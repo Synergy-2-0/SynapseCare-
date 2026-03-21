@@ -5,7 +5,7 @@ spring:
   application:
     name: doctor-service
   datasource:
-    url: jdbc:sqlserver://${DB_HOST:localhost}:1433;databaseName=doctordb;encrypt=true;trustServerCertificate=true;
+    url: jdbc:sqlserver://${DB_HOST:localhost};instanceName=SQLEXPRESS;databaseName=healthcare_app;encrypt=true;trustServerCertificate=true;
     username: ${DB_USER:sa}
     password: ${DB_PASS:StrongPass!123}
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
