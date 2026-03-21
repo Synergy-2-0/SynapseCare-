@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Symptom Checker - HealthPlus</title>
+    <title>AI Symptom Checker - MediLink</title>
     <!-- Modern Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Icons -->
@@ -87,7 +87,7 @@
         <aside class="sidebar">
             <div class="logo">
                 <i class="fa-solid fa-heart-pulse"></i>
-                Health<span>Plus</span>
+                Medi<span>Link</span>
             </div>
             
             <ul class="nav-links">
@@ -109,7 +109,7 @@
             <div class="chat-container">
                 <div class="chat-messages" id="chatBox">
                     <div class="msg msg-ai">
-                        <strong>HealthPlus AI</strong><br><br>
+                        <strong>MediLink AI</strong><br><br>
                         Hello! I am your AI health assistant powered by the Integration Service. Please describe your symptoms.
                     </div>
                 </div>
@@ -154,7 +154,7 @@
                 setTimeout(() => {
                     const aiMsg = document.createElement('div');
                     aiMsg.className = 'msg msg-ai';
-                    aiMsg.innerHTML = '<strong>HealthPlus AI</strong><br><br>' + 
+                    aiMsg.innerHTML = '<strong>MediLink AI</strong><br><br>' + 
                     'Based on your symptoms, it could be a mild migraine or dehydration. I recommend booking an appointment with a General Physician for a formal diagnosis. <br><br>Would you like to book an appointment now?';
                     chatBox.appendChild(aiMsg);
                     chatBox.scrollTop = chatBox.scrollHeight;
