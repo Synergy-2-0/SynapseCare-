@@ -1,4 +1,4 @@
-// MediLink Frontend Core Logic
+// SynapseCare Frontend Core Logic
 // Handling interactions with the backend Microservices Gateway/Endpoints
 
 const API_BASE_URL = 'http://localhost:8080'; // Gateway or main entry point
