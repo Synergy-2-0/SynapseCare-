@@ -1,0 +1,15 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: appointment-service
+  datasource:
+    url: jdbc:sqlserver://${DB_HOST:localhost}:1433;databaseName=appointmentdb;encrypt=true;trustServerCertificate=true;
+    username: ${DB_USER:sa}
+    password: ${DB_PASS:StrongPass!123}
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true

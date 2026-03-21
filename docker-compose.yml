@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: healthcare_sqlserver
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: "StrongPass!123"
+    ports:
+      - "1433:1433"
+    networks:
+      - healthcare-net
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-U", "sa", "-P", "StrongPass!123", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  patient-service:
+    build:
+      context: ./patient-service
+    container_name: patient-service
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_HOST=sqlserver
+      - DB_USER=sa
+      - DB_PASS=StrongPass!123
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - healthcare-net
+
+  doctor-service:
+    build:
+      context: ./doctor-service
+    container_name: doctor-service
+    ports:
+      - "8082:8082"
+    environment:
+      - DB_HOST=sqlserver
+      - DB_USER=sa
+      - DB_PASS=StrongPass!123
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - healthcare-net
+
+  appointment-service:
+    build:
+      context: ./appointment-service
+    container_name: appointment-service
+    ports:
+      - "8083:8083"
+    environment:
+      - DB_HOST=sqlserver
+      - DB_USER=sa
+      - DB_PASS=StrongPass!123
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - healthcare-net
+
+  integration-service:
+    build:
+      context: ./integration-service
+    container_name: integration-service
+    ports:
+      - "8084:8084"
+    environment:
+      - DB_HOST=sqlserver
+      - DB_USER=sa
+      - DB_PASS=StrongPass!123
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - healthcare-net
+
+  admin-service:
+    build:
+      context: ./admin-service
+    container_name: admin-service
+    ports:
+      - "8085:8085"
+    networks:
+      - healthcare-net
+
+networks:
+  healthcare-net:
+    driver: bridge
+
+

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - HealthPlus</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <header id="navbar" class="scrolled">
+        <a href="index.html" class="logo">
+            <i class="fa-solid fa-heart-pulse"></i>
+            Health<span>Plus</span>
+        </a>
+    </header>
+
+    <!-- Register Section -->
+    <div class="auth-container" style="padding: 6rem 2rem;">
+        <!-- Background Elements -->
+        <div class="hero-bg" style="top: -10%; left: -20%; background: radial-gradient(circle, rgba(74,144,226,0.3) 0%, rgba(80,227,194,0.1) 70%);"></div>
+        <div class="hero-bg" style="bottom: -10%; right: -20%; background: radial-gradient(circle, rgba(80,227,194,0.3) 0%, rgba(74,144,226,0.1) 70%);"></div>
+
+        <div class="glass auth-card" style="max-width: 600px;">
+            <div class="auth-header">
+                <h2>Create Account</h2>
+                <p>Join the future of healthcare today</p>
+            </div>
+            
+            <form id="registerForm">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="form-group">
+                        <label for="reg-role">I am a</label>
+                        <select id="reg-role" required>
+                            <option value="patient">Patient</option>
+                            <option value="doctor">Doctor</option>
+                        </select>
+                        <i class="fa-solid fa-user-tag"></i>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-name">Full Name</label>
+                        <input type="text" id="reg-name" placeholder="John Doe" required>
+                        <i class="fa-regular fa-user"></i>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="form-group">
+                        <label for="reg-email">Email Address</label>
+                        <input type="email" id="reg-email" placeholder="john.doe@email.com" required>
+                        <i class="fa-regular fa-envelope"></i>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-phone">Phone Number</label>
+                        <input type="tel" id="reg-phone" placeholder="+1 234 567 8900" required>
+                        <i class="fa-solid fa-phone"></i>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="form-group" id="dob-group">
+                        <label for="reg-dob">Date of Birth</label>
+                        <input type="date" id="reg-dob" required>
+                    </div>
+
+                    <div class="form-group" id="gender-group">
+                        <label for="reg-gender">Gender</label>
+                        <select id="reg-gender" required>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="specialization-group" style="display: none;">
+                        <label for="reg-spec">Specialization</label>
+                        <input type="text" id="reg-spec" placeholder="e.g. Cardiologist">
+                        <i class="fa-solid fa-stethoscope"></i>
+                    </div>
+
+                    <div class="form-group" id="experience-group" style="display: none;">
+                        <label for="reg-exp">Experience (Years)</label>
+                        <input type="number" id="reg-exp" placeholder="5" min="0">
+                        <i class="fa-solid fa-briefcase-medical"></i>
+                    </div>
+                </div>
+
+                <div class="form-group" id="address-group">
+                    <label for="reg-address">Address</label>
+                    <input type="text" id="reg-address" placeholder="123 Main St, City, Country" required>
+                    <i class="fa-solid fa-location-dot"></i>
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" placeholder="••••••••" required>
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Create Account</button>
+                
+                <div class="auth-links">
+                    <p>Already have an account? <a href="login.html">Sign in</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        // Form interactivity for Doctor vs Patient
+        document.getElementById('reg-role').addEventListener('change', function(e) {
+            const role = e.target.value;
+            if (role === 'doctor') {
+                document.getElementById('dob-group').style.display = 'none';
+                document.getElementById('gender-group').style.display = 'none';
+                document.getElementById('address-group').style.display = 'none';
+                
+                document.getElementById('specialization-group').style.display = 'block';
+                document.getElementById('experience-group').style.display = 'block';
+
+                document.getElementById('reg-dob').removeAttribute('required');
+                document.getElementById('reg-gender').removeAttribute('required');
+                document.getElementById('reg-address').removeAttribute('required');
+
+                document.getElementById('reg-spec').setAttribute('required', 'true');
+                document.getElementById('reg-exp').setAttribute('required', 'true');
+            } else {
+                document.getElementById('dob-group').style.display = 'block';
+                document.getElementById('gender-group').style.display = 'block';
+                document.getElementById('address-group').style.display = 'block';
+                
+                document.getElementById('specialization-group').style.display = 'none';
+                document.getElementById('experience-group').style.display = 'none';
+
+                document.getElementById('reg-spec').removeAttribute('required');
+                document.getElementById('reg-exp').removeAttribute('required');
+
+                document.getElementById('reg-dob').setAttribute('required', 'true');
+                document.getElementById('reg-gender').setAttribute('required', 'true');
+                document.getElementById('reg-address').setAttribute('required', 'true');
+            }
+        });
+    </script>
+</body>
+</html>

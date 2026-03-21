@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - HealthPlus</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-heart-pulse"></i>
+                Health<span>Plus</span>
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="#" class="active"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+                <li><a href="#"><i class="fa-solid fa-calendar-check"></i> Appointments</a></li>
+                <li id="menu-reports" style="display: none;"><a href="#"><i class="fa-solid fa-file-medical"></i> Medical Reports</a></li>
+                <li id="menu-patients" style="display: none;"><a href="#"><i class="fa-solid fa-users"></i> My Patients</a></li>
+                <li><a href="#"><i class="fa-solid fa-video"></i> Telemedicine</a></li>
+                <li><a href="#"><i class="fa-solid fa-robot"></i> AI Symptom Chat</a></li>
+                <li><a href="#"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                <li style="margin-top: auto;"><a href="login.html" id="logoutBtn" style="color: #dc2626;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Search appointments, doctors...">
+                </div>
+                
+                <div class="user-profile">
+                    <i class="fa-regular fa-bell" style="font-size: 1.2rem; color: #666;"></i>
+                    <div class="avatar" id="userAvatar">JD</div>
+                    <div>
+                        <h5 id="userNameDisplay" style="margin-bottom: 2px;">John Doe</h5>
+                        <p id="userRoleDisplay" style="font-size: 0.8rem; color: #777;">Patient</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-down" style="font-size: 0.8rem; color: #999;"></i>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="dashboard-cards" id="patientStats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fa-regular fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>3</h3>
+                        <p>Upcoming Appointments</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(80, 227, 194, 0.1); color: var(--secondary-color);">
+                        <i class="fa-solid fa-notes-medical"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>12</h3>
+                        <p>Medical Reports</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(255, 193, 7, 0.1); color: #ffc107;">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>2</h3>
+                        <p>Pending Payments</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Content Area -->
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>Recent Appointments</h3>
+                    <a href="#" class="btn btn-outline" style="padding: 0.4rem 1rem; font-size: 0.9rem;">View All</a>
+                </div>
+                
+                <!-- Appointments Table -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Doctor / Patient</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appointmentsList">
+                        <!-- Populated by JS -->
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="avatar" style="width: 30px; height: 30px; font-size: 0.8rem; background: #eee; color: #555;">DS</div>
+                                    <div>Dr. Smith<br><small style="color:#777;">Cardiologist</small></div>
+                                </div>
+                            </td>
+                            <td>Oct 24, 2026</td>
+                            <td>10:00 AM</td>
+                            <td><span class="status-badge status-confirmed">Confirmed</span></td>
+                            <td>
+                                <button class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;"><i class="fa-solid fa-video"></i> Join</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="avatar" style="width: 30px; height: 30px; font-size: 0.8rem; background: #eee; color: #555;">AJ</div>
+                                    <div>Dr. Alice Joy<br><small style="color:#777;">Neurologist</small></div>
+                                </div>
+                            </td>
+                            <td>Oct 28, 2026</td>
+                            <td>02:30 PM</td>
+                            <td><span class="status-badge status-pending">Pending</span></td>
+                            <td>
+                                <button class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-color: #dc2626; color: #dc2626;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals for specific actions would go here -->
+
+    <script src="js/app.js"></script>
+    <script>
+        // Temporary logic to display dynamic data based on role
+        document.addEventListener('DOMContentLoaded', () => {
+            const role = localStorage.getItem('userRole') || 'patient';
+            
+            if (role === 'doctor') {
+                document.getElementById('userRoleDisplay').innerText = 'Doctor';
+                document.getElementById('userNameDisplay').innerText = localStorage.getItem('userName') || 'Dr. Smith';
+                document.getElementById('userAvatar').innerText = 'DS';
+                
+                document.getElementById('menu-patients').style.display = 'block';
+                document.getElementById('menu-reports').style.display = 'none';
+
+                // Change stats
+                document.getElementById('patientStats').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                        <div class="stat-info"><h3>8</h3><p>Today's Patients</p></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(80, 227, 194, 0.1); color: var(--secondary-color);"><i class="fa-regular fa-clock"></i></div>
+                        <div class="stat-info"><h3>4h</h3><p>Available Slots</p></div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('userRoleDisplay').innerText = 'Patient';
+                document.getElementById('userNameDisplay').innerText = localStorage.getItem('userName') || 'John Doe';
+                document.getElementById('userAvatar').innerText = 'JD';
+                
+                document.getElementById('menu-patients').style.display = 'none';
+                document.getElementById('menu-reports').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

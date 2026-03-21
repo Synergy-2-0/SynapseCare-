@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthPlus - Cloud-Native Healthcare</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <header id="navbar">
+        <a href="index.html" class="logo">
+            <i class="fa-solid fa-heart-pulse"></i>
+            Health<span>Plus</span>
+        </a>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#specialists">Specialists</a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+        </nav>
+        <div class="nav-buttons">
+            <a href="login.html" class="btn btn-outline">Log in</a>
+            <a href="register.html" class="btn btn-primary">Sign up</a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <h1>Your health,<br>our <span>Cloud-Native</span> Priority.</h1>
+            <p>Experience seamless healthcare coordination with our advanced platform. Manage appointments, connect with top specialists via telemedicine, and securely access your medical history anytime, anywhere.</p>
+            <div class="hero-actions">
+                <a href="register.html" class="btn btn-primary">Book an Appointment</a>
+                <a href="#services" class="btn btn-outline">Explore Services</a>
+            </div>
+        </div>
+        
+        <div class="hero-image">
+            <div class="glass" style="width: 400px; height: 500px; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 30px; border: 1px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.2);">
+                <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Doctor" style="width: 100%; height: 100%; object-fit: cover; border-radius: 20px;">
+            </div>
+            
+            <div class="floating-card card-1">
+                <div class="icon-box">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h5 style="margin-bottom: 5px;">24/7 Availability</h5>
+                    <p style="font-size: 0.8rem; color: #666; width: 150px; line-height: 1.2;">Book online anytime</p>
+                </div>
+            </div>
+
+            <div class="floating-card card-2">
+                <div class="icon-box" style="background: #e6f9f0; color: #00b060;">
+                    <i class="fa-solid fa-video"></i>
+                </div>
+                <div>
+                    <h5 style="margin-bottom: 5px;">Telemedicine</h5>
+                    <p style="font-size: 0.8rem; color: #666; width: 150px; line-height: 1.2;">Consult from home</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="services" class="features">
+        <h2 class="section-title">Comprehensive Healthcare Platform</h2>
+        <p class="section-subtitle">A microservices architecture delivering scalable, secure, and fast healthcare services.</p>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <i class="fa-solid fa-users feature-icon"></i>
+                <h3 class="feature-title">Patient Management</h3>
+                <p class="feature-desc">Securely manage patient profiles, medical histories, and health records with our robust patient service module.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-user-doctor feature-icon"></i>
+                <h3 class="feature-title">Top Specialists</h3>
+                <p class="feature-desc">Access a verified network of doctors. View availability slots and manage consultations effortlessly.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-calendar-plus feature-icon"></i>
+                <h3 class="feature-title">Smart Appointments</h3>
+                <p class="feature-desc">Intelligent booking system that prevents double bookings, handles reschedules, and optimizes doctor time.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-network-wired feature-icon"></i>
+                <h3 class="feature-title">Integrations</h3>
+                <p class="feature-desc">Seamlessly integrated telemedicine, automated payment processing, real-time notifications, and AI symptom checker.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Section -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col" style="flex: 2;">
+                <a href="#" class="logo" style="color: #fff;">
+                    <i class="fa-solid fa-heart-pulse"></i> Health<span>Plus</span>
+                </a>
+                <p style="margin-top: 1.5rem; color: #999; max-width: 300px; line-height: 1.6;">
+                    Providing modern, reliable, and secure healthcare solutions supported by cloud-native microservices architecture.
+                </p>
+            </div>
+            <div class="footer-col">
+                <h4>Platform</h4>
+                <ul>
+                    <li><a href="#">Patient Services</a></li>
+                    <li><a href="#">Doctor Portal</a></li>
+                    <li><a href="#">Appointments</a></li>
+                    <li><a href="#">Telemedicine</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 HealthPlus. Built with Spring Boot Microservices.</p>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

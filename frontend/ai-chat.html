@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Symptom Checker - HealthPlus</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+        .msg {
+            max-width: 70%;
+            margin-bottom: 1.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 20px;
+            line-height: 1.5;
+            animation: fadeIn 0.4s ease;
+        }
+        .msg-ai {
+            background: rgba(74, 144, 226, 0.1);
+            color: #222;
+            border-bottom-left-radius: 0;
+            margin-right: auto;
+        }
+        .msg-user {
+            background: var(--primary-color);
+            color: #fff;
+            border-bottom-right-radius: 0;
+            margin-left: auto;
+        }
+        .chat-input-area {
+            padding: 1.5rem;
+            background: #fff;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 1rem;
+        }
+        .chat-input-area input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            outline: none;
+            transition: var(--transition);
+        }
+        .chat-input-area input:focus {
+            border-color: var(--primary-color);
+        }
+        .chat-input-area button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .chat-input-area button:hover {
+            transform: scale(1.05);
+            background: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-heart-pulse"></i>
+                Health<span>Plus</span>
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+                <li><a href="appointments.html"><i class="fa-solid fa-calendar-check"></i> Appointments</a></li>
+                <li id="menu-reports" style="display: none;"><a href="#"><i class="fa-solid fa-file-medical"></i> Medical Reports</a></li>
+                <li id="menu-patients" style="display: none;"><a href="#"><i class="fa-solid fa-users"></i> My Patients</a></li>
+                <li><a href="telemedicine.html"><i class="fa-solid fa-video"></i> Telemedicine</a></li>
+                <li><a href="ai-chat.html" class="active"><i class="fa-solid fa-robot"></i> AI Symptom Chat</a></li>
+                <li><a href="#"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                <li style="margin-top: auto;"><a href="index.html" id="logoutBtn" style="color: #dc2626;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <h2 style="margin-bottom: 2rem;">AI Assistant & Symptom Checker</h2>
+            
+            <div class="chat-container">
+                <div class="chat-messages" id="chatBox">
+                    <div class="msg msg-ai">
+                        <strong>HealthPlus AI</strong><br><br>
+                        Hello! I am your AI health assistant powered by the Integration Service. Please describe your symptoms.
+                    </div>
+                </div>
+                
+                <form class="chat-input-area" id="chatForm">
+                    <input type="text" id="chatInput" placeholder="Type your symptoms here... e.g. 'I have had a headache for 2 days'" required autocomplete="off">
+                    <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const role = localStorage.getItem('userRole') || 'patient';
+            if (role === 'doctor') {
+                document.getElementById('menu-patients').style.display = 'block';
+            } else {
+                document.getElementById('menu-reports').style.display = 'block';
+            }
+
+            const chatForm = document.getElementById('chatForm');
+            const chatBox = document.getElementById('chatBox');
+            const chatInput = document.getElementById('chatInput');
+
+            chatForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = chatInput.value.trim();
+                if(!text) return;
+
+                // Add User Message
+                const userMsg = document.createElement('div');
+                userMsg.className = 'msg msg-user';
+                userMsg.innerText = text;
+                chatBox.appendChild(userMsg);
+                
+                chatInput.value = '';
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                // Simulate AI response
+                setTimeout(() => {
+                    const aiMsg = document.createElement('div');
+                    aiMsg.className = 'msg msg-ai';
+                    aiMsg.innerHTML = '<strong>HealthPlus AI</strong><br><br>' + 
+                    'Based on your symptoms, it could be a mild migraine or dehydration. I recommend booking an appointment with a General Physician for a formal diagnosis. <br><br>Would you like to book an appointment now?';
+                    chatBox.appendChild(aiMsg);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }, 1000);
+            });
+        });
+    </script>
+</body>
+</html>
