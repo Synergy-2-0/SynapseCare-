@@ -1,4 +1,4 @@
-# Cloud-Native Healthcare Platform
+# MediLink - Cloud-Native Healthcare Platform
 
 Welcome to the Cloud-Native Healthcare Platform! This is a comprehensive, microservices-based application built with Java Spring Boot, backed by Microsoft SQL Server. It includes a beautiful, responsive frontend UI to handle interactions across patients, doctors, and administrators seamlessly.
 
