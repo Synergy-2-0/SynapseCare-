@@ -19,8 +19,7 @@ services:
 
   patient-service:
     build:
-      context: .
-      dockerfile: ./patient-service/Dockerfile
+      context: ./patient-service
     container_name: patient-service
     ports:
       - "8081:8081"
@@ -36,8 +35,7 @@ services:
 
   doctor-service:
     build:
-      context: .
-      dockerfile: ./doctor-service/Dockerfile
+      context: ./doctor-service
     container_name: doctor-service
     ports:
       - "8082:8082"
@@ -53,8 +51,7 @@ services:
 
   appointment-service:
     build:
-      context: .
-      dockerfile: ./appointment-service/Dockerfile
+      context: ./appointment-service
     container_name: appointment-service
     ports:
       - "8083:8083"
@@ -70,8 +67,7 @@ services:
 
   integration-service:
     build:
-      context: .
-      dockerfile: ./integration-service/Dockerfile
+      context: ./integration-service
     container_name: integration-service
     ports:
       - "8084:8084"
@@ -87,8 +83,7 @@ services:
 
   admin-service:
     build:
-      context: .
-      dockerfile: ./admin-service/Dockerfile
+      context: ./admin-service
     container_name: admin-service
     ports:
       - "8085:8085"

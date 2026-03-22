@@ -2,81 +2,85 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, Heart, Shield, ArrowRight, Activity, Stethoscope } from 'lucide-react';
+import { Shield, User, Mail, Lock, Heart, ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
 
 const RegisterPage = () => {
     const [role, setRole] = useState('PATIENT');
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', extra: '' });
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
     const handleRegister = (e) => {
         e.preventDefault();
         setLoading(true);
-        setTimeout(() => {
-            alert(`Registered successfully as ${role}! Redirecting to login...`);
-            router.push('/login');
-            setLoading(false);
-        }, 1500);
+        setTimeout(() => { router.push('/login'); setLoading(false); }, 1500);
     };
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] flex flex-col md:flex-row font-bold italic">
-            <div className="md:w-1/3 bg-slate-900 border-r border-slate-800 p-12 text-white flex flex-col justify-between relative overflow-hidden italic">
-                <div className="absolute top-0 left-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-                <Link href="/" className="flex items-center gap-2 relative z-10 group">
-                    <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:scale-110 transition-transform">S</div>
-                    <span className="text-2xl font-black tracking-tight italic">SynapseCare</span>
+        <div className="min-h-screen bg-white flex flex-col md:flex-row font-bold italic text-slate-900 italic font-bold">
+            <div className="md:w-[500px] bg-slate-950 p-20 text-white flex flex-col justify-between relative overflow-hidden italic font-bold">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2"></div>
+                
+                <Link href="/" className="flex items-center gap-3 relative z-10 group italic">
+                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg transition-all group-hover:scale-110 italic">S</div>
+                    <span className="text-2xl font-black italic tracking-tighter italic font-bold">SynapseCare</span>
                 </Link>
-                <div className="relative z-10 space-y-12">
-                    <div className="space-y-4">
-                        <h1 className="text-5xl font-black leading-tight italic">Start your journey to <span className="text-primary">Better Health</span>.</h1>
-                        <p className="text-slate-400 font-medium leading-relaxed italic">Join over 10,000+ users who trust our cloud-native healthcare platform for their medical needs.</p>
+
+                <div className="relative z-10 space-y-12 italic font-bold">
+                    <h1 className="text-6xl font-black italic italic leading-[1.05] tracking-tighter italic">Create Your <span className="text-indigo-400 italic">Health</span> Account.</h1>
+                    <div className="space-y-6 italic font-bold">
+                        {["Secure Cloud Storage", "Private Data Encryption", "Direct Doctor Connect"].map(f => (
+                            <div key={f} className="flex items-center gap-4 text-slate-400 text-lg font-bold italic group">
+                                <CheckCircle2 className="w-6 h-6 text-indigo-400 italic group-hover:scale-110" /> {f}
+                            </div>
+                        ))}
                     </div>
                 </div>
-                <div className="text-[10px] uppercase font-black tracking-[0.3em] text-slate-500 relative z-10 italic">© 2026 Virtual Health Systems</div>
+
+                <div className="text-[10px] uppercase font-black tracking-[0.4em] text-slate-700 relative z-10 italic">Account Registration v1.2</div>
             </div>
 
-            <div className="flex-1 p-8 md:p-24 flex items-center justify-center">
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-xl space-y-10 font-bold italic">
-                    <div className="space-y-2 italic italic italic">
-                        <h2 className="text-4xl font-black text-slate-900 italic">Create Account</h2>
-                        <p className="text-slate-500 font-bold italic italic">Select your role to get started with SynapseCare.</p>
+            <div className="flex-1 bg-[#F8FAFC] p-8 md:p-24 flex items-center justify-center italic font-bold overflow-y-auto">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-2xl space-y-12 italic font-bold">
+                    <div className="space-y-4 italic font-bold text-center md:text-left">
+                        <h2 className="text-5xl font-black text-slate-900 italic tracking-tighter">Sign Up</h2>
+                        <p className="text-slate-500 font-bold italic text-lg opacity-90 italic">Select your role and enter your details to get started.</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 italic italic">
-                        <button onClick={() => setRole('PATIENT')} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col gap-3 items-center text-center group ${role === 'PATIENT' ? 'border-primary bg-orange-50/50 shadow-xl shadow-orange-500/5' : 'border-slate-100 hover:border-slate-200'}`}>
-                            <User className={`w-8 h-8 transition-colors ${role === 'PATIENT' ? 'text-primary' : 'text-slate-300'}`} />
-                            <div><div className="font-black text-slate-900 group-hover:text-primary transition-colors italic">Patient</div><div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1 italic">Personal Access</div></div>
-                        </button>
-                        <button onClick={() => setRole('DOCTOR')} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col gap-3 items-center text-center group ${role === 'DOCTOR' ? 'border-indigo-600 bg-indigo-50/50 shadow-xl shadow-indigo-500/5' : 'border-slate-100 hover:border-slate-200'}`}>
-                            <Stethoscope className={`w-8 h-8 transition-colors ${role === 'DOCTOR' ? 'text-indigo-600' : 'text-slate-300'}`} />
-                            <div><div className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors italic">Doctor</div><div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1 italic">Provider Access</div></div>
-                        </button>
+                    <div className="grid grid-cols-2 gap-6 italic font-bold">
+                        {[{ id: 'PATIENT', label: 'I am a Patient', desc: 'Secure health portal' }, { id: 'DOCTOR', label: 'I am a Doctor', desc: 'Clinical specialist access' }].map((r) => (
+                            <button key={r.id} onClick={() => setRole(r.id)} className={`p-8 rounded-[2.5rem] border-2 transition-all text-left italic font-bold shadow-xl ${role === r.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-600/30' : 'bg-white border-slate-100 text-slate-900 hover:border-slate-200'}`}>
+                                <div className="font-black text-2xl italic mb-1">{r.label}</div>
+                                <div className={`text-xs font-bold italic uppercase tracking-[0.1em] opacity-80 italic font-bold`}>{r.desc}</div>
+                            </button>
+                        ))}
                     </div>
 
-                    <form onSubmit={handleRegister} className="space-y-6 italic italic italic">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 italic italic italic">
-                            <div className="space-y-2 italic font-bold">
-                                <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 italic italic italic">Full Name</label>
-                                <div className="relative italic font-bold">
-                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                    <input type="text" placeholder="John Carter" className="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all italic shadow-inner" required />
-                                </div>
-                            </div>
-                            <div className="space-y-2 italic font-bold">
-                                <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1 italic italic italic">Email Address</label>
-                                <div className="relative italic font-bold font-bold">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                    <input type="email" placeholder="john@example.com" className="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary/50 transition-all italic shadow-inner" required />
-                                </div>
-                            </div>
+                    <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-8 italic font-bold">
+                        <div className="space-y-4 italic font-bold">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Full Name</label>
+                            <input placeholder="John Doe" className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required />
                         </div>
-                        <button disabled={loading} className={`w-full py-5 rounded-[2rem] font-black text-lg shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 italic ${role === 'PATIENT' ? 'bg-primary text-white shadow-orange-500/20' : 'bg-indigo-600 text-white shadow-indigo-500/20'}`}>
-                            {loading ? "Initializing..." : (<>Create {role.toLowerCase()} Profile <ArrowRight className="w-5 h-5" /></>)}
-                        </button>
+                        <div className="space-y-4 italic font-bold">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Email Address</label>
+                            <input type="email" placeholder="john@gmail.com" className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required />
+                        </div>
+                        <div className="space-y-4 italic font-bold">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Password</label>
+                            <input type="password" placeholder="••••••••••••" className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required />
+                        </div>
+                        <div className="space-y-4 italic font-bold">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Personal Address</label>
+                            <input placeholder="City, State" className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required />
+                        </div>
+                        
+                        <div className="md:col-span-2 pt-6 italic font-bold">
+                            <button disabled={loading} className="w-full py-8 bg-slate-900 text-white rounded-[2.5rem] font-black text-2xl shadow-2xl transition-all shadow-slate-900/30 flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-[0.98] italic">
+                                {loading ? "Creating Account..." : <>Complete Sign Up <ChevronRight className="w-7 h-7 italic" /></>}
+                            </button>
+                        </div>
                     </form>
-                    <p className="text-center font-bold text-slate-400 italic">Already have an account? <Link href="/login" className="text-slate-900 hover:underline italic">Sign In Now</Link></p>
+
+                    <p className="text-center font-black text-slate-400 text-sm italic italic tracking-tight italic font-bold uppercase tracking-widest">Already have an account? <Link href="/login" className="text-slate-900 hover:text-indigo-600 italic italic font-bold underline underline-offset-8">Sign In</Link></p>
                 </motion.div>
             </div>
         </div>
