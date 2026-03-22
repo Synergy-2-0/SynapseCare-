@@ -1,0 +1,8 @@
+**/node_modules
+**/target
+**/.next
+**/.git
+frontend
+k8s
+frontend_legacy
+.idea
