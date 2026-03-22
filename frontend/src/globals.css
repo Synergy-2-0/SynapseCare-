@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #f97316;
+  --primary-hover: #ea580c;
+  --secondary: #6366f1;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
