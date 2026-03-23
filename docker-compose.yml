@@ -45,9 +45,13 @@ services:
       - DB_HOST=postgres
       - DB_USER=postgres
       - DB_PASS=1234
+      - RABBIT_HOST=rabbitmq
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
     networks:
       - healthcare-net
 
@@ -64,6 +68,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: always
     networks:
       - healthcare-net
 
@@ -80,6 +85,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: always
     networks:
       - healthcare-net
 
@@ -93,9 +99,13 @@ services:
       - DB_HOST=postgres
       - DB_USER=postgres
       - DB_PASS=1234
+      - RABBIT_HOST=rabbitmq
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
     networks:
       - healthcare-net
 
