@@ -5,10 +5,10 @@ spring:
   application:
     name: integration-service
   datasource:
-    url: jdbc:sqlserver://${DB_HOST:localhost};instanceName=SQLEXPRESS;databaseName=healthcare_app;encrypt=true;trustServerCertificate=true;
-    username: ${DB_USER:sa}
-    password: ${DB_PASS:StrongPass!123}
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/hospital_system
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:1234}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
