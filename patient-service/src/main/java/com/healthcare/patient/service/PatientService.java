@@ -15,14 +15,17 @@ import java.util.stream.Collectors;
 public class PatientService {
 
     private final PatientRepository patientRepository;
+    private final PatientEventProducer eventProducer;
 
-    public PatientDto createPatient(PatientDto dto) {
-        if (patientRepository.existsByEmail(dto.getEmail())) {
+    public PatientDto createPatient(PatientDto patientDto) {
+        if (patientRepository.existsByEmail(patientDto.getEmail())) {
             throw new RuntimeException("Email already in use");
         }
-        Patient patient = mapToEntity(dto);
-        patient = patientRepository.save(patient);
-        return mapToDto(patient);
+        Patient patient = mapToEntity(patientDto);
+        Patient savedPatient = patientRepository.save(patient);
+        PatientDto savedDto = mapToDto(savedPatient);
+        eventProducer.sendPatientCreatedEvent(savedDto);
+        return savedDto;
     }
 
     public PatientDto getPatientById(Long id) {
@@ -37,21 +40,24 @@ public class PatientService {
                 .collect(Collectors.toList());
     }
 
-    public PatientDto updatePatient(Long id, PatientDto dto) {
-        Patient existing = patientRepository.findById(id)
+    public PatientDto updatePatient(Long id, PatientDto patientDto) {
+        Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
         
-        existing.setName(dto.getName());
-        existing.setPhone(dto.getPhone());
-        existing.setAddress(dto.getAddress());
-        existing.setDob(dto.getDob());
-        existing.setGender(dto.getGender());
-        existing.setBloodGroup(dto.getBloodGroup());
-        existing.setAllergies(dto.getAllergies());
-        existing.setEmergencyContact(dto.getEmergencyContact());
+        patient.setName(patientDto.getName());
+        patient.setEmail(patientDto.getEmail()); // Added email update as per instruction snippet
+        patient.setPhone(patientDto.getPhone());
+        patient.setAddress(patientDto.getAddress());
+        patient.setDob(patientDto.getDob());
+        patient.setGender(patientDto.getGender());
+        patient.setBloodGroup(patientDto.getBloodGroup());
+        patient.setAllergies(patientDto.getAllergies());
+        patient.setEmergencyContact(patientDto.getEmergencyContact());
         
-        existing = patientRepository.save(existing);
-        return mapToDto(existing);
+        Patient updatedPatient = patientRepository.save(patient);
+        PatientDto updatedDto = mapToDto(updatedPatient);
+        eventProducer.sendPatientUpdatedEvent(updatedDto);
+        return updatedDto;
     }
 
     public void deletePatient(Long id) {
