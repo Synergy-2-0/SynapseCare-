@@ -1,5 +1,13 @@
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
-COPY target/*.jar app.jar
+COPY mvnw pom.xml ./
+COPY .mvn .mvn
+RUN ./mvnw dependency:go-offline -q
+COPY src ./src
+RUN ./mvnw clean package -DskipTests -q
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/doctor-service-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8082
 ENTRYPOINT ["java", "-jar", "app.jar"]
