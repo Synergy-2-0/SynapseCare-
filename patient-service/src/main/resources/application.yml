@@ -16,3 +16,18 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: 5672
+    username: ${RABBIT_USER:guest}
+    password: ${RABBIT_PASS:guest}
+    template:
+      exchange: ${PATIENT_EXCHANGE:patient.exchange}
+      routing-key: ${PATIENT_ROUTING_KEY:patient.routing.key}
+
+app:
+  rabbitmq:
+    queue: ${PATIENT_QUEUE:patient.queue}
+    exchange: ${PATIENT_EXCHANGE:patient.exchange}
+    routing-key: ${PATIENT_ROUTING_KEY:patient.routing.key}
