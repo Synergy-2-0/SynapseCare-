@@ -46,6 +46,9 @@ public class PatientService {
         existing.setAddress(dto.getAddress());
         existing.setDob(dto.getDob());
         existing.setGender(dto.getGender());
+        existing.setBloodGroup(dto.getBloodGroup());
+        existing.setAllergies(dto.getAllergies());
+        existing.setEmergencyContact(dto.getEmergencyContact());
         
         existing = patientRepository.save(existing);
         return mapToDto(existing);
@@ -67,6 +70,9 @@ public class PatientService {
                 .dob(dto.getDob())
                 .gender(dto.getGender())
                 .address(dto.getAddress())
+                .bloodGroup(dto.getBloodGroup())
+                .allergies(dto.getAllergies())
+                .emergencyContact(dto.getEmergencyContact())
                 .build();
     }
 
@@ -79,6 +85,9 @@ public class PatientService {
                 .dob(entity.getDob())
                 .gender(entity.getGender())
                 .address(entity.getAddress())
+                .bloodGroup(entity.getBloodGroup())
+                .allergies(entity.getAllergies())
+                .emergencyContact(entity.getEmergencyContact())
                 .build();
     }
 }
