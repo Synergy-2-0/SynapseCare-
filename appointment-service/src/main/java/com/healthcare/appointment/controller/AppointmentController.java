@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.healthcare.appointment.client.DoctorServiceClient;
+import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
+
+import java.math.BigDecimal;
 
 import java.util.List;
 
@@ -18,6 +22,7 @@ import java.util.List;
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
+    private final DoctorServiceClient doctorServiceClient;
 
     @PostMapping("/book")
     public ResponseEntity<ApiResponse<AppointmentDto>> bookAppointment(@Valid @RequestBody AppointmentDto dto) {
@@ -56,6 +61,16 @@ public class AppointmentController {
     public ResponseEntity<ApiResponse<List<AppointmentDto>>> getAppointmentsByDoctor(@PathVariable("doctorId") Long doctorId) {
         List<AppointmentDto> appointments = appointmentService.getAppointmentsByDoctor(doctorId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Doctor appointments fetched", appointments));
+    }
+
+    @GetMapping("/doctors/search")
+    public ResponseEntity<ApiResponse<List<DoctorProfileClientDto>>> searchDoctors(
+            @RequestParam(value = "specialization", required = false) String specialization,
+            @RequestParam(value = "minFee", required = false) BigDecimal minFee,
+            @RequestParam(value = "maxFee", required = false) BigDecimal maxFee) {
+
+        List<DoctorProfileClientDto> doctors = doctorServiceClient.searchDoctors(specialization, minFee, maxFee);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Doctors fetched from doctor-service", doctors));
     }
 
     @PatchMapping("/{id}/status")

@@ -8,6 +8,9 @@ import com.healthcare.appointment.exception.SlotConflictException;
 import com.healthcare.appointment.repository.AppointmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.healthcare.appointment.client.DoctorServiceClient;
+import com.healthcare.appointment.dto.client.AvailableSlotClientDto;
+import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,10 +20,33 @@ import java.util.stream.Collectors;
 public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
+    private final DoctorServiceClient doctorServiceClient;
 
     public AppointmentDto bookAppointment(AppointmentDto dto) {
-        boolean isBooked = appointmentRepository.existsByDoctorIdAndDateAndTimeAndStatus(
-                dto.getDoctorId(), dto.getDate(), dto.getTime(), AppointmentStatus.CONFIRMED);
+        DoctorProfileClientDto doctor = doctorServiceClient.getDoctorById(dto.getDoctorId());
+
+        if (doctor == null) {
+            throw new ResourceNotFoundException("Doctor not found");
+        }
+        if (!Boolean.TRUE.equals(doctor.getIsAvailable())) {
+            throw new SlotConflictException("Doctor is currently unavailable");
+        }
+        if (doctor.getVerificationStatus() == null || !"APPROVED".equalsIgnoreCase(doctor.getVerificationStatus())) {
+            throw new SlotConflictException("Doctor is not approved for appointments");
+        }
+
+        List<AvailableSlotClientDto> availableSlots =
+                doctorServiceClient.getAvailableSlots(dto.getDoctorId(), dto.getDate());
+        if (!isWithinAnyAvailableSlot(dto.getTime(), availableSlots)) {
+            throw new SlotConflictException("Requested time is not within doctor available slots");
+        }
+
+        boolean isBooked = appointmentRepository.existsByDoctorIdAndDateAndTimeAndStatusIn(
+                dto.getDoctorId(),
+                dto.getDate(),
+                dto.getTime(),
+                List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED)
+        );
 
         if (isBooked) {
             throw new SlotConflictException("Doctor is already booked for this slot");
@@ -31,7 +57,7 @@ public class AppointmentService {
                 .doctorId(dto.getDoctorId())
                 .date(dto.getDate())
                 .time(dto.getTime())
-                .status(AppointmentStatus.PENDING) 
+                .status(AppointmentStatus.PENDING)
                 .build();
 
         appointment = appointmentRepository.save(appointment);
@@ -51,8 +77,18 @@ public class AppointmentService {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
 
-        boolean isBooked = appointmentRepository.existsByDoctorIdAndDateAndTimeAndStatus(
-                appointment.getDoctorId(), dto.getDate(), dto.getTime(), AppointmentStatus.CONFIRMED);
+        List<AvailableSlotClientDto> availableSlots =
+            doctorServiceClient.getAvailableSlots(appointment.getDoctorId(), dto.getDate());
+        if (!isWithinAnyAvailableSlot(dto.getTime(), availableSlots)) {
+            throw new SlotConflictException("Requested time is not within doctor available slots");
+        }
+
+        boolean isBooked = appointmentRepository.existsByDoctorIdAndDateAndTimeAndStatusIn(
+                appointment.getDoctorId(),
+                dto.getDate(),
+                dto.getTime(),
+                List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED)
+        );
 
         if (isBooked) {
             throw new SlotConflictException("Doctor is already booked for the new slot");
@@ -102,5 +138,11 @@ public class AppointmentService {
                 .time(entity.getTime())
                 .status(entity.getStatus())
                 .build();
+    }
+
+    private boolean isWithinAnyAvailableSlot(java.time.LocalTime requestedTime, List<AvailableSlotClientDto> slots) {
+        return slots.stream()
+                .filter(slot -> Boolean.TRUE.equals(slot.getIsAvailable()))
+                .anyMatch(slot -> !requestedTime.isBefore(slot.getStartTime()) && requestedTime.isBefore(slot.getEndTime()));
     }
 }
