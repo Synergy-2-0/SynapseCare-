@@ -1,18 +1,36 @@
 version: '3.8'
 
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: healthcare_sqlserver
+  postgres:
+    image: postgres:15-alpine
+    container_name: healthcare_postgres
     environment:
-      ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: "StrongPass!123"
+      POSTGRES_DB: hospital_system
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "1234"
     ports:
-      - "1433:1433"
+      - "5432:5432"
     networks:
       - healthcare-net
     healthcheck:
-      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-U", "sa", "-P", "StrongPass!123", "-Q", "SELECT 1", "-C"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hospital_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: healthcare_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - healthcare-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,12 +42,16 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - DB_HOST=sqlserver
-      - DB_USER=sa
-      - DB_PASS=StrongPass!123
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASS=1234
+      - RABBIT_HOST=rabbitmq
     depends_on:
-      sqlserver:
+      postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
     networks:
       - healthcare-net
 
@@ -40,12 +62,13 @@ services:
     ports:
       - "8082:8082"
     environment:
-      - DB_HOST=sqlserver
-      - DB_USER=sa
-      - DB_PASS=StrongPass!123
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASS=1234
     depends_on:
-      sqlserver:
+      postgres:
         condition: service_healthy
+    restart: always
     networks:
       - healthcare-net
 
@@ -56,12 +79,13 @@ services:
     ports:
       - "8083:8083"
     environment:
-      - DB_HOST=sqlserver
-      - DB_USER=sa
-      - DB_PASS=StrongPass!123
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASS=1234
     depends_on:
-      sqlserver:
+      postgres:
         condition: service_healthy
+    restart: always
     networks:
       - healthcare-net
 
@@ -72,12 +96,16 @@ services:
     ports:
       - "8084:8084"
     environment:
-      - DB_HOST=sqlserver
-      - DB_USER=sa
-      - DB_PASS=StrongPass!123
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASS=1234
+      - RABBIT_HOST=rabbitmq
     depends_on:
-      sqlserver:
+      postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
     networks:
       - healthcare-net
 
@@ -93,5 +121,6 @@ services:
 networks:
   healthcare-net:
     driver: bridge
+
 
 

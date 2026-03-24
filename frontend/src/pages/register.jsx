@@ -3,16 +3,33 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { Shield, User, Mail, Lock, Heart, ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
+import { patientApi } from '../lib/api';
 
 const RegisterPage = () => {
     const [role, setRole] = useState('PATIENT');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const handleRegister = (e) => {
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', address: '' });
+
+    const handleRegister = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setTimeout(() => { router.push('/login'); setLoading(false); }, 1500);
+        try {
+            if (role === 'PATIENT') {
+                await patientApi.post('/patients', {
+                    name: formData.name,
+                    email: formData.email,
+                    address: formData.address
+                });
+            }
+            router.push('/login');
+            setLoading(false);
+        } catch (err) {
+            console.error("Registration failed", err);
+            alert("Registration failed. Please try again.");
+            setLoading(false);
+        }
     };
 
     return (
@@ -58,11 +75,21 @@ const RegisterPage = () => {
                     <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-8 italic font-bold">
                         <div className="space-y-4 italic font-bold">
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Full Name</label>
-                            <input placeholder="John Doe" className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required />
+                            <input 
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="John Doe" 
+                                className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required 
+                            />
                         </div>
                         <div className="space-y-4 italic font-bold">
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Email Address</label>
-                            <input type="email" placeholder="john@gmail.com" className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required />
+                            <input 
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                type="email" placeholder="john@gmail.com" 
+                                className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required 
+                            />
                         </div>
                         <div className="space-y-4 italic font-bold">
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Password</label>
@@ -70,7 +97,12 @@ const RegisterPage = () => {
                         </div>
                         <div className="space-y-4 italic font-bold">
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Personal Address</label>
-                            <input placeholder="City, State" className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required />
+                            <input 
+                                value={formData.address}
+                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                placeholder="City, State" 
+                                className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required 
+                            />
                         </div>
                         
                         <div className="md:col-span-2 pt-6 italic font-bold">
