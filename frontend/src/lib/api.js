@@ -1,11 +1,7 @@
 import axios from 'axios';
 
 const CONFIG = {
-    API_GATEWAY_PATIENT: 'http://localhost:8081/api/v1',
-    API_GATEWAY_DOCTOR: 'http://localhost:8082/api/v1',
-    API_GATEWAY_APPOINTMENT: 'http://localhost:8083/api/v1',
-    API_GATEWAY_INTEGRATION: 'http://localhost:8084/api/v1',
-    API_GATEWAY_ADMIN: 'http://localhost:8085/api/v1'
+    API_GATEWAY: 'http://localhost:8080/api'
 };
 
 const createApiInstance = (baseURL) => {
@@ -27,11 +23,13 @@ const createApiInstance = (baseURL) => {
     return instance;
 };
 
-export const patientApi = createApiInstance(CONFIG.API_GATEWAY_PATIENT);
-export const doctorApi = createApiInstance(CONFIG.API_GATEWAY_DOCTOR);
-export const appointmentApi = createApiInstance(CONFIG.API_GATEWAY_APPOINTMENT);
-export const integrationApi = createApiInstance(CONFIG.API_GATEWAY_INTEGRATION);
-export const adminApi = createApiInstance(CONFIG.API_GATEWAY_ADMIN);
+export const authApi = createApiInstance(CONFIG.API_GATEWAY + '/auth');
+export const doctorApi = createApiInstance(CONFIG.API_GATEWAY + '/doctors');
+export const appointmentApi = createApiInstance(CONFIG.API_GATEWAY + '/appointments');
+export const patientApi = createApiInstance(CONFIG.API_GATEWAY + '/patients');
+export const medicalHistoryApi = createApiInstance(CONFIG.API_GATEWAY + '/medical-history');
+export const integrationApi = createApiInstance(CONFIG.API_GATEWAY + '/integration');
+export const adminApi = createApiInstance(CONFIG.API_GATEWAY + '/admin');
 
-const api = axios.create({ headers: { 'Content-Type': 'application/json' } });
+const api = axios.create({ baseURL: CONFIG.API_GATEWAY, headers: { 'Content-Type': 'application/json' } });
 export default api;
