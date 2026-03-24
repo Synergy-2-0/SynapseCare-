@@ -88,6 +88,18 @@ services:
       - healthcare-network
     restart: unless-stopped
 
+  ai-symptom-checker-service:
+    build: ./AI-SymptomChecker-Service
+    container_name: synapscare-ai-symptom-checker
+    ports:
+      - '8085:8085'
+    environment:
+      - 'MISTRAL_API_KEY=${MISTRAL_API_KEY:-yAgB9m01JEg3YaFmT2OMa9iAuowSkhkA}'
+      - 'JWT_SECRET=ejedVZ4KIRRaAy8kWjs4QSadL823O1WKUDanGentLY3'
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
 networks:
   healthcare-network:
     driver: bridge
