@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: 'postgres:latest'
+    container_name: synapscare-postgres-doctor
+    environment:
+      - 'POSTGRES_DB=synapscare_doctors'
+      - 'POSTGRES_PASSWORD=Luqa'
+      - 'POSTGRES_USER=postgres'
+    ports:
+      - '5433:5432'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - healthcare-network
+
+  rabbitmq:
+    image: 'rabbitmq:3-management'
+    container_name: synapscare-rabbitmq-doctor
+    ports:
+      - '5673:5672'
+      - '15673:15672'
+    environment:
+      - 'RABBITMQ_DEFAULT_USER=admin'
+      - 'RABBITMQ_DEFAULT_PASS=admin123'
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - healthcare-network
+
+  doctor-service:
+    build: .
+    container_name: synapscare-doctor-service
+    ports:
+      - '8082:8082'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare_doctors'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_APPLICATION_NAME=doctor-service'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+networks:
+  healthcare-network:
+    driver: bridge
