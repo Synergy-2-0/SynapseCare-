@@ -1,4 +1,4 @@
-package com.synapscare.doctorservice.security;
+package com.synapscare.gateway.config;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -11,6 +11,4 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class JwtConfig {
     private String secret;
-    private long expirationMs;
-    private long refreshExpirationMs = 604800000;
 }
