@@ -47,4 +47,16 @@ public class AppointmentController {
             @RequestBody AppointmentDto dto) {
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rescheduled", appointmentService.rescheduleAppointment(id, dto)));
     }
+
+    @PutMapping("/{id}/accept")
+    public ResponseEntity<ApiResponse<String>> acceptAppointment(@PathVariable Long id) {
+        appointmentService.confirmAppointment(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment accepted successfully", "CONFIRMED"));
+    }
+
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<String>> rejectAppointment(@PathVariable Long id) {
+        appointmentService.rejectAppointment(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rejected", "REJECTED"));
+    }
 }
