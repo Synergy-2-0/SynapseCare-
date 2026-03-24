@@ -1,10 +1,10 @@
 services:
   postgres:
-    image: 'postgres:latest'
+    image: 'postgres:15'
     container_name: synapscare-postgres
     environment:
       - 'POSTGRES_DB=synapscare'
-      - 'POSTGRES_PASSWORD=Luqa'
+      - 'POSTGRES_PASSWORD=1234'
       - 'POSTGRES_USER=postgres'
     ports:
       - '5432:5432'
@@ -45,7 +45,7 @@ services:
     environment:
       - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=userService'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
@@ -67,9 +67,9 @@ services:
     ports:
       - '8082:8082'
     environment:
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare_doctors'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=doctor-service'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
@@ -84,6 +84,99 @@ services:
         condition: service_healthy
       auth-service:
         condition: service_started
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  patient-service:
+    build: ./patient-service
+    container_name: synapscare-patient-service
+    ports:
+      - '8084:8084'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  appointment-service:
+    build: ./appointment-service
+    container_name: synapscare-appointment-service
+    ports:
+      - '8083:8083'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  integration-service:
+    build: ./integration-service
+    container_name: synapscare-integration-service
+    ports:
+      - '8085:8085'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+      - 'API_OPENROUTER_KEY=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'
+      - 'API_PAYHERE_SECRET=MzYzNDIwNTQyNTMyNTUwNDU4MTM0MjMyMzM1NjI4MTIzNjQ2Mjg0Nw=='
+      - 'API_PAYHERE_MERCHANTID=1233989'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: synapscare-api-gateway
+    ports:
+      - '8080:8080'
+    environment:
+      - 'AUTH_SERVICE_URL=http://synapscare-auth-service:8081'
+      - 'DOCTOR_SERVICE_URL=http://synapscare-doctor-service:8082'
+      - 'APPOINTMENT_SERVICE_URL=http://synapscare-appointment-service:8083'
+      - 'PATIENT_SERVICE_URL=http://synapscare-patient-service:8084'
+      - 'INTEGRATION_SERVICE_URL=http://synapscare-integration-service:8085'
+    depends_on:
+      - auth-service
+      - doctor-service
+      - patient-service
+      - appointment-service
+      - integration-service
     networks:
       - healthcare-network
     restart: unless-stopped
