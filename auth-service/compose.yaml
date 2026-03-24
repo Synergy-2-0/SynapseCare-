@@ -16,6 +16,23 @@ services:
     networks:
       - healthcare-network
 
+  rabbitmq:
+    image: 'rabbitmq:3-management'
+    container_name: synapscare-rabbitmq
+    ports:
+      - '5672:5672'   # AMQP port
+      - '15672:15672' # Management UI
+    environment:
+      - 'RABBITMQ_DEFAULT_USER=admin'
+      - 'RABBITMQ_DEFAULT_PASS=admin123'
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - healthcare-network
+
   user-service:
     build: .
     container_name: synapscare-user-service
@@ -27,8 +44,14 @@ services:
       - 'SPRING_DATASOURCE_PASSWORD=Luqa'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=userService'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - healthcare-network

@@ -5,11 +5,29 @@ spring:
   application:
     name: integration-service
   datasource:
-    url: jdbc:sqlserver://${DB_HOST:localhost};instanceName=SQLEXPRESS;databaseName=healthcare_app;encrypt=true;trustServerCertificate=true;
-    username: ${DB_USER:sa}
-    password: ${DB_PASS:StrongPass!123}
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/hospital_system
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:1234}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  hikari:
+    connection-timeout: 30000
+    maximum-pool-size: 10
+
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: 5672
+    username: ${RABBIT_USER:guest}
+    password: ${RABBIT_PASS:guest}
+
+app:
+  rabbitmq:
+    queue: ${PATIENT_QUEUE:patient.queue}
+    exchange: ${PATIENT_EXCHANGE:patient.exchange}
+    routing-key: ${PATIENT_ROUTING_KEY:patient.routing.key}

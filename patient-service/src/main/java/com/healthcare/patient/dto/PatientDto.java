@@ -28,4 +28,7 @@ public class PatientDto {
     private LocalDate dob;
     private String gender;
     private String address;
+    private String bloodGroup;
+    private String allergies;
+    private String emergencyContact;
 }
