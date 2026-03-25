@@ -94,11 +94,12 @@ public class AppointmentService {
             throw new SlotConflictException("Requested time is not within doctor available slots");
         }
 
-        boolean isBooked = appointmentRepository.existsByDoctorIdAndDateAndTimeAndStatusIn(
+        boolean isBooked = appointmentRepository.existsByDoctorIdAndDateAndTimeAndStatusInAndIdNot(
                 appointment.getDoctorId(),
                 dto.getDate(),
                 dto.getTime(),
-                List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED)
+            List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED),
+            appointment.getId()
         );
 
         if (isBooked) {
