@@ -1,6 +1,8 @@
 package com.healthcare.appointment.service;
 
+import com.healthcare.appointment.client.PatientServiceClient;
 import com.healthcare.appointment.dto.AppointmentDto;
+import com.healthcare.appointment.dto.AppointmentEvent;
 import com.healthcare.appointment.entity.Appointment;
 import com.healthcare.appointment.entity.AppointmentStatus;
 import com.healthcare.appointment.exception.ResourceNotFoundException;
@@ -12,6 +14,7 @@ import com.healthcare.appointment.client.DoctorServiceClient;
 import com.healthcare.appointment.dto.client.AvailableSlotClientDto;
 import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,8 +24,12 @@ public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final DoctorServiceClient doctorServiceClient;
+    private final PatientServiceClient patientServiceClient;
+    private final AppointmentEventProducer appointmentEventProducer;
 
     public AppointmentDto bookAppointment(AppointmentDto dto) {
+        patientServiceClient.getPatientById(dto.getPatientId());
+
         DoctorProfileClientDto doctor = doctorServiceClient.getDoctorById(dto.getDoctorId());
 
         if (doctor == null) {
@@ -61,6 +68,8 @@ public class AppointmentService {
                 .build();
 
         appointment = appointmentRepository.save(appointment);
+
+        publishEvent("APPOINTMENT_BOOKED", appointment);
         return mapToDto(appointment);
     }
 
@@ -70,6 +79,8 @@ public class AppointmentService {
 
         appointment.setStatus(AppointmentStatus.CANCELLED);
         appointment = appointmentRepository.save(appointment);
+
+        publishEvent("APPOINTMENT_CANCELLED", appointment);
         return mapToDto(appointment);
     }
 
@@ -97,6 +108,8 @@ public class AppointmentService {
         appointment.setDate(dto.getDate());
         appointment.setTime(dto.getTime());
         appointment = appointmentRepository.save(appointment);
+
+        publishEvent("APPOINTMENT_RESCHEDULED", appointment);
         return mapToDto(appointment);
     }
 
@@ -126,6 +139,8 @@ public class AppointmentService {
 
         appointment.setStatus(status);
         appointment = appointmentRepository.save(appointment);
+
+        publishEvent("APPOINTMENT_STATUS_UPDATED", appointment);
         return mapToDto(appointment);
     }
 
@@ -144,5 +159,20 @@ public class AppointmentService {
         return slots.stream()
                 .filter(slot -> Boolean.TRUE.equals(slot.getIsAvailable()))
                 .anyMatch(slot -> !requestedTime.isBefore(slot.getStartTime()) && requestedTime.isBefore(slot.getEndTime()));
+    }
+
+    private void publishEvent(String eventType, Appointment appointment) {
+        appointmentEventProducer.sendAppointmentEvent(
+                AppointmentEvent.builder()
+                        .eventType(eventType)
+                        .appointmentId(appointment.getId())
+                        .patientId(appointment.getPatientId())
+                        .doctorId(appointment.getDoctorId())
+                        .date(appointment.getDate())
+                        .time(appointment.getTime())
+                        .status(appointment.getStatus())
+                        .occurredAt(LocalDateTime.now())
+                        .build()
+        );
     }
 }
