@@ -3,26 +3,53 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { Shield, Mail, Lock, Heart, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { authApi } from '../lib/api';
 
 const LoginPage = () => {
     const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const router = useRouter();
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setTimeout(() => {
-            const role = credentials.email.includes('admin') ? 'ADMIN' : (credentials.email.includes('doctor') ? 'DOCTOR' : 'PATIENT');
-            localStorage.setItem('user_role', role);
-            localStorage.setItem('user_name', credentials.email.split('@')[0]);
-            localStorage.setItem('user_id', '1001');
-            
+        setError('');
+        
+        try {
+            const response = await authApi.post('/login', credentials);
+            const data = response?.data || {};
+            const user = data.user || {};
+
+            const token = data.accessToken || data.token;
+            const role = user.role || data.role;
+            const userId = user.id ?? data.userId;
+            const email = user.email || data.email || credentials.email;
+            const name =
+                data.name ||
+                user.username ||
+                [user.firstName, user.lastName].filter(Boolean).join(' ') ||
+                (typeof email === 'string' && email.includes('@') ? email.split('@')[0] : '');
+
+            if (!token) {
+                throw new Error('Login response missing access token');
+            }
+
+            localStorage.setItem('auth_token', token);
+            if (role) localStorage.setItem('user_role', role);
+            if (email) localStorage.setItem('user_email', email);
+            if (userId !== undefined && userId !== null) localStorage.setItem('user_id', String(userId));
+            if (name) localStorage.setItem('user_name', name);
+
             if (role === 'ADMIN') router.push('/dashboard/admin');
             else if (role === 'DOCTOR') router.push('/dashboard/doctor');
             else router.push('/dashboard/patient');
+        } catch (err) {
+            console.error('Login failed:', err);
+            setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
+        } finally {
             setLoading(false);
-        }, 1200);
+        }
     };
 
     return (
@@ -61,6 +88,12 @@ const LoginPage = () => {
                         <h2 className="text-6xl font-black text-slate-900 italic tracking-tighter">Welcome Back</h2>
                         <p className="text-slate-500 font-bold italic text-xl opacity-90 italic">Please enter your sign-in details to access your portal.</p>
                     </div>
+
+                    {error && (
+                        <div className="bg-red-50 border-2 border-red-200 text-red-600 px-8 py-4 rounded-2xl font-bold italic text-sm">
+                            {error}
+                        </div>
+                    )}
 
                     <form onSubmit={handleLogin} className="space-y-10 italic font-bold">
                         <div className="space-y-4 italic font-bold">

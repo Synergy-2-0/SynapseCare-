@@ -1,33 +1,28 @@
 server:
-  port: 8084
+  port: 8085
 
 spring:
   application:
     name: integration-service
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:5432/hospital_system
-    username: ${DB_USER:postgres}
-    password: ${DB_PASS:1234}
+    url: jdbc:postgresql://localhost:5432/synapscare
+    username: postgres
+    password: 1234
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-  hikari:
-    connection-timeout: 30000
-    maximum-pool-size: 10
-
   rabbitmq:
-    host: ${RABBIT_HOST:localhost}
+    host: localhost
     port: 5672
-    username: ${RABBIT_USER:guest}
-    password: ${RABBIT_PASS:guest}
+    username: admin
+    password: admin123
 
-app:
-  rabbitmq:
-    queue: ${PATIENT_QUEUE:patient.queue}
-    exchange: ${PATIENT_EXCHANGE:patient.exchange}
-    routing-key: ${PATIENT_ROUTING_KEY:patient.routing.key}
+api:
+  openrouter:
+    key: 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
+    url: https://openrouter.ai/api/v1/chat/completions
+  payhere:
+    merchant-id: 1233989
+    secret: MzYzNDIwNTQyNTMyNTUwNDU4MTM0MjMyMzM1NjI4MTIzNjQ2Mjg0Nw==

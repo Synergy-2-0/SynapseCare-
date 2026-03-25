@@ -2,38 +2,43 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { Shield, User, Mail, Lock, Heart, ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
-import { patientApi } from '../lib/api';
+import { Shield, User, Mail, Lock, Heart, ArrowRight, CheckCircle2, ChevronRight, Phone, Briefcase } from 'lucide-react';
+import { authApi } from '../lib/api';
 
 const RegisterPage = () => {
     const [role, setRole] = useState('PATIENT');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const router = useRouter();
 
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', address: '' });
+    const [formData, setFormData] = useState({
+        username: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        phoneNumber: '',
+        specialization: ''
+    });
 
     const handleRegister = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setError('');
         try {
-            if (role === 'PATIENT') {
-                await patientApi.post('/patients', {
-                    name: formData.name,
-                    email: formData.email,
-                    address: formData.address
-                });
-            }
-            router.push('/login');
-            setLoading(false);
+            const endpoint = role === 'PATIENT' ? '/register/patient' : '/register/doctor';
+            await authApi.post(endpoint, formData);
+            router.push('/login?registered=true');
         } catch (err) {
             console.error("Registration failed", err);
-            alert("Registration failed. Please try again.");
+            setError(err.response?.data?.message || "Registration failed. Please check your details.");
+        } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-white flex flex-col md:flex-row font-bold italic text-slate-900 italic font-bold">
+        <div className="min-h-screen bg-white flex flex-col md:flex-row font-bold italic text-slate-900 border-t-8 border-indigo-600">
             <div className="md:w-[500px] bg-slate-950 p-20 text-white flex flex-col justify-between relative overflow-hidden italic font-bold">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2"></div>
                 
@@ -53,10 +58,10 @@ const RegisterPage = () => {
                     </div>
                 </div>
 
-                <div className="text-[10px] uppercase font-black tracking-[0.4em] text-slate-700 relative z-10 italic">Account Registration v1.2</div>
+                <div className="text-[10px] uppercase font-black tracking-[0.4em] text-slate-700 relative z-10 italic">Account Registration v2.0</div>
             </div>
 
-            <div className="flex-1 bg-[#F8FAFC] p-8 md:p-24 flex items-center justify-center italic font-bold overflow-y-auto">
+            <div className="flex-1 bg-[#F8FAFC] p-8 md:p-32 flex items-center justify-center italic font-bold overflow-y-auto">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-2xl space-y-12 italic font-bold">
                     <div className="space-y-4 italic font-bold text-center md:text-left">
                         <h2 className="text-5xl font-black text-slate-900 italic tracking-tighter">Sign Up</h2>
@@ -65,20 +70,53 @@ const RegisterPage = () => {
 
                     <div className="grid grid-cols-2 gap-6 italic font-bold">
                         {[{ id: 'PATIENT', label: 'I am a Patient', desc: 'Secure health portal' }, { id: 'DOCTOR', label: 'I am a Doctor', desc: 'Clinical specialist access' }].map((r) => (
-                            <button key={r.id} onClick={() => setRole(r.id)} className={`p-8 rounded-[2.5rem] border-2 transition-all text-left italic font-bold shadow-xl ${role === r.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-600/30' : 'bg-white border-slate-100 text-slate-900 hover:border-slate-200'}`}>
+                            <button key={r.id} onClick={() => setRole(r.id)} type="button" className={`p-8 rounded-[2.5rem] border-2 transition-all text-left italic font-bold shadow-xl ${role === r.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-600/30' : 'bg-white border-slate-100 text-slate-900 hover:border-slate-200'}`}>
                                 <div className="font-black text-2xl italic mb-1">{r.label}</div>
                                 <div className={`text-xs font-bold italic uppercase tracking-[0.1em] opacity-80 italic font-bold`}>{r.desc}</div>
                             </button>
                         ))}
                     </div>
 
+                    {error && (
+                        <div className="bg-red-50 border-2 border-red-200 text-red-600 px-8 py-4 rounded-2xl font-bold italic text-sm">
+                            {error}
+                        </div>
+                    )}
+
                     <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-8 italic font-bold">
                         <div className="space-y-4 italic font-bold">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Full Name</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">First Name</label>
                             <input 
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="John Doe" 
+                                value={formData.firstName}
+                                onChange={(e)=>setFormData({...formData, firstName: e.target.value})}
+                                placeholder="John" 
+                                className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required 
+                            />
+                        </div>
+                        <div className="space-y-4 italic font-bold">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Last Name</label>
+                            <input 
+                                value={formData.lastName}
+                                onChange={(e)=>setFormData({...formData, lastName: e.target.value})}
+                                placeholder="Doe" 
+                                className="w-full bg-white border-2 border-slate-100 rounded-[2rem) py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required 
+                            />
+                        </div>
+                        <div className="space-y-4 italic font-bold">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Username</label>
+                            <input 
+                                value={formData.username}
+                                onChange={(e)=>setFormData({...formData, username: e.target.value})}
+                                placeholder="johndoe123" 
+                                className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required 
+                            />
+                        </div>
+                        <div className="space-y-4 italic font-bold">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Phone Number</label>
+                            <input 
+                                value={formData.phoneNumber}
+                                onChange={(e)=>setFormData({...formData, phoneNumber: e.target.value})}
+                                placeholder="+1234567890" 
                                 className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required 
                             />
                         </div>
@@ -86,24 +124,32 @@ const RegisterPage = () => {
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Email Address</label>
                             <input 
                                 value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                onChange={(e)=>setFormData({...formData, email: e.target.value})}
                                 type="email" placeholder="john@gmail.com" 
                                 className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required 
                             />
                         </div>
                         <div className="space-y-4 italic font-bold">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Password</label>
-                            <input type="password" placeholder="••••••••••••" className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required />
-                        </div>
-                        <div className="space-y-4 italic font-bold">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Personal Address</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Password (8+ chars)</label>
                             <input 
-                                value={formData.address}
-                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                placeholder="City, State" 
-                                className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required 
+                                value={formData.password}
+                                onChange={(e)=>setFormData({...formData, password: e.target.value})}
+                                type="password" placeholder="••••••••••••" 
+                                className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required minLength={8}
                             />
                         </div>
+
+                        {role === 'DOCTOR' && (
+                            <div className="md:col-span-2 space-y-4 italic font-bold">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Specialization</label>
+                                <input 
+                                    value={formData.specialization}
+                                    onChange={(e)=>setFormData({...formData, specialization: e.target.value})}
+                                    placeholder="Heart Surgeon / Cardiologist" 
+                                    className="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-6 px-10 text-sm font-black text-slate-900 outline-none focus:border-indigo-600 transition-all shadow-md italic" required 
+                                />
+                            </div>
+                        )}
                         
                         <div className="md:col-span-2 pt-6 italic font-bold">
                             <button disabled={loading} className="w-full py-8 bg-slate-900 text-white rounded-[2.5rem] font-black text-2xl shadow-2xl transition-all shadow-slate-900/30 flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-[0.98] italic">
