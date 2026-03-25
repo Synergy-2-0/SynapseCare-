@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/medical-history")
+@RequestMapping("/api/medical-history")
 @RequiredArgsConstructor
 public class MedicalHistoryController {
 

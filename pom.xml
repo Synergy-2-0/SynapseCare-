@@ -14,6 +14,8 @@
         <module>appointment-service</module>
         <module>integration-service</module>
         <module>admin-service</module>
+        <module>api-gateway</module>
+        <module>auth-service</module>
     </modules>
 
     <properties>

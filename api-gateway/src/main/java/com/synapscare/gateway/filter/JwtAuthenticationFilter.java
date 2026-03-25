@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
      * Supports Ant-style patterns.
      */
     private static final List<String> PUBLIC_PATHS = List.of(
-            "/auth/**",            // All auth-service routes (login, register, refresh)
+            "/api/auth/**",            // All auth-service routes (login, register, refresh)
             "/actuator/**",        // Health checks
             "/api/doctors/search", // Public doctor search
             "/api/doctors/*/available-slots" // Public slot availability

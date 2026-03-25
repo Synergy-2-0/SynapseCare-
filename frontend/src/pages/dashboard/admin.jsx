@@ -33,13 +33,22 @@ const AdminDashboard = () => {
 
         const fetchData = async () => {
             try {
-                const docRes = await doctorApi.get('/doctors');
+                // Fetch all active doctors for metrics
+                const docRes = await doctorApi.get('/search');
+                // Fetch pending doctors for the table
+                const pendingRes = await doctorApi.get('/pending');
+                
                 const allDocs = docRes.data || [];
-                setDoctors(allDocs);
+                const pendingDocs = pendingRes.data || [];
+                
+                // Combine them for the UI table or use pendingDocs for the verification list
+                // Since the UI wants to show pending + verified, we'll combine them for now
+                setDoctors([...pendingDocs, ...allDocs]);
+                
                 setStats({
                     totalPatients: 1024,
                     totalDoctors: allDocs.length,
-                    pendingVerifications: allDocs.filter(d => !d.verified).length,
+                    pendingVerifications: pendingDocs.length,
                     totalPayments: 15420.50
                 });
                 setLoading(false);
@@ -53,10 +62,12 @@ const AdminDashboard = () => {
 
     const verifyDoctor = async (id) => {
         try {
-            await adminApi.put(`/admin/verify-doctor/${id}`);
+            await doctorApi.put(`/${id}/verify`, { status: 'VERIFIED' });
             setDoctors(doctors.map(d => d.id === id ? { ...d, verified: true } : d));
-            setStats(s => ({ ...s, pendingVerifications: s.pendingVerifications - 1 }));
+            setStats(s => ({ ...s, totalDoctors: s.totalDoctors + 1, pendingVerifications: s.pendingVerifications - 1 }));
         } catch (err) {
+            console.error("Failed to verify doctor", err);
+            // Temporary optimistic update for demo
             setDoctors(doctors.map(d => d.id === id ? { ...d, verified: true } : d));
             setStats(s => ({ ...s, pendingVerifications: s.pendingVerifications - 1 }));
         }
@@ -145,19 +156,19 @@ const AdminDashboard = () => {
                                         <td className="px-10 py-8 italic first:rounded-l-[2rem]">
                                             <div className="flex items-center gap-6 italic">
                                                 <div className="w-14 h-14 bg-indigo-600/20 rounded-[1.2rem] flex items-center justify-center font-black text-indigo-400 italic shadow-lg group-hover:scale-110 transition-transform">Dr</div>
-                                                <div><div className="text-lg font-black italic italic font-bold text-slate-100 italic leading-none mb-2">Dr. {doc.name || 'External Specialist'}</div><div className="text-[10px] text-slate-600 font-bold italic italic font-bold uppercase tracking-widest">DOCTOR_ID: {doc.id}</div></div>
+                                                <div><div className="text-lg font-black italic italic font-bold text-slate-100 italic leading-none mb-2">Dr. {doc.name || 'External Specialist'}</div><div className="text-[10px] text-slate-600 font-bold italic italic font-bold uppercase tracking-widest">System ID: {doc.userId}</div></div>
                                             </div>
                                         </td>
-                                        <td className="px-10 py-8 italic"><span className="px-4 py-2 bg-indigo-600/10 text-indigo-400 rounded-xl text-[10px] font-black italic italic font-bold uppercase tracking-widest border border-indigo-600/20 shadow-sm">{doc.specialty || 'General'}</span></td>
+                                        <td className="px-10 py-8 italic"><span className="px-4 py-2 bg-indigo-600/10 text-indigo-400 rounded-xl text-[10px] font-black italic italic font-bold uppercase tracking-widest border border-indigo-600/20 shadow-sm">{doc.specialization || 'General'}</span></td>
                                         <td className="px-10 py-8 italic">
-                                            {doc.verified ? (
+                                            {doc.verificationStatus === 'APPROVED' ? (
                                                 <span className="flex items-center gap-3 text-emerald-400 font-black italic italic font-bold uppercase text-[10px] tracking-widest"><CheckCircle className="w-5 h-5 italic" /> Active</span>
                                             ) : (
                                                 <span className="flex items-center gap-3 text-amber-500 font-black italic italic font-bold uppercase text-[10px] tracking-widest animate-pulse"><AlertCircle className="w-5 h-5 italic" /> Under Review</span>
                                             )}
                                         </td>
                                         <td className="px-10 py-8 italic last:rounded-r-[2rem] text-right">
-                                            {!doc.verified ? (
+                                            {doc.verificationStatus !== 'APPROVED' ? (
                                                 <div className="flex gap-4 justify-end italic">
                                                     <button onClick={() => verifyDoctor(doc.id)} className="px-8 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-600/30 hover:bg-indigo-500 transition-all italic">Approve</button>
                                                     <button className="px-8 py-3 bg-white/5 border border-white/10 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all italic">Decline</button>

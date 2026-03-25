@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { patientApi, appointmentApi } from '../../lib/api';
+import { patientApi, appointmentApi, medicalHistoryApi } from '../../lib/api';
 import { 
     LayoutDashboard, 
     Calendar, 
@@ -47,10 +47,10 @@ const PatientDashboard = () => {
             const fetchData = async () => {
                 try {
                     const [apptRes, patientRes, historyRes, reportRes] = await Promise.all([
-                        appointmentApi.get(`/appointments/patient/${id}`).catch(() => ({ data: [] })),
-                        patientApi.get(`/patients/${id}`).catch(() => ({ data: { data: {} } })),
-                        patientApi.get(`/medical-history/patient/${id}`).catch(() => ({ data: { data: [] } })),
-                        patientApi.get(`/patients/${id}/reports`).catch(() => ({ data: { data: [] } }))
+                        appointmentApi.get(`/patient/${id}`).catch(() => ({ data: [] })),
+                        patientApi.get(`/${id}`).catch(() => ({ data: { data: {} } })),
+                        medicalHistoryApi.get(`/patient/${id}`).catch(() => ({ data: { data: [] } })),
+                        patientApi.get(`/${id}/reports`).catch(() => ({ data: { data: [] } }))
                     ]);
                     
                     const allAppts = apptRes.data || [];
