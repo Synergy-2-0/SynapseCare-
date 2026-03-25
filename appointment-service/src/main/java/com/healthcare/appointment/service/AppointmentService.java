@@ -64,6 +64,8 @@ public class AppointmentService {
                 .doctorId(dto.getDoctorId())
                 .date(dto.getDate())
                 .time(dto.getTime())
+            .meetingLink(dto.getMeetingLink())
+            .reason(dto.getReason())
                 .status(AppointmentStatus.PENDING)
                 .build();
 
@@ -108,6 +110,12 @@ public class AppointmentService {
 
         appointment.setDate(dto.getDate());
         appointment.setTime(dto.getTime());
+        if (dto.getReason() != null) {
+            appointment.setReason(dto.getReason());
+        }
+        if (dto.getMeetingLink() != null) {
+            appointment.setMeetingLink(dto.getMeetingLink());
+        }
         appointment = appointmentRepository.save(appointment);
 
         publishEvent("APPOINTMENT_RESCHEDULED", appointment);
@@ -152,7 +160,11 @@ public class AppointmentService {
                 .doctorId(entity.getDoctorId())
                 .date(entity.getDate())
                 .time(entity.getTime())
+                .meetingLink(entity.getMeetingLink())
+                .reason(entity.getReason())
                 .status(entity.getStatus())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
                 .build();
     }
 
