@@ -1,28 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --color-primary: #1366d9;
-  --color-primary-strong: #0f4fa9;
-  --color-secondary: #0aa7a0;
-  --color-accent: #10b981;
-  --color-bg: #f4f8fc;
-  --color-bg-soft: #ebf2f9;
+  --color-primary: #0f766e; /* teal-700 */
+  --color-primary-strong: #115e59; /* teal-800 */
+  --color-secondary: #0d9488; /* teal-600 */
+  --color-accent: #10b981; /* emerald-500 */
+  --color-bg: #f8fafc; /* slate-50 (whitish) */
+  --color-bg-soft: #f1f5f9; /* slate-100 */
   --color-surface: #ffffff;
-  --color-surface-soft: #f8fbff;
-  --color-text: #10243e;
-  --color-text-muted: #5a6f85;
-  --color-border: #d8e2ee;
-  --color-success: #0f9f6f;
-  --color-warning: #c98613;
-  --color-danger: #d65050;
-  /* Professional healthcare - reduced radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  /* Subtle, clinical shadows */
-  --shadow-soft: 0 2px 8px rgba(22, 46, 78, 0.06);
-  --shadow-strong: 0 4px 12px rgba(19, 65, 118, 0.10);
+  --color-surface-soft: #f8fafc;
+  --color-text: #0f172a; /* slate-900 */
+  --color-text-muted: #64748b; /* slate-500 */
+  --color-border: #e2e8f0; /* slate-200 */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  /* Next level clean clinic - Mini-rounded UIs */
+  --radius-sm: 8px;
+  --radius-md: 12px; /* typical inputs */
+  --radius-lg: 16px; /* typical cards */
+  --radius-xl: 24px; /* typical sections/hero */
+  /* Elegant, soft drop shadows */
+  --shadow-soft: 0 4px 14px 0 rgba(0, 0, 0, 0.03);
+  --shadow-strong: 0 12px 30px -4px rgba(0, 0, 0, 0.08);
 }
 
 * {
