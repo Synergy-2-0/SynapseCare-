@@ -22,6 +22,11 @@ public class Appointment {
     private LocalDate date;
     private LocalTime time;
     
+    private Double fee;
+    private String notes;
+    private String consultationType; // e.g., PHYSICAL, VIDEO
+    private Integer tokenNumber;
+    
     @Enumerated(EnumType.STRING)
     private AppointmentStatus status;
 }
