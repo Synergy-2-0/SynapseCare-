@@ -1,16 +1,7 @@
 import React from 'react';
-import { ChevronRight, Bell } from 'lucide-react';
+import { ChevronRight, ShieldCheck, AlertCircle, Info } from 'lucide-react';
 import Badge from '../ui/Badge';
 
-/**
- * Header Component
- *
- * @param {string} title - Page title
- * @param {string} subtitle - Page subtitle
- * @param {Array} breadcrumbs - Array of { label, href } breadcrumb items
- * @param {ReactNode} actions - Action buttons
- * @param {object} verificationStatus - { status: 'PENDING'|'APPROVED'|'REJECTED', message: string }
- */
 const Header = ({
     title,
     subtitle,
@@ -19,56 +10,60 @@ const Header = ({
     verificationStatus
 }) => {
     return (
-        <div className="mb-8">
-            {/* Breadcrumbs */}
-            {breadcrumbs && breadcrumbs.length > 0 && (
-                <div className="flex items-center gap-2 mb-3 text-xs font-medium text-slate-500">
-                    {breadcrumbs.map((crumb, index) => (
-                        <React.Fragment key={index}>
-                            <span className={index === breadcrumbs.length - 1 ? 'text-blue-600 font-semibold' : ''}>
-                                {crumb.label}
-                            </span>
-                            {index < breadcrumbs.length - 1 && (
-                                <ChevronRight className="w-4 h-4" />
-                            )}
-                        </React.Fragment>
-                    ))}
-                </div>
-            )}
+        <div className="mb-12">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                <div className="space-y-4">
+                    {/* Integrated Breadcrumbs */}
+                    {breadcrumbs && breadcrumbs.length > 0 && (
+                        <div className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none">
+                            {breadcrumbs.map((crumb, index) => (
+                                <React.Fragment key={index}>
+                                    <span className={index === breadcrumbs.length - 1 ? 'text-indigo-600' : ''}>
+                                        {crumb.label}
+                                    </span>
+                                    {index < breadcrumbs.length - 1 && (
+                                        <ChevronRight className="w-3 h-3 text-slate-300" />
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    )}
 
-            {/* Title & Actions */}
-            <div className="flex justify-between items-start gap-6">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-bold text-slate-900">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter leading-none">
                             {title}
                         </h1>
+                        
                         {verificationStatus && (
-                            <Badge
-                                variant={
-                                    verificationStatus.status === 'APPROVED' ? 'success' :
-                                    verificationStatus.status === 'REJECTED' ? 'danger' :
-                                    'warning'
-                                }
-                                size="md"
-                            >
-                                {verificationStatus.status === 'APPROVED' ? 'Verified' : verificationStatus.message}
-                            </Badge>
+                            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 shadow-sm ${
+                                verificationStatus.status === 'APPROVED' 
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                                : 'bg-amber-50 text-amber-600 border-amber-100'
+                            }`}>
+                                {verificationStatus.status === 'APPROVED' ? <ShieldCheck size={14} /> : <AlertCircle size={14} />}
+                                {verificationStatus.status === 'APPROVED' ? 'Verified Practitioner' : verificationStatus.message || 'Status Pending'}
+                            </div>
                         )}
                     </div>
+
                     {subtitle && (
-                        <p className="text-slate-600 font-regular text-xs">
+                        <p className="text-lg text-slate-500 font-medium max-w-2xl leading-relaxed">
                             {subtitle}
                         </p>
                     )}
                 </div>
 
-                {/* Actions */}
+                {/* Dashboard Actions Integrated */}
                 {actions && (
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 shrink-0">
                         {actions}
                     </div>
                 )}
+            </div>
+            
+            {/* Horizontal Divider with Subtle Indigo Glow */}
+            <div className="mt-10 h-px w-full bg-slate-200 relative">
+                 <div className="absolute left-0 top-0 h-px w-32 bg-indigo-500 shadow-[0_0_8px_rgba(79,70,229,0.5)]" />
             </div>
         </div>
     );
