@@ -1,25 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-/**
- * Card Component - Enhanced with Hover Effects
- *
- * Features:
- * - Subtle hover lift
- * - Border glow on hover
- * - Shadow enhancement
- * - Professional transitions
- *
- * @param {string} title - Card title
- * @param {string} subtitle - Card subtitle
- * @param {ReactNode} actions - Action buttons in header
- * @param {ReactNode} children - Card content
- * @param {string} variant - 'default' | 'dark' | 'glass'
- * @param {string} padding - 'none' | 'sm' | 'md' | 'lg' | 'xl'
- * @param {boolean} hoverable - Enable hover effects (default: false)
- * @param {function} onClick - Click handler (makes card clickable)
- * @param {string} className - Additional CSS classes
- */
 const Card = ({
     title,
     subtitle,
@@ -27,62 +8,46 @@ const Card = ({
     children,
     variant = 'default',
     padding = 'lg',
-    hoverable = false,
+    hoverable = true,
     onClick,
     className = '',
 }) => {
-    const variantStyles = {
-        default: 'bg-white border border-slate-200 shadow-sm',
-        dark: 'bg-[#0f2a45] border border-[#20496f] shadow-sm text-white',
-        glass: 'glass'
+    const variants = {
+        default: 'bg-white border-slate-200 shadow-sm hover:shadow-premium hover:border-indigo-100',
+        dark: 'bg-slate-900 border-slate-800 text-white shadow-2xl shadow-indigo-100',
+        glass: 'glass-morphism border-white/50 shadow-2xl backdrop-blur-3xl'
     };
 
-    const paddingStyles = {
-        none: '',
+    const paddings = {
+        none: 'p-0',
         sm: 'p-4',
         md: 'p-6',
-        lg: 'p-6',
-        xl: 'p-8'
+        lg: 'p-10',
+        xl: 'p-16'
     };
 
-    const isInteractive = hoverable || onClick;
-    const Component = isInteractive ? motion.div : 'div';
-
-    const interactiveProps = isInteractive ? {
-        whileTap: { scale: 0.995 },
-        transition: { duration: 0.15 },
-        onClick: onClick,
-        className: `${variantStyles[variant]} ${paddingStyles[padding]} ${className} rounded-xl overflow-hidden cursor-pointer transition-colors duration-200 hover:border-blue-300`
-    } : {
-        className: `rounded-xl ${variantStyles[variant]} ${paddingStyles[padding]} ${className} overflow-hidden`
-    };
-
+    const Component = hoverable || onClick ? motion.div : 'div';
+    
     return (
-        <Component {...interactiveProps}>
+        <Component
+            onClick={onClick}
+            whileHover={hoverable ? { y: -5 } : {}}
+            className={`rounded-[2.5rem] border transition-all duration-500 overflow-hidden relative ${variants[variant]} ${paddings[padding]} ${className} ${onClick ? 'cursor-pointer' : ''}`}
+        >
             {(title || subtitle || actions) && (
-                <div className={`flex justify-between items-start gap-4 ${padding !== 'none' ? 'mb-4' : 'p-6 border-b border-slate-200 bg-slate-50'}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
                     <div>
-                        {title && (
-                            <h3 className="text-xl font-semibold text-slate-900">
-                                {title}
-                            </h3>
-                        )}
-                        {subtitle && (
-                            <p className="text-slate-500 text-sm mt-1">
-                                {subtitle}
-                            </p>
-                        )}
+                        {title && <h3 className="text-3xl font-black text-slate-900 tracking-tighter leading-tight">{title}</h3>}
+                        {subtitle && <p className="text-sm font-medium text-slate-500 mt-2">{subtitle}</p>}
                     </div>
-                    {actions && (
-                        <div className="flex gap-3">
-                            {actions}
-                        </div>
-                    )}
+                    {actions && <div className="flex items-center gap-3 shrink-0">{actions}</div>}
                 </div>
             )}
-            <div className={padding === 'none' && (title || subtitle || actions) ? 'p-6' : ''}>
+            <div className="relative z-10 font-medium">
                 {children}
             </div>
+            {/* Subtle background flair */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500 opacity-0 group-hover:opacity-5 blur-3xl pointer-events-none transition-opacity" />
         </Component>
     );
 };

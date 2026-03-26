@@ -1,74 +1,50 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-/**
- * Badge Component - Enhanced with Appear Animation
- *
- * Features:
- * - Fade-in scale animation
- * - Pulse for notifications
- * - Smooth color transitions
- * - Professional appearance
- *
- * @param {ReactNode} children - Badge text
- * @param {string} variant - 'success' | 'warning' | 'danger' | 'info' | 'neutral'
- * @param {string} size - 'sm' | 'md' | 'lg'
- * @param {boolean} rounded - Use rounded-full instead of rounded-lg
- * @param {boolean} pulse - Enable pulse animation for notifications
- * @param {boolean} animated - Enable appear animation (default: true)
- * @param {string} className - Additional CSS classes
- */
 const Badge = ({
     children,
     variant = 'neutral',
     size = 'md',
-    rounded = false,
+    rounded = true,
     pulse = false,
     animated = true,
     className = ''
 }) => {
-    const variantStyles = {
-        success: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-        warning: 'bg-amber-100 text-amber-700 border-amber-200',
-        danger: 'bg-rose-100 text-rose-700 border-rose-200',
-        info: 'bg-blue-100 text-blue-700 border-blue-200',
-        neutral: 'bg-slate-100 text-slate-700 border-slate-200'
+    const variants = {
+        success: 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-100/50',
+        warning: 'bg-amber-50 text-amber-600 border-amber-100 shadow-amber-100/50',
+        danger: 'bg-rose-50 text-rose-600 border-rose-100 shadow-rose-100/50',
+        info: 'bg-indigo-50 text-indigo-600 border-indigo-100 shadow-indigo-100/50',
+        primary: 'bg-indigo-600 text-white border-indigo-500 shadow-indigo-200/50',
+        neutral: 'bg-slate-50 text-slate-500 border-slate-100 shadow-slate-100/50'
     };
 
-    const sizeStyles = {
-        sm: 'px-2 py-0.5 text-[10px]',
-        md: 'px-4 py-1.5 text-xs',
-        lg: 'px-5 py-2 text-sm'
+    const sizes = {
+        sm: 'px-3 py-1 text-[9px]',
+        md: 'px-4 py-1.5 text-[10px]',
+        lg: 'px-5 py-2 text-xs'
     };
 
-    const BadgeComponent = animated ? motion.span : 'span';
-
-    const animationProps = animated ? {
-        initial: { opacity: 0, scale: 0.9 },
-        animate: { opacity: 1, scale: 1 },
-        transition: {
-            duration: 0.25,
-            ease: [0.25, 0.1, 0.25, 1]
-        }
-    } : {};
+    const Component = animated ? motion.span : 'span';
 
     return (
-        <BadgeComponent
-            {...animationProps}
+        <Component
+            initial={animated ? { opacity: 0, scale: 0.9 } : {}}
+            animate={animated ? { opacity: 1, scale: 1 } : {}}
             className={`
                 inline-flex items-center justify-center
-                ${rounded ? 'rounded-full' : 'rounded-lg'}
-                ${variantStyles[variant]}
-                ${sizeStyles[size]}
+                ${rounded ? 'rounded-full' : 'rounded-xl'}
+                ${variants[variant] || variants.neutral}
+                ${sizes[size]}
                 border shadow-sm
-                font-medium
-                transition-colors duration-200
-                ${pulse ? 'animate-pulse-subtle' : ''}
+                font-black uppercase tracking-[0.2em]
+                transition-all duration-300
+                ${pulse ? 'animate-pulse' : ''}
                 ${className}
             `}
         >
             {children}
-        </BadgeComponent>
+        </Component>
     );
 };
 
