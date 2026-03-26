@@ -1,29 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Video, 
-    VideoOff, 
-    Mic, 
-    MicOff, 
-    PhoneOff, 
-    MessageSquare, 
-    Users, 
-    Settings, 
+import { useRouter } from 'next/router';
+import {
+    Video,
+    VideoOff,
+    Mic,
+    MicOff,
+    PhoneOff,
+    MessageSquare,
     Maximize,
     Shield,
-    Activity,
     Clock,
     User,
-    ArrowLeft
+    ArrowLeft,
+    FileText
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/router';
 import Link from 'next/link';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
 
 const TelemedicinePage = () => {
+    const router = useRouter();
     const [muted, setMuted] = useState(false);
     const [cameraOff, setCameraOff] = useState(false);
     const [duration, setDuration] = useState(0);
-    const router = useRouter();
 
     useEffect(() => {
         const timer = setInterval(() => setDuration(d => d + 1), 1000);
@@ -37,97 +36,143 @@ const TelemedicinePage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col font-bold italic text-white italic font-bold">
-            <nav className="p-10 flex justify-between items-center bg-transparent relative z-50 italic">
-                <div className="flex items-center gap-6 italic">
-                    <Link href="/dashboard/patient" className="p-4 bg-white/5 border border-white/10 rounded-2xl text-white shadow-2xl hover:bg-white/10 transition-all italic">
-                        <ArrowLeft className="w-5 h-5 italic" />
+        <div className="min-h-screen bg-slate-900 flex flex-col">
+            {/* Header */}
+            <header className="px-6 py-4 flex justify-between items-center border-b border-slate-800">
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/dashboard/patient"
+                        className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-slate-400" />
                     </Link>
-                    <div className="space-y-1 italic font-bold">
-                         <div className="flex items-center gap-3 italic"><h1 className="text-3xl font-black italic tracking-tighter italic font-bold">Video Consultation</h1><div className="px-3 py-1 bg-emerald-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest italic animate-pulse">LIVE</div></div>
-                         <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest font-bold flex items-center gap-2 italic">Secured with Private Encryption</p>
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-lg font-semibold text-white">Video Consultation</h1>
+                            <Badge variant="success" size="sm">LIVE</Badge>
+                        </div>
+                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                            <Shield className="w-3 h-3" />
+                            End-to-end encrypted
+                        </p>
                     </div>
                 </div>
-                <div className="px-8 py-4 bg-white/5 border border-white/10 rounded-[1.5rem] flex items-center gap-6 italic shadow-2xl">
-                    <Clock className="w-5 h-5 text-emerald-400 italic" />
-                    <span className="text-xl font-black italic italic font-bold tracking-tighter">{formatTime(duration)}</span>
+                <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-lg">
+                    <Clock className="w-4 h-4 text-emerald-400" />
+                    <span className="text-white font-medium">{formatTime(duration)}</span>
                 </div>
-            </nav>
+            </header>
 
-            <main className="flex-1 p-10 flex gap-12 italic font-bold overflow-hidden relative">
-                <div className="absolute inset-0 bg-indigo-600/5 blur-[150px] pointer-events-none"></div>
-                
-                <div className="flex-1 relative rounded-[4rem] overflow-hidden bg-slate-900 border-2 border-white/5 shadow-2xl flex items-center justify-center italic">
+            {/* Main Content */}
+            <main className="flex-1 p-6 flex gap-6 overflow-hidden">
+                {/* Video Area */}
+                <div className="flex-1 relative rounded-xl overflow-hidden bg-slate-800 flex items-center justify-center">
                     {!cameraOff ? (
-                        <div className="absolute inset-0 flex items-center justify-center italic">
-                             <div className="text-center italic animate-pulse">
-                                <Video className="w-24 h-24 text-indigo-400 mx-auto mb-8 italic opacity-40 shrink-0" />
-                                <h2 className="text-3xl font-black italic italic font-bold tracking-tight">Waiting for Doctor to join...</h2>
-                                <p className="text-slate-400 text-lg font-bold italic font-bold uppercase tracking-widest mt-2 italic shadow-sm">Your specialist will be here shortly</p>
-                             </div>
+                        <div className="text-center">
+                            <div className="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Video className="w-10 h-10 text-slate-500" />
+                            </div>
+                            <h2 className="text-xl font-semibold text-white mb-2">
+                                Waiting for Doctor
+                            </h2>
+                            <p className="text-slate-400 text-sm">
+                                Your specialist will join shortly
+                            </p>
                         </div>
                     ) : (
-                        <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center gap-6 italic font-bold">
-                             <div className="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center italic"><User className="w-14 h-14 text-slate-700 italic" /></div>
-                             <span className="text-slate-500 font-black uppercase text-xs tracking-[0.3em] italic italic font-bold">Camera Turned Off</span>
+                        <div className="text-center">
+                            <div className="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <User className="w-10 h-10 text-slate-500" />
+                            </div>
+                            <p className="text-slate-400 text-sm">Camera Off</p>
                         </div>
                     )}
-                    
-                    <div className="absolute bottom-12 right-12 w-80 aspect-video bg-slate-950 rounded-[2.5rem] border-2 border-white/10 shadow-2xl overflow-hidden z-20 italic">
-                        <div className="absolute inset-0 flex items-center justify-center italic">
-                            <span className="text-xs text-slate-700 font-black uppercase tracking-[0.2em] italic font-bold italic italic font-bold italic">You</span>
-                        </div>
+
+                    {/* Connection Status */}
+                    <div className="absolute top-4 left-4 px-3 py-1.5 bg-slate-900/80 rounded-lg flex items-center gap-2">
+                        <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                        <span className="text-xs text-white">Connected</span>
                     </div>
 
-                    <div className="absolute top-12 left-12 italic">
-                         <div className="px-6 py-3 bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center gap-4 italic shadow-2xl">
-                             <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse italic"></div>
-                             <span className="font-black text-xs uppercase tracking-widest italic font-bold">Connection Stable</span>
-                         </div>
+                    {/* Self View */}
+                    <div className="absolute bottom-4 right-4 w-48 aspect-video bg-slate-950 rounded-lg border border-slate-700 flex items-center justify-center">
+                        <span className="text-xs text-slate-500">You</span>
                     </div>
                 </div>
 
-                <div className="w-[450px] flex flex-col gap-12 italic font-bold">
-                    <div className="flex-1 bg-white/5 border border-white/10 rounded-[3.5rem] p-10 flex flex-col italic shadow-2xl overflow-hidden">
-                         <div className="flex justify-between items-center mb-10 italic font-bold">
-                             <h3 className="text-xl font-black italic tracking-tighter italic font-bold">Shared Records</h3>
-                             <Users className="w-5 h-5 text-indigo-400 italic" />
-                         </div>
-                         <div className="flex-1 overflow-y-auto space-y-6 italic font-bold custom-scrollbar">
-                             {[
-                                { name: 'Health_Report_002.pdf', size: '2.4 MB', type: 'Medical' },
-                                { name: 'MRI_Scan_Results.jpg', size: '184 MB', type: 'Imaging' }
-                             ].map((f, i) => (
-                                 <div key={i} className="p-6 bg-white/5 border border-white/10 rounded-3xl group hover:bg-white/10 transition-all italic font-bold">
-                                     <div className="flex items-center gap-4 italic italic font-bold mb-4">
-                                         <Activity className="w-6 h-6 text-indigo-400 italic shrink-0" />
-                                         <div><div className="text-sm font-black italic italic font-bold group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{f.name}</div><div className="text-[10px] text-slate-500 font-black tracking-widest uppercase italic">{f.size} • {f.type}</div></div>
-                                     </div>
-                                     <button className="w-full py-3 bg-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg italic transition-all active:scale-[0.98]">Review Document</button>
-                                 </div>
-                             ))}
-                         </div>
+                {/* Sidebar */}
+                <div className="w-80 flex flex-col gap-4">
+                    {/* Shared Records */}
+                    <div className="flex-1 bg-slate-800 rounded-xl p-5 flex flex-col">
+                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-blue-400" />
+                            Shared Records
+                        </h3>
+                        <div className="flex-1 overflow-y-auto space-y-3">
+                            {[
+                                { name: 'Health_Report.pdf', size: '2.4 MB' },
+                                { name: 'MRI_Results.jpg', size: '18 MB' }
+                            ].map((file, i) => (
+                                <div
+                                    key={i}
+                                    className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
+                                >
+                                    <p className="text-sm text-white font-medium truncate">{file.name}</p>
+                                    <p className="text-xs text-slate-400">{file.size}</p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="bg-white/5 border border-white/10 rounded-[3.5rem] p-10 flex gap-4 justify-between items-center italic shadow-2xl">
-                         <button onClick={() => setMuted(!muted)} className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${muted ? 'bg-rose-500 text-white animate-pulse' : 'bg-white/10 text-white hover:bg-white/20'} italic`}>
-                             {muted ? <MicOff className="w-6 h-6 italic" /> : <Mic className="w-6 h-6 italic" />}
-                         </button>
-                         <button onClick={() => setCameraOff(!cameraOff)} className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${cameraOff ? 'bg-rose-500 text-white animate-pulse' : 'bg-white/10 text-white hover:bg-white/20'} italic`}>
-                             {cameraOff ? <VideoOff className="w-6 h-6 italic" /> : <Video className="w-6 h-6 italic" />}
-                         </button>
-                         <button className="w-16 h-16 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition-all italic"><Maximize className="w-6 h-6 italic" /></button>
-                         <button onClick={() => router.push('/dashboard/patient')} className="flex-1 h-16 bg-rose-600 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-rose-600/30 hover:bg-rose-500 transition-all italic flex items-center justify-center gap-3 active:scale-[0.98]">
-                            <PhoneOff className="w-6 h-6 italic" /> End Call
-                         </button>
+                    {/* Controls */}
+                    <div className="bg-slate-800 rounded-xl p-4">
+                        <div className="flex gap-3 justify-center">
+                            <button
+                                onClick={() => setMuted(!muted)}
+                                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                                    muted
+                                        ? 'bg-rose-600 text-white'
+                                        : 'bg-slate-700 text-white hover:bg-slate-600'
+                                }`}
+                            >
+                                {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                            </button>
+                            <button
+                                onClick={() => setCameraOff(!cameraOff)}
+                                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                                    cameraOff
+                                        ? 'bg-rose-600 text-white'
+                                        : 'bg-slate-700 text-white hover:bg-slate-600'
+                                }`}
+                            >
+                                {cameraOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+                            </button>
+                            <button className="w-12 h-12 rounded-xl bg-slate-700 text-white hover:bg-slate-600 transition-colors">
+                                <MessageSquare className="w-5 h-5" />
+                            </button>
+                            <button className="w-12 h-12 rounded-xl bg-slate-700 text-white hover:bg-slate-600 transition-colors">
+                                <Maximize className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => router.push('/dashboard/patient')}
+                            className="w-full mt-4 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors"
+                        >
+                            <PhoneOff className="w-5 h-5" />
+                            End Call
+                        </button>
                     </div>
                 </div>
             </main>
 
-            <footer className="p-10 flex justify-center gap-12 text-[10px] font-black uppercase tracking-[0.4em] text-slate-600 italic">
-                 <div className="flex items-center gap-3 italic"><Shield className="w-3 h-3 text-emerald-500 italic" /> Secure Connection</div>
-                 <div className="flex items-center gap-3 italic"><Users className="w-3 h-3 text-indigo-400 italic" /> Private Session</div>
-                 <div className="flex items-center gap-3 italic"><Activity className="w-3 h-3 text-rose-500 italic" /> HD Quality</div>
+            {/* Footer */}
+            <footer className="px-6 py-3 border-t border-slate-800 flex justify-center gap-6 text-xs text-slate-500">
+                <span className="flex items-center gap-1">
+                    <Shield className="w-3 h-3" /> Secure
+                </span>
+                <span className="flex items-center gap-1">
+                    <Video className="w-3 h-3" /> HD Video
+                </span>
             </footer>
         </div>
     );

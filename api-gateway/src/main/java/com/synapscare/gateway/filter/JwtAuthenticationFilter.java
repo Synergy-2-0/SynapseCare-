@@ -54,6 +54,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
 
+        // ── Step 0: bypass filter for CORS preflight requests ─────────────────
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod().name())) {
+            log.debug("OPTIONS preflight '{}' — bypassing JWT validation", path);
+            return chain.filter(exchange);
+        }
+
         // ── Step 1: bypass filter for public paths ────────────────────────────
         if (isPublicPath(path)) {
             log.debug("Public path '{}' — bypassing JWT validation", path);

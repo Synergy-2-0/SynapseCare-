@@ -26,6 +26,13 @@ public class DoctorController {
 
     // ==================== Public Endpoints ====================
 
+    /**
+     * Search doctors with complete profiles and APPROVED verification.
+     * Returns empty if no doctors meet ALL criteria:
+     * - specialization IS NOT NULL (profile complete)
+     * - consultationFee IS NOT NULL (profile complete)
+     * - verificationStatus = APPROVED
+     */
     @GetMapping("/search")
     public ResponseEntity<List<DoctorProfileResponse>> searchDoctors(
             @RequestParam(required = false) String specialization,
@@ -33,6 +40,16 @@ public class DoctorController {
             @RequestParam(required = false) BigDecimal maxFee
     ) {
         List<DoctorProfileResponse> doctors = doctorService.searchDoctors(specialization, minFee, maxFee);
+        return ResponseEntity.ok(doctors);
+    }
+
+    /**
+     * Get ALL doctors (for debugging/admin purposes).
+     * Shows doctors regardless of verification or profile completion status.
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<DoctorProfileResponse>> getAllDoctors() {
+        List<DoctorProfileResponse> doctors = doctorService.getAllDoctors();
         return ResponseEntity.ok(doctors);
     }
 
@@ -135,18 +152,22 @@ public class DoctorController {
 
     // ==================== Admin Endpoints ====================
 
+    /**
+     * Get all doctors pending verification.
+     * For actual verification, use auth-service: PUT /api/admin/doctors/{id}/verify
+     */
     @GetMapping("/pending")
     public ResponseEntity<List<DoctorProfileResponse>> getPendingDoctors() {
         List<DoctorProfileResponse> doctors = doctorService.getPendingDoctors();
         return ResponseEntity.ok(doctors);
     }
 
-    @PutMapping("/{id}/verify")
-    public ResponseEntity<DoctorProfileResponse> verifyDoctor(
-            @PathVariable Long id,
-            @Valid @RequestBody VerifyDoctorRequest request
-    ) {
-        DoctorProfileResponse response = doctorService.verifyDoctor(id, request.getStatus());
-        return ResponseEntity.ok(response);
-    }
+    /**
+     * REMOVED: PUT /api/doctors/{id}/verify
+     *
+     * Doctor verification is now exclusively handled by auth-service.
+     * Use this endpoint instead: PUT /api/admin/doctors/{id}/verify in auth-service
+     *
+     * Doctor-service automatically syncs verification status from auth-service via RabbitMQ events.
+     */
 }

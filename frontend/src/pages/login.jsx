@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { Shield, Mail, Lock, Heart, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, CircleCheckBig } from 'lucide-react';
 import { authApi } from '../lib/api';
 
 const LoginPage = () => {
@@ -16,8 +16,15 @@ const LoginPage = () => {
         setLoading(true);
         setError('');
         
+        if (!credentials.email?.trim() || !credentials.password) {
+            setError('Please enter both email and password.');
+            setLoading(false);
+            return;
+        }
+
         try {
-            const response = await authApi.post('/login', credentials);
+            const payload = { email: credentials.email.trim(), password: credentials.password };
+            const response = await authApi.post('/login', payload);
             const data = response?.data || {};
             const user = data.user || {};
 
@@ -41,9 +48,27 @@ const LoginPage = () => {
             if (userId !== undefined && userId !== null) localStorage.setItem('user_id', String(userId));
             if (name) localStorage.setItem('user_name', name);
 
-            if (role === 'ADMIN') router.push('/dashboard/admin');
-            else if (role === 'DOCTOR') router.push('/dashboard/doctor');
-            else router.push('/dashboard/patient');
+            if (role === 'ADMIN') {
+                router.push('/dashboard/admin');
+            } else if (role === 'DOCTOR') {
+                // Check if doctor has completed profile setup
+                try {
+                    const { doctorApi } = await import('../lib/api');
+                    const profileRes = await doctorApi.get('/profile/me');
+                    // Profile exists, go to dashboard
+                    router.push('/doctor/dashboard');
+                } catch (profileErr) {
+                    // Profile doesn't exist (404), redirect to setup
+                    if (profileErr.response?.status === 404) {
+                        router.push('/doctor/profile/setup');
+                    } else {
+                        // Other error, go to dashboard anyway
+                        router.push('/doctor/dashboard');
+                    }
+                }
+            } else {
+                router.push('/dashboard/patient');
+            }
         } catch (err) {
             console.error('Login failed:', err);
             setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
@@ -53,92 +78,95 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white flex flex-col md:flex-row font-bold italic text-slate-900 italic font-bold">
-            <div className="md:w-[450px] bg-slate-950 p-16 text-white flex flex-col justify-between relative overflow-hidden italic font-bold">
-                <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-600/30 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"></div>
-                
-                <Link href="/" className="flex items-center gap-3 relative z-10 group italic">
-                    <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl ring-4 ring-indigo-500/20 transition-transform group-hover:scale-110 italic">S</div>
-                    <span className="text-3xl font-black italic tracking-tighter italic font-bold">SynapseCare</span>
-                </Link>
+        <div className="min-h-screen text-[var(--color-text)] bg-[var(--color-bg)]">
+            <div className="section-shell py-8 md:py-12">
+                <div className="grid min-h-[78vh] overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-strong)] lg:grid-cols-[0.95fr_1.05fr]">
+                    <div className="relative bg-gradient-to-b from-[#145ec2] to-[#0f4fa9] p-8 md:p-10 text-white">
+                        <div className="absolute inset-0 bg-[radial-gradient(800px_300px_at_10%_0%,rgba(255,255,255,0.18),transparent)]" />
+                        <div className="relative flex h-full flex-col justify-between">
+                            <Link href="/" className="flex items-center gap-3">
+                                <img src="/logo.png" alt="SynapseCare" className="w-10 h-10" />
+                                <span className="text-2xl font-semibold">SynapseCare</span>
+                            </Link>
 
-                <div className="relative z-10 italic font-bold">
-                    <h1 className="text-6xl font-black italic leading-[1.1] mb-8 italic tracking-tighter">Your <span className="text-indigo-400 italic">Personal</span> Health Dashboard.</h1>
-                    <p className="text-slate-400 font-bold italic leading-relaxed opacity-80 mb-12 italic text-lg">Secure, encrypted access to your medical center, appointments, and test results.</p>
-                    
-                    <div className="space-y-8 italic font-bold">
-                        {[
-                            { title: "Privacy First", desc: "Your health data is safe and private." },
-                            { title: "24/7 Access", desc: "Consult doctors and view records anytime." }
-                        ].map((item, i) => (
-                            <div key={i} className="flex gap-4 items-start italic font-bold group hover:translate-x-2 transition-transform">
-                                <CheckCircle2 className="w-6 h-6 text-indigo-400 shrink-0 italic" />
-                                <div><h4 className="font-black text-base italic">{item.title}</h4><p className="text-slate-500 text-sm mt-1 font-bold italic italic font-bold">{item.desc}</p></div>
+                            <div>
+                                <h1 className="text-3xl md:text-4xl font-semibold leading-tight">Welcome back to your clinical portal.</h1>
+                                <p className="mt-4 text-blue-100 max-w-sm">
+                                    Securely manage appointments, records, and consultations in one trusted healthcare workspace.
+                                </p>
+
+                                <div className="mt-8 space-y-3">
+                                    {['Protected patient data', 'Fast role-based access', 'Always-on support workflows'].map((item) => (
+                                        <div key={item} className="flex items-center gap-2 text-sm text-blue-50">
+                                            <CircleCheckBig className="w-4 h-4" /> {item}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        ))}
+
+                            <p className="text-xs text-blue-100/90">Clinical access console • v3</p>
+                        </div>
+                    </div>
+
+                    <div className="p-6 md:p-10 lg:p-12 flex items-center">
+                        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="w-full max-w-md mx-auto">
+                            <h2 className="text-3xl font-semibold tracking-tight">Sign in</h2>
+                            <p className="copy-muted mt-2 text-sm">Enter your credentials to continue.</p>
+
+                            {error && (
+                                <div className="mt-5 rounded-[var(--radius-sm)] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+                                    {error}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleLogin} className="mt-6 space-y-5">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">Email Address</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
+                                        <input
+                                            type="email"
+                                            placeholder="name@hospital.com"
+                                            value={credentials.email}
+                                            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white py-3 pl-10 pr-3 text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-blue-100 transition-all"
+                                            onChange={(e)=>setCredentials({...credentials, email: e.target.value})}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">Password</label>
+                                        <button type="button" className="text-xs font-semibold text-[var(--color-primary)]">Forgot Password?</button>
+                                    </div>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
+                                        <input
+                                            type="password"
+                                            placeholder="••••••••"
+                                            value={credentials.password}
+                                            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white py-3 pl-10 pr-3 text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-blue-100 transition-all"
+                                            onChange={(e)=>setCredentials({...credentials, password: e.target.value})}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    disabled={loading}
+                                    className="w-full py-3 bg-[var(--color-primary)] text-white rounded-[var(--radius-md)] font-semibold text-sm shadow-[var(--shadow-soft)] transition-all flex items-center justify-center gap-2 hover:bg-[var(--color-primary-strong)] disabled:opacity-50"
+                                >
+                                    {loading ? 'Signing In...' : <>Continue <ArrowRight className="w-4 h-4" /></>}
+                                </button>
+                            </form>
+
+                            <p className="text-center mt-6 text-sm copy-muted">
+                                New to SynapseCare? <Link href="/register" className="text-[var(--color-primary)] font-semibold">Create an account</Link>
+                            </p>
+                        </motion.div>
                     </div>
                 </div>
-
-                <div className="text-[10px] uppercase font-black tracking-[0.4em] text-slate-600 relative z-10 italic font-bold">Secure Patient Portal v2.0</div>
-            </div>
-
-            <div className="flex-1 bg-[#F8FAFC] p-8 md:p-32 flex items-center justify-center italic font-bold">
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-xl space-y-16 italic font-bold">
-                    <div className="space-y-4 italic font-bold">
-                        <h2 className="text-6xl font-black text-slate-900 italic tracking-tighter">Welcome Back</h2>
-                        <p className="text-slate-500 font-bold italic text-xl opacity-90 italic">Please enter your sign-in details to access your portal.</p>
-                    </div>
-
-                    {error && (
-                        <div className="bg-red-50 border-2 border-red-200 text-red-600 px-8 py-4 rounded-2xl font-bold italic text-sm">
-                            {error}
-                        </div>
-                    )}
-
-                    <form onSubmit={handleLogin} className="space-y-10 italic font-bold">
-                        <div className="space-y-4 italic font-bold">
-                            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2 italic">Email Address</label>
-                            <div className="relative italic font-bold">
-                                <Mail className="absolute left-8 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 italic" />
-                                <input 
-                                    type="email" 
-                                    placeholder="your-name@gmail.com"
-                                    className="w-full bg-white border-2 border-slate-200 rounded-[2.5rem] py-8 pl-18 pr-8 text-base font-black text-slate-900 outline-none focus:border-indigo-600 focus:ring-8 focus:ring-indigo-100 transition-all italic shadow-md shadow-slate-200/50"
-                                    onChange={(e)=>setCredentials({...credentials, email: e.target.value})}
-                                    required 
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-4 italic font-bold">
-                            <div className="flex justify-between items-center px-4 italic font-bold">
-                                <label className="text-xs font-black uppercase tracking-widest text-slate-500 italic">Password</label>
-                                <button type="button" className="text-xs font-black uppercase text-indigo-600 italic">Forgot Password?</button>
-                            </div>
-                            <div className="relative italic font-bold">
-                                <Lock className="absolute left-8 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 italic" />
-                                <input 
-                                    type="password" 
-                                    placeholder="••••••••••••"
-                                    className="w-full bg-white border-2 border-slate-200 rounded-[2.5rem] py-8 pl-18 pr-8 text-base font-black text-slate-900 outline-none focus:border-indigo-600 focus:ring-8 focus:ring-indigo-100 transition-all italic shadow-md shadow-slate-200/50"
-                                    onChange={(e)=>setCredentials({...credentials, password: e.target.value})}
-                                    required 
-                                />
-                            </div>
-                        </div>
-
-                        <button 
-                            disabled={loading}
-                            className="w-full py-8 bg-indigo-600 text-white rounded-[2.5rem] font-black text-2xl shadow-[0_20px_50px_rgba(79,70,229,0.3)] transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:opacity-50 hover:bg-indigo-700 italic"
-                        >
-                            {loading ? "Signing In..." : (
-                                <>Sign In <ArrowRight className="w-6 h-6 italic" /></>
-                            )}
-                        </button>
-                    </form>
-
-                    <p className="text-center font-black text-slate-500 text-lg italic tracking-tight italic">New to SynapseCare? <Link href="/register" className="text-indigo-600 hover:underline italic font-bold">Create an Account</Link></p>
-                </motion.div>
             </div>
         </div>
     );

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Background -->
+  <rect x="80" y="60" width="240" height="180" rx="16" fill="#EBF5FF" opacity="0.4"/>
+
+  <!-- Calendar Base -->
+  <rect x="100" y="80" width="200" height="160" rx="12" fill="white" stroke="#0066CC" stroke-width="2"/>
+
+  <!-- Calendar Header -->
+  <rect x="100" y="80" width="200" height="40" rx="12" fill="#0066CC"/>
+  <rect x="100" y="100" width="200" height="20" fill="#0066CC"/>
+
+  <!-- Calendar Rings -->
+  <rect x="130" y="72" width="8" height="20" rx="4" fill="#14B8A6"/>
+  <rect x="170" y="72" width="8" height="20" rx="4" fill="#14B8A6"/>
+  <rect x="222" y="72" width="8" height="20" rx="4" fill="#14B8A6"/>
+  <rect x="262" y="72" width="8" height="20" rx="4" fill="#14B8A6"/>
+
+  <!-- Month Text Placeholder -->
+  <rect x="160" y="88" width="80" height="12" rx="2" fill="white" opacity="0.8"/>
+
+  <!-- Calendar Grid -->
+  <g fill="#CBD5E1" opacity="0.5">
+    <rect x="115" y="130" width="25" height="20" rx="4"/>
+    <rect x="148" y="130" width="25" height="20" rx="4"/>
+    <rect x="181" y="130" width="25" height="20" rx="4"/>
+    <rect x="214" y="130" width="25" height="20" rx="4"/>
+    <rect x="247" y="130" width="25" height="20" rx="4"/>
+  </g>
+
+  <g fill="#CBD5E1" opacity="0.5">
+    <rect x="115" y="158" width="25" height="20" rx="4"/>
+    <rect x="148" y="158" width="25" height="20" rx="4"/>
+    <rect x="247" y="158" width="25" height="20" rx="4"/>
+  </g>
+
+  <!-- Highlighted Dates -->
+  <rect x="181" y="158" width="25" height="20" rx="4" fill="#14B8A6"/>
+  <rect x="214" y="158" width="25" height="20" rx="4" fill="#0066CC"/>
+
+  <g fill="#CBD5E1" opacity="0.5">
+    <rect x="115" y="186" width="25" height="20" rx="4"/>
+    <rect x="148" y="186" width="25" height="20" rx="4"/>
+    <rect x="181" y="186" width="25" height="20" rx="4"/>
+    <rect x="214" y="186" width="25" height="20" rx="4"/>
+  </g>
+
+  <!-- Clock Overlay -->
+  <circle cx="320" cy="180" r="40" fill="white" stroke="#14B8A6" stroke-width="3"/>
+  <circle cx="320" cy="180" r="35" fill="#F8FAFC"/>
+
+  <!-- Clock Hands -->
+  <line x1="320" y1="180" x2="320" y2="155" stroke="#0066CC" stroke-width="3" stroke-linecap="round"/>
+  <line x1="320" y1="180" x2="340" y2="185" stroke="#14B8A6" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="320" cy="180" r="4" fill="#0066CC"/>
+
+  <!-- Clock Ticks -->
+  <g stroke="#CBD5E1" stroke-width="2">
+    <line x1="320" y1="148" x2="320" y2="152"/>
+    <line x1="320" y1="208" x2="320" y2="212"/>
+    <line x1="352" y1="180" x2="356" y2="180"/>
+    <line x1="284" y1="180" x2="288" y2="180"/>
+  </g>
+
+  <!-- Decorative -->
+  <circle cx="80" cy="100" r="5" fill="#14B8A6" opacity="0.3"/>
+  <circle cx="340" cy="80" r="4" fill="#0066CC" opacity="0.3"/>
+</svg>

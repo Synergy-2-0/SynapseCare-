@@ -16,13 +16,27 @@ import java.math.BigDecimal;
 
 import java.util.List;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/v1/appointments")
+@RequestMapping("")
 @RequiredArgsConstructor
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
     private final DoctorServiceClient doctorServiceClient;
+
+    @GetMapping("/doctor/{doctorId}")
+    public ResponseEntity<List<AppointmentDto>> getAppointmentsByDoctor(@PathVariable Long doctorId) {
+        List<AppointmentDto> appointments = appointmentService.getAppointmentsByDoctor(doctorId);
+        return ResponseEntity.ok(appointments);
+    }
+
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<List<AppointmentDto>> getAppointmentsByPatient(@PathVariable Long patientId) {
+        List<AppointmentDto> appointments = appointmentService.getAppointmentsByPatient(patientId);
+        return ResponseEntity.ok(appointments);
+    }
 
     @PostMapping("/book")
     public ResponseEntity<ApiResponse<AppointmentDto>> bookAppointment(@Valid @RequestBody AppointmentDto dto) {
@@ -39,45 +53,8 @@ public class AppointmentController {
 
     @PutMapping("/{id}/reschedule")
     public ResponseEntity<ApiResponse<AppointmentDto>> rescheduleAppointment(
-            @PathVariable("id") Long id,
-            @Valid @RequestBody AppointmentDto dto) {
-        AppointmentDto rescheduled = appointmentService.rescheduleAppointment(id, dto);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rescheduled", rescheduled));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<AppointmentDto>> getAppointmentById(@PathVariable("id") Long id) {
-        AppointmentDto appointment = appointmentService.getAppointmentById(id);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment fetched", appointment));
-    }
-
-    @GetMapping("/patient/{patientId}")
-    public ResponseEntity<ApiResponse<List<AppointmentDto>>> getAppointmentsByPatient(@PathVariable("patientId") Long patientId) {
-        List<AppointmentDto> appointments = appointmentService.getAppointmentsByPatient(patientId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Patient appointments fetched", appointments));
-    }
-
-    @GetMapping("/doctor/{doctorId}")
-    public ResponseEntity<ApiResponse<List<AppointmentDto>>> getAppointmentsByDoctor(@PathVariable("doctorId") Long doctorId) {
-        List<AppointmentDto> appointments = appointmentService.getAppointmentsByDoctor(doctorId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Doctor appointments fetched", appointments));
-    }
-
-    @GetMapping("/doctors/search")
-    public ResponseEntity<ApiResponse<List<DoctorProfileClientDto>>> searchDoctors(
-            @RequestParam(value = "specialization", required = false) String specialization,
-            @RequestParam(value = "minFee", required = false) BigDecimal minFee,
-            @RequestParam(value = "maxFee", required = false) BigDecimal maxFee) {
-
-        List<DoctorProfileClientDto> doctors = doctorServiceClient.searchDoctors(specialization, minFee, maxFee);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Doctors fetched from doctor-service", doctors));
-    }
-
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<AppointmentDto>> updateStatus(
-            @PathVariable("id") Long id,
-            @RequestParam("status") AppointmentStatus status) {
-        AppointmentDto updated = appointmentService.updateStatus(id, status);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment status updated", updated));
+            @PathVariable Long id,
+            @RequestBody AppointmentDto dto) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rescheduled", appointmentService.rescheduleAppointment(id, dto)));
     }
 }

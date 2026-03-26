@@ -66,7 +66,7 @@ const AISymptomChecker = () => {
                 
                 <div className="space-y-12 relative z-10">
                     <Link href="/" className="flex items-center gap-4 italic group">
-                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg italic transition-transform group-hover:rotate-12">S</div>
+                        <img src="/logo.png" alt="SynapseCare" className="w-10 h-10" />
                         <span className="text-2xl font-black italic tracking-tighter">SynapseCare AI</span>
                     </Link>
 
