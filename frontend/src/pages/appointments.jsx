@@ -150,10 +150,10 @@ const AppointmentsPage = () => {
                                     {/* Date Block */}
                                     <div className="w-16 h-16 bg-blue-50 rounded-xl flex flex-col items-center justify-center">
                                         <span className="text-xl font-bold text-blue-600">
-                                            {new Date(appt.appointmentDate).getDate()}
+                                            {new Date(appt.date).getDate()}
                                         </span>
                                         <span className="text-xs text-blue-600 uppercase">
-                                            {new Date(appt.appointmentDate).toLocaleString('default', { month: 'short' })}
+                                            {new Date(appt.date).toLocaleString('default', { month: 'short' })}
                                         </span>
                                     </div>
 
@@ -173,12 +173,12 @@ const AppointmentsPage = () => {
                                         <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
                                             <span className="flex items-center gap-1">
                                                 <Clock size={14} />
-                                                {appt.appointmentTime || '10:00 AM'}
+                                                {appt.time || '10:00 AM'}
                                             </span>
-                                            {appt.type === 'VIDEO' && (
+                                            {appt.status === 'CONFIRMED' && (
                                                 <span className="flex items-center gap-1 text-blue-600">
                                                     <Video size={14} />
-                                                    Video Call
+                                                    Video Session Available
                                                 </span>
                                             )}
                                         </div>
@@ -187,17 +187,29 @@ const AppointmentsPage = () => {
 
                                 {/* Actions */}
                                 <div className="flex items-center gap-3">
-                                    {appt.status === 'CONFIRMED' && new Date(appt.appointmentDate) >= new Date() && (
+                                    {appt.status === 'PENDING' && (
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.push(`/payment?id=${appt.id}&amount=1500&patientId=${appt.patientId}`);
+                                            }}
+                                        >
+                                            Pay Now
+                                        </Button>
+                                    )}
+                                    {appt.status === 'CONFIRMED' && (
                                         <Button
                                             variant="primary"
                                             size="sm"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                router.push('/telemedicine');
+                                                router.push(`/telemedicine?appointmentId=${appt.id}`);
                                             }}
                                         >
                                             <Video size={14} />
-                                            Join
+                                            Join Call
                                         </Button>
                                     )}
                                     <ChevronRight size={20} className="text-slate-400" />
