@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Background -->
+  <circle cx="200" cy="150" r="110" fill="#EBF5FF" opacity="0.3"/>
+
+  <!-- Group of Patient Avatars -->
+  <!-- Patient 1 (Center Front) -->
+  <circle cx="200" cy="140" r="35" fill="#0066CC" opacity="0.15"/>
+  <circle cx="200" cy="125" r="20" fill="#FBBF24"/>
+  <path d="M170 170 Q170 145 200 145 Q230 145 230 170 L230 200 Q230 210 200 210 Q170 210 170 200 Z" fill="#0066CC" opacity="0.8"/>
+
+  <!-- Patient 2 (Left) -->
+  <circle cx="130" cy="145" r="30" fill="#14B8A6" opacity="0.15"/>
+  <circle cx="130" cy="132" r="16" fill="#F472B6"/>
+  <path d="M108 165 Q108 145 130 145 Q152 145 152 165 L152 190 Q152 198 130 198 Q108 198 108 190 Z" fill="#14B8A6" opacity="0.7"/>
+
+  <!-- Patient 3 (Right) -->
+  <circle cx="270" cy="145" r="30" fill="#0066CC" opacity="0.15"/>
+  <circle cx="270" cy="132" r="16" fill="#60A5FA"/>
+  <path d="M248 165 Q248 145 270 145 Q292 145 292 165 L292 190 Q292 198 270 198 Q248 198 248 190 Z" fill="#0066CC" opacity="0.7"/>
+
+  <!-- Medical Folder -->
+  <rect x="160" y="220" width="80" height="55" rx="4" fill="#F8FAFC" stroke="#0066CC" stroke-width="2"/>
+  <rect x="160" y="220" width="80" height="15" rx="4" fill="#14B8A6"/>
+  <rect x="160" y="230" width="80" height="5" fill="#14B8A6"/>
+
+  <!-- Folder Tab -->
+  <rect x="185" y="212" width="30" height="12" rx="2" fill="#14B8A6"/>
+
+  <!-- Document Lines -->
+  <line x1="172" y1="248" x2="228" y2="248" stroke="#CBD5E1" stroke-width="2"/>
+  <line x1="172" y1="258" x2="228" y2="258" stroke="#CBD5E1" stroke-width="2"/>
+  <line x1="172" y1="268" x2="210" y2="268" stroke="#CBD5E1" stroke-width="2"/>
+
+  <!-- Medical Cross on Folder -->
+  <rect x="195" y="238" width="10" height="5" rx="1" fill="#0066CC"/>
+  <rect x="197.5" y="235.5" width="5" height="10" rx="1" fill="#0066CC"/>
+
+  <!-- Decorative Elements -->
+  <circle cx="80" cy="120" r="6" fill="#0066CC" opacity="0.3"/>
+  <circle cx="320" cy="120" r="6" fill="#14B8A6" opacity="0.3"/>
+  <circle cx="100" cy="200" r="4" fill="#14B8A6" opacity="0.2"/>
+  <circle cx="300" cy="200" r="4" fill="#0066CC" opacity="0.2"/>
+
+  <!-- Connection Lines (representing network) -->
+  <path d="M130 165 Q165 180 200 170" stroke="#0066CC" stroke-width="1.5" fill="none" stroke-dasharray="4 4" opacity="0.3"/>
+  <path d="M270 165 Q235 180 200 170" stroke="#14B8A6" stroke-width="1.5" fill="none" stroke-dasharray="4 4" opacity="0.3"/>
+</svg>

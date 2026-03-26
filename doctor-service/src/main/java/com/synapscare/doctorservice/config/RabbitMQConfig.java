@@ -7,7 +7,6 @@ import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 public class RabbitMQConfig {
@@ -15,6 +14,7 @@ public class RabbitMQConfig {
     // Queue names
     public static final String USER_REGISTERED_QUEUE = "user.registered.queue";
     public static final String DOCTOR_VERIFIED_QUEUE = "doctor.verified.queue";
+    public static final String USER_DOCTOR_VERIFIED_QUEUE = "user.doctor.verified.queue";
 
     // Exchange names
     public static final String DOCTOR_EXCHANGE = "doctor.exchange";
@@ -23,6 +23,7 @@ public class RabbitMQConfig {
     // Routing keys
     public static final String USER_REGISTERED_ROUTING_KEY = "user.registered.doctor";
     public static final String DOCTOR_VERIFIED_ROUTING_KEY = "doctor.verified";
+    public static final String USER_DOCTOR_VERIFIED_ROUTING_KEY = "user.doctor.verified";
 
 
 
@@ -30,6 +31,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue userRegisteredQueue() {
         return new Queue(USER_REGISTERED_QUEUE, true);
+    }
+
+    @Bean
+    public Queue userDoctorVerifiedQueue() {
+        return new Queue(USER_DOCTOR_VERIFIED_QUEUE, true);
     }
 
     // Doctor verified queue (for notifications)
@@ -58,6 +64,13 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Binding userDoctorVerifiedBinding(Queue userDoctorVerifiedQueue, DirectExchange userExchange) {
+        return BindingBuilder.bind(userDoctorVerifiedQueue)
+                .to(userExchange)
+                .with(USER_DOCTOR_VERIFIED_ROUTING_KEY);
+    }
+
+    @Bean
     public Binding doctorVerifiedBinding(Queue doctorVerifiedQueue, DirectExchange doctorExchange) {
         return BindingBuilder.bind(doctorVerifiedQueue)
                 .to(doctorExchange)
@@ -66,15 +79,15 @@ public class RabbitMQConfig {
 
     // Message converter
     @Bean
-    public MessageConverter jsonMessageConverter(JsonMapper jsonMapper) {
-        return new JacksonJsonMessageConverter(jsonMapper);
+    public MessageConverter jsonMessageConverter() {
+        return new JacksonJsonMessageConverter();
     }
 
     // RabbitTemplate with message converter
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter jsonMessageConverter) {
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setMessageConverter(jsonMessageConverter);
+        rabbitTemplate.setMessageConverter(jsonMessageConverter());
         return rabbitTemplate;
     }
 }

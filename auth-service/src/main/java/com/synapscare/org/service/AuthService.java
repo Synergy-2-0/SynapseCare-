@@ -6,6 +6,8 @@ import com.synapscare.org.dto.request.PatientRegisterRequest;
 import com.synapscare.org.dto.request.TokenRefreshRequest;
 import com.synapscare.org.dto.response.AuthResponse;
 import com.synapscare.org.dto.response.UserResponse;
+import com.synapscare.org.dto.messaging.UserRegisteredEvent;
+import com.synapscare.org.config.RabbitMQConfig;
 import com.synapscare.org.entity.RefreshToken;
 import com.synapscare.org.entity.User;
 import com.synapscare.org.exception.BadRequestException;
@@ -21,6 +23,7 @@ import com.synapscare.org.security.UserDetailsImpl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -28,6 +31,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -41,6 +45,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
     private final JwtConfig jwtConfig;
+    private final RabbitTemplate rabbitTemplate;
 
     @Transactional
     public AuthResponse registerPatient(PatientRegisterRequest request) {
@@ -75,10 +80,36 @@ public class AuthService {
                 .phoneNumber(request.getPhoneNumber())
                 .role(User.Role.DOCTOR)
                 .isActive(true)
-                .isVerified(false)
+                .isVerified(false) // Kept for backward compatibility
+                .verificationStatus(com.synapscare.org.enums.VerificationStatus.PENDING) // New: source of truth
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        // Publish event to create doctor profile
+        try {
+            UserRegisteredEvent event = UserRegisteredEvent.builder()
+                    .userId(savedUser.getId())
+                    .username(savedUser.getUsername())
+                    .email(savedUser.getEmail())
+                    .firstName(savedUser.getFirstName())
+                    .lastName(savedUser.getLastName())
+                    .phoneNumber(savedUser.getPhoneNumber())
+                    .roles(Set.of("DOCTOR"))
+                    .build();
+
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.USER_EXCHANGE,
+                    RabbitMQConfig.USER_REGISTERED_ROUTING_KEY,
+                    event
+            );
+
+            log.info("Published UserRegisteredEvent for doctor userId: {}", savedUser.getId());
+        } catch (Exception e) {
+            log.error("Failed to publish UserRegisteredEvent for userId: {}", savedUser.getId(), e);
+            // Don't fail registration if messaging fails
+        }
+
         return buildAuthResponse(UserDetailsImpl.build(savedUser), savedUser);
     }
 
@@ -102,8 +133,18 @@ public class AuthService {
             throw new UnauthorizedAccessException("User account is deactivated");
         }
 
-        if (user.getRole() == User.Role.DOCTOR && !Boolean.TRUE.equals(user.getIsVerified())) {
-            throw new BadRequestException("Doctor account is pending verification");
+        // Check doctor verification status
+        if (user.getRole() == User.Role.DOCTOR) {
+            if (user.getVerificationStatus() == null ||
+                user.getVerificationStatus() == com.synapscare.org.enums.VerificationStatus.PENDING) {
+                throw new BadRequestException("Doctor account is pending verification. Please wait for admin approval.");
+            }
+            if (user.getVerificationStatus() == com.synapscare.org.enums.VerificationStatus.REJECTED) {
+                String reason = user.getVerificationRejectionReason();
+                String message = "Doctor account verification was rejected" +
+                               (reason != null ? ": " + reason : "");
+                throw new BadRequestException(message);
+            }
         }
 
         return buildAuthResponse(userDetails, user);

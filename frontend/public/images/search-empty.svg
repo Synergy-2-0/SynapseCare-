@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Background -->
+  <circle cx="200" cy="150" r="100" fill="#EBF5FF" opacity="0.3"/>
+
+  <!-- Magnifying Glass -->
+  <circle cx="180" cy="140" r="50" fill="white" stroke="#0066CC" stroke-width="4"/>
+  <circle cx="180" cy="140" r="40" fill="#F8FAFC"/>
+  <line x1="218" y1="178" x2="260" y2="220" stroke="#0066CC" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Search Lines Inside -->
+  <line x1="155" y1="125" x2="205" y2="125" stroke="#CBD5E1" stroke-width="3"/>
+  <line x1="155" y1="140" x2="195" y2="140" stroke="#CBD5E1" stroke-width="3"/>
+  <line x1="155" y1="155" x2="185" y2="155" stroke="#CBD5E1" stroke-width="3"/>
+
+  <!-- Found Result Highlight -->
+  <rect x="188" y="135" width="20" height="10" rx="2" fill="#14B8A6" opacity="0.5"/>
+
+  <!-- Medical Cross Decorations -->
+  <g fill="#0066CC" opacity="0.3">
+    <rect x="290" y="90" width="14" height="6" rx="1"/>
+    <rect x="294" y="86" width="6" height="14" rx="1"/>
+  </g>
+
+  <g fill="#14B8A6" opacity="0.3">
+    <rect x="90" y="90" width="12" height="5" rx="1"/>
+    <rect x="93.5" y="86.5" width="5" height="12" rx="1"/>
+  </g>
+
+  <!-- Sparkles/Stars indicating results -->
+  <path d="M280 150 L283 157 L290 157 L284 162 L287 170 L280 165 L273 170 L276 162 L270 157 L277 157 Z" fill="#FBBF24" opacity="0.8"/>
+  <path d="M100 180 L102 185 L107 185 L103 188 L105 193 L100 190 L95 193 L97 188 L93 185 L98 185 Z" fill="#14B8A6" opacity="0.6"/>
+
+  <!-- Pulse Line -->
+  <path d="M80 230 L120 230 L130 215 L145 245 L160 220 L170 235 L180 230 L320 230"
+        stroke="#0066CC" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.4"/>
+</svg>

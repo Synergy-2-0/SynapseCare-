@@ -23,13 +23,12 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     List<Doctor> findByVerificationStatus(VerificationStatus status);
 
     @Query("SELECT d FROM Doctor d WHERE " +
-            "(:specialization IS NULL OR LOWER(d.specialization) LIKE LOWER(CONCAT('%', :specialization, '%'))) AND " +
+            "d.specialization IS NOT NULL AND " +
+            "d.consultationFee IS NOT NULL AND " +
             "(:minFee IS NULL OR d.consultationFee >= :minFee) AND " +
             "(:maxFee IS NULL OR d.consultationFee <= :maxFee) AND " +
-            "d.verificationStatus = 'APPROVED' AND " +
-            "d.isAvailable = true")
+            "d.verificationStatus = com.synapscare.doctorservice.enums.VerificationStatus.APPROVED")
     List<Doctor> searchDoctors(
-            @Param("specialization") String specialization,
             @Param("minFee") BigDecimal minFee,
             @Param("maxFee") BigDecimal maxFee
     );

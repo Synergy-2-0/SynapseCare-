@@ -25,7 +25,8 @@ public class Doctor {
     @Column(nullable = false, unique = true)
     private Long userId; // Reference to auth-service User
 
-    @Column(nullable = false)
+    // Nullable during initial registration, filled via profile creation
+    @Column(nullable = true)
     private String specialization;
 
     @Column(length = 1000)
@@ -36,7 +37,8 @@ public class Doctor {
     @Column(unique = true)
     private String licenseNumber;
 
-    @Column(nullable = false)
+    // Nullable during initial registration, filled via profile creation
+    @Column(nullable = true)
     private BigDecimal consultationFee;
 
     @Column(length = 2000)
@@ -50,6 +52,12 @@ public class Doctor {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
+
+    @Column(length = 500)
+    private String verificationRejectionReason; // Synced from auth-service
+
+    @Column(length = 100)
+    private String verifiedBy; // Admin username who verified/rejected
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

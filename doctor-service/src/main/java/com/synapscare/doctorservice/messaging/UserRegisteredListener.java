@@ -18,16 +18,22 @@ public class UserRegisteredListener {
 
     @RabbitListener(queues = USER_REGISTERED_QUEUE)
     public void handleUserRegistered(UserRegisteredEvent event) {
-        log.info("Received user registered event for userId: {}", event.getUserId());
+        log.info("Received UserRegisteredEvent: userId={}, roles={}", event.getUserId(), event.getRoles());
 
         try {
             // Check if user has DOCTOR role
             if (event.getRoles() != null && event.getRoles().contains("DOCTOR")) {
-                log.info("Creating empty doctor profile for userId: {}", event.getUserId());
+                log.info("Creating placeholder doctor profile for userId: {}", event.getUserId());
                 doctorService.createEmptyDoctorProfile(event.getUserId());
+                log.info("Successfully created placeholder doctor profile for userId: {}", event.getUserId());
+            } else {
+                log.debug("Skipping doctor profile creation - not a DOCTOR role: {}", event.getRoles());
             }
         } catch (Exception e) {
-            log.error("Error processing user registered event for userId: {}", event.getUserId(), e);
+            log.error("CRITICAL: Failed to create doctor profile for userId: {}. Doctor will not appear in search!",
+                     event.getUserId(), e);
+            // Re-throw to trigger retry
+            throw new RuntimeException("Failed to create doctor profile", e);
         }
     }
 }
