@@ -1,37 +1,39 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: sqlserver
+  name: postgres
 spec:
   selector:
-    app: sqlserver
+    app: postgres
   ports:
-    - port: 1433
+    - port: 5432
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sqlserver
+  name: postgres
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sqlserver
+      app: postgres
   template:
     metadata:
       labels:
-        app: sqlserver
+        app: postgres
     spec:
       containers:
-        - name: sqlserver
-          image: mcr.microsoft.com/mssql/server:2022-latest
+        - name: postgres
+          image: postgres:15
           env:
-            - name: ACCEPT_EULA
-              value: "Y"
-            - name: MSSQL_SA_PASSWORD
-              value: "StrongPass!123"
+            - name: POSTGRES_DB
+              value: "synapscare"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "Luqa"
           ports:
-            - containerPort: 1433
+            - containerPort: 5432
 ---
 # Patient Service
 apiVersion: v1
@@ -64,12 +66,12 @@ spec:
         - name: patient-service
           image: myrepo/patient-service:latest
           env:
-            - name: DB_HOST
-              value: sqlserver
-            - name: DB_USER
-              value: sa
-            - name: DB_PASS
-              value: StrongPass!123
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/synapscare
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: Luqa
           ports:
             - containerPort: 8081
 ---
@@ -104,12 +106,12 @@ spec:
         - name: doctor-service
           image: myrepo/doctor-service:latest
           env:
-            - name: DB_HOST
-              value: sqlserver
-            - name: DB_USER
-              value: sa
-            - name: DB_PASS
-              value: StrongPass!123
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/synapscare
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: Luqa
           ports:
             - containerPort: 8082
 ---
@@ -144,12 +146,12 @@ spec:
         - name: appointment-service
           image: myrepo/appointment-service:latest
           env:
-            - name: DB_HOST
-              value: sqlserver
-            - name: DB_USER
-              value: sa
-            - name: DB_PASS
-              value: StrongPass!123
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/synapscare
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: Luqa
           ports:
             - containerPort: 8083
 ---
@@ -184,12 +186,12 @@ spec:
         - name: integration-service
           image: myrepo/integration-service:latest
           env:
-            - name: DB_HOST
-              value: sqlserver
-            - name: DB_USER
-              value: sa
-            - name: DB_PASS
-              value: StrongPass!123
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/synapscare
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: Luqa
           ports:
             - containerPort: 8084
 ---

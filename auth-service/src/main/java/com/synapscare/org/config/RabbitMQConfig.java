@@ -13,17 +13,24 @@ public class RabbitMQConfig {
 
     // Queue names
     public static final String USER_REGISTERED_QUEUE = "user.registered.queue";
+    public static final String USER_DOCTOR_VERIFIED_QUEUE = "user.doctor.verified.queue";
 
     // Exchange names
     public static final String USER_EXCHANGE = "user.exchange";
 
     // Routing keys
     public static final String USER_REGISTERED_ROUTING_KEY = "user.registered.doctor";
+    public static final String USER_DOCTOR_VERIFIED_ROUTING_KEY = "user.doctor.verified";
 
     // Queues
     @Bean
     public Queue userRegisteredQueue() {
         return new Queue(USER_REGISTERED_QUEUE, true);
+    }
+
+    @Bean
+    public Queue userDoctorVerifiedQueue() {
+        return new Queue(USER_DOCTOR_VERIFIED_QUEUE, true);
     }
 
     // Exchanges
@@ -38,6 +45,13 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(userRegisteredQueue)
                 .to(userExchange)
                 .with(USER_REGISTERED_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding userDoctorVerifiedBinding(Queue userDoctorVerifiedQueue, DirectExchange userExchange) {
+        return BindingBuilder.bind(userDoctorVerifiedQueue)
+                .to(userExchange)
+                .with(USER_DOCTOR_VERIFIED_ROUTING_KEY);
     }
 
     // Message converter

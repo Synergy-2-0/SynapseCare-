@@ -32,6 +32,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
         List<User> findByRoleAndIsVerifiedAndIsActiveAndIsDeletedFalse(User.Role role, Boolean isVerified, Boolean isActive);
 
+    // New methods for querying without isVerified (using verificationStatus instead)
+    List<User> findByRoleAndIsActiveAndIsDeletedFalse(User.Role role, Boolean isActive);
+
+    Optional<User> findByIdAndRoleAndIsActiveAndIsDeletedFalse(Long id, User.Role role, Boolean isActive);
+
     Optional<User> findByIdAndRoleAndIsVerifiedAndIsActive(
             Long id,
             User.Role role,

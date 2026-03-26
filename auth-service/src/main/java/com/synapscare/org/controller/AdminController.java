@@ -1,12 +1,16 @@
 package com.synapscare.org.controller;
 
+import com.synapscare.org.dto.request.DoctorVerificationRequest;
 import com.synapscare.org.dto.response.UserResponse;
 import com.synapscare.org.entity.User;
 import com.synapscare.org.exception.BadRequestException;
+import com.synapscare.org.security.UserDetailsImpl;
 import com.synapscare.org.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -50,10 +54,32 @@ public class AdminController {
         return ResponseEntity.ok(userService.getPendingDoctors());
     }
 
-    // PUT /api/admin/doctors/{id}/verify  – Approve a doctor registration
+    // PUT /api/admin/doctors/{id}/verify  – Approve or reject a doctor registration
+    /**
+     * SOURCE OF TRUTH endpoint for doctor verification.
+     * This method updates the verification status in auth-service and publishes
+     * an event to notify doctor-service and other services.
+     *
+     * @param id the doctor's user ID
+     * @param request verification request containing status (APPROVED/REJECTED) and optional rejection reason.
+     *                If not provided, defaults to APPROVED for backward compatibility.
+     * @param principal the authenticated admin user
+     * @return the updated user response
+     */
     @PutMapping("/doctors/{id}/verify")
-    public ResponseEntity<UserResponse> verifyDoctor(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.verifyDoctor(id));
+    public ResponseEntity<UserResponse> verifyDoctor(
+            @PathVariable Long id,
+            @Valid @RequestBody(required = false) DoctorVerificationRequest request,
+            @AuthenticationPrincipal UserDetailsImpl principal
+    ) {
+        String adminUsername = principal.getUsername();
+
+        // Backward compatibility: if no body provided, default to APPROVED
+        if (request == null) {
+            request = new DoctorVerificationRequest("APPROVED", null);
+        }
+
+        return ResponseEntity.ok(userService.verifyDoctor(id, request, adminUsername));
     }
 
     // PUT /api/admin/users/{id}/toggle-status  – Activate or deactivate a user

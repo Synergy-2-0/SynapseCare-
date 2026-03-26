@@ -24,7 +24,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/router';
 
 const DoctorDashboard = () => {
-    const [userData, setUserData] = useState(null);
+    const [userData] = useState(() => {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+
+        return {
+            name: localStorage.getItem('user_name'),
+            id: localStorage.getItem('user_id')
+        };
+    });
     const [stats, setStats] = useState({ appointmentsToday: 0, activePatients: 0, hours: 0 });
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -34,11 +43,9 @@ const DoctorDashboard = () => {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const role = localStorage.getItem('user_role');
-            const name = localStorage.getItem('user_name');
             const id = localStorage.getItem('user_id');
 
             if (role !== 'DOCTOR') { router.push('/login'); return; }
-            setUserData({ name, id });
 
             const fetchData = async () => {
                 try {
@@ -68,7 +75,7 @@ const DoctorDashboard = () => {
         <div className="min-h-screen bg-[#F8FAFC] flex font-bold italic text-slate-900 italic font-bold">
             <aside className="w-80 bg-slate-950 border-r border-white/5 flex flex-col p-10 sticky top-0 h-screen shadow-2xl italic font-bold">
                 <div className="flex items-center gap-4 mb-20 px-4 italic">
-                    <div className="w-12 h-12 bg-indigo-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/20 italic">S</div>
+                    <img src="/logo.png" alt="SynapseCare" className="w-12 h-12" />
                     <span className="text-2xl font-black text-white italic tracking-tighter italic font-bold">Doctor Portal</span>
                 </div>
                 
@@ -118,7 +125,7 @@ const DoctorDashboard = () => {
                         {activeTab === 'overview' && (
                             <div className="bg-white rounded-[4rem] shadow-2xl border border-slate-100 overflow-hidden italic font-bold">
                                 <div className="p-10 border-b border-slate-50 flex justify-between items-center italic bg-slate-50/50">
-                                    <h3 className="text-3xl font-black text-slate-900 italic italic font-bold tracking-tight">Today's Appointments</h3>
+                                    <h3 className="text-3xl font-black text-slate-900 italic italic font-bold tracking-tight">Today&apos;s Appointments</h3>
                                     <div className="flex gap-4 italic font-bold"><button className="px-6 py-3 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-black italic italic font-bold tracking-widest uppercase">My History</button></div>
                                 </div>
                                 <div className="p-12 space-y-6 italic font-bold">

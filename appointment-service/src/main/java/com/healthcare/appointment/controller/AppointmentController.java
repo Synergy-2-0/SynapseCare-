@@ -8,12 +8,26 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/v1/appointments")
+@RequestMapping("")
 @RequiredArgsConstructor
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
+
+    @GetMapping("/doctor/{doctorId}")
+    public ResponseEntity<List<AppointmentDto>> getAppointmentsByDoctor(@PathVariable Long doctorId) {
+        List<AppointmentDto> appointments = appointmentService.getAppointmentsByDoctor(doctorId);
+        return ResponseEntity.ok(appointments);
+    }
+
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<List<AppointmentDto>> getAppointmentsByPatient(@PathVariable Long patientId) {
+        List<AppointmentDto> appointments = appointmentService.getAppointmentsByPatient(patientId);
+        return ResponseEntity.ok(appointments);
+    }
 
     @PostMapping("/book")
     public ResponseEntity<ApiResponse<AppointmentDto>> bookAppointment(@RequestBody AppointmentDto dto) {
@@ -29,7 +43,7 @@ public class AppointmentController {
 
     @PutMapping("/{id}/reschedule")
     public ResponseEntity<ApiResponse<AppointmentDto>> rescheduleAppointment(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestBody AppointmentDto dto) {
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rescheduled", appointmentService.rescheduleAppointment(id, dto)));
     }

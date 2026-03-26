@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Background -->
+  <circle cx="200" cy="150" r="100" fill="#EBF5FF" opacity="0.4"/>
+
+  <!-- Doctor Figure -->
+  <circle cx="200" cy="90" r="35" fill="#0066CC" opacity="0.15"/>
+  <!-- Head -->
+  <circle cx="200" cy="80" r="25" fill="#FBBF24" opacity="0.8"/>
+  <!-- Body -->
+  <path d="M165 120 Q165 100 200 100 Q235 100 235 120 L235 180 Q235 195 200 195 Q165 195 165 180 Z" fill="white" stroke="#0066CC" stroke-width="2"/>
+
+  <!-- Stethoscope -->
+  <path d="M180 130 Q170 145 175 160 Q180 175 200 175" stroke="#14B8A6" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="200" cy="175" r="8" fill="#14B8A6"/>
+  <circle cx="200" cy="175" r="4" fill="white"/>
+
+  <!-- Clipboard -->
+  <rect x="210" y="125" width="35" height="45" rx="3" fill="#F8FAFC" stroke="#0066CC" stroke-width="2"/>
+  <rect x="220" y="120" width="15" height="8" rx="2" fill="#0066CC"/>
+  <line x1="218" y1="138" x2="238" y2="138" stroke="#CBD5E1" stroke-width="2"/>
+  <line x1="218" y1="148" x2="238" y2="148" stroke="#CBD5E1" stroke-width="2"/>
+  <line x1="218" y1="158" x2="232" y2="158" stroke="#CBD5E1" stroke-width="2"/>
+
+  <!-- Medical Cross Badge -->
+  <circle cx="175" cy="125" r="12" fill="#0066CC"/>
+  <rect x="172" y="119" width="6" height="12" rx="1" fill="white"/>
+  <rect x="169" y="122" width="12" height="6" rx="1" fill="white"/>
+
+  <!-- Decorative Elements -->
+  <circle cx="120" cy="100" r="6" fill="#14B8A6" opacity="0.3"/>
+  <circle cx="280" cy="100" r="6" fill="#0066CC" opacity="0.3"/>
+  <circle cx="130" cy="200" r="4" fill="#0066CC" opacity="0.2"/>
+  <circle cx="270" cy="200" r="4" fill="#14B8A6" opacity="0.2"/>
+
+  <!-- Floor Line -->
+  <ellipse cx="200" cy="220" rx="60" ry="10" fill="#0066CC" opacity="0.1"/>
+</svg>

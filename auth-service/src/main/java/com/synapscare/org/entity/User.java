@@ -1,5 +1,6 @@
 package com.synapscare.org.entity;
 
+import com.synapscare.org.enums.VerificationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -48,9 +49,19 @@ public class User {
     @Builder.Default
     private Boolean isActive = true;
 
+    // Kept for backward compatibility - for PATIENT and ADMIN roles
     @Column(name = "is_verified")
     @Builder.Default
     private Boolean isVerified = false;
+
+    // New field for DOCTOR verification - source of truth
+    @Enumerated(EnumType.STRING)
+    @Column(name = "verification_status", length = 20)
+    private VerificationStatus verificationStatus;
+
+    // Rejection reason for DOCTOR accounts
+    @Column(name = "verification_rejection_reason", length = 500)
+    private String verificationRejectionReason;
 
     @Column(name = "is_deleted")
     @Builder.Default
@@ -68,5 +79,18 @@ public class User {
         PATIENT,
         DOCTOR,
         ADMIN
+    }
+
+    // Convenience method for checking if doctor is verified
+    public boolean isDoctorVerified() {
+        return role == Role.DOCTOR && verificationStatus == VerificationStatus.APPROVED;
+    }
+
+    // Convenience method for checking if user can login
+    public boolean canLogin() {
+        if (role == Role.DOCTOR) {
+            return verificationStatus == VerificationStatus.APPROVED;
+        }
+        return Boolean.TRUE.equals(isVerified);
     }
 }
