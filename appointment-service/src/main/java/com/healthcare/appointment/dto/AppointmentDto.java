@@ -18,5 +18,9 @@ public class AppointmentDto {
     private Long doctorId;
     private LocalDate date;
     private LocalTime time;
+    private Double fee;
+    private String notes;
+    private String consultationType;
+    private Integer tokenNumber;
     private AppointmentStatus status;
 }
