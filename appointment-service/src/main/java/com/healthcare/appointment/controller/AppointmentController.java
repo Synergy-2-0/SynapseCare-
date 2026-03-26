@@ -2,7 +2,6 @@ package com.healthcare.appointment.controller;
 
 import com.healthcare.appointment.dto.ApiResponse;
 import com.healthcare.appointment.dto.AppointmentDto;
-import com.healthcare.appointment.entity.AppointmentStatus;
 import com.healthcare.appointment.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,13 +9,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.healthcare.appointment.client.DoctorServiceClient;
-import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
 
 import java.math.BigDecimal;
 
 import java.util.List;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("")
@@ -56,5 +53,17 @@ public class AppointmentController {
             @PathVariable Long id,
             @RequestBody AppointmentDto dto) {
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rescheduled", appointmentService.rescheduleAppointment(id, dto)));
+    }
+
+        @PutMapping("/{id}/accept")
+    public ResponseEntity<ApiResponse<String>> acceptAppointment(@PathVariable Long id) {
+        appointmentService.confirmAppointment(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment accepted successfully", "CONFIRMED"));
+    }
+
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<String>> rejectAppointment(@PathVariable Long id) {
+        appointmentService.rejectAppointment(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rejected", "REJECTED"));
     }
 }

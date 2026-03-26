@@ -29,6 +29,11 @@ public class Appointment {
     private String meetingLink;
     private String reason;
     
+    private Double fee;
+    private String notes;
+    private String consultationType; // e.g., PHYSICAL, VIDEO
+    private Integer tokenNumber;
+    
     @Enumerated(EnumType.STRING)
     private AppointmentStatus status;
 

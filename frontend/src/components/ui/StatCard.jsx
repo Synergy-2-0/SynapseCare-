@@ -1,87 +1,46 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import useCountUp from '../../hooks/useCountUp';
 
-/**
- * StatCard Component - Enhanced with Count-Up Animation
- *
- * Features:
- * - Animated count-up for numbers
- * - Icon pulse on mount
- * - Subtle hover lift
- * - Trend indicator slide-in
- * - Professional animations
- *
- * @param {string} label - Stat label
- * @param {string|number} value - Stat value
- * @param {Component} icon - Lucide icon component
- * @param {string} color - Icon color class (e.g., 'text-indigo-600')
- * @param {string} bgColor - Icon background color class (e.g., 'bg-indigo-50')
- * @param {object} trend - Trend data ({ value: '+12%', isPositive: true })
- * @param {function} onClick - Click handler
- * @param {boolean} animated - Enable count-up animation (default: true)
- * @param {string} prefix - Prefix for number (e.g., "$")
- * @param {string} suffix - Suffix for number (e.g., "%")
- */
 const StatCard = ({
     label,
     value,
     icon: Icon,
-    color = 'text-blue-600',
-    bgColor = 'bg-blue-50',
+    color,
+    bgColor,
     trend,
     onClick,
-    animated = true,
-    prefix = '',
-    suffix = ''
 }) => {
     const CardWrapper = onClick ? motion.button : motion.div;
 
-    // Check if value is a number for count-up animation
-    const isNumber = !isNaN(parseFloat(value)) && isFinite(value);
-    const numericValue = isNumber ? parseFloat(value) : 0;
-
-    // Use count-up animation for numeric values
-    const animatedValue = useCountUp(numericValue, {
-        duration: 1500,
-        enabled: animated && isNumber,
-        prefix,
-        suffix
-    });
-
-    const displayValue = animated && isNumber ? animatedValue : `${prefix}${value}${suffix}`;
-
     return (
         <CardWrapper
+            whileHover={{ y: -5, scale: 1.02 }}
             onClick={onClick}
-            className={`bg-white p-5 rounded-xl shadow-sm border border-slate-200 ${onClick ? 'cursor-pointer transition-colors hover:border-blue-300' : ''}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
+            className={`p-10 surface-card surface-card-hover flex flex-col justify-between group h-full ${onClick ? 'cursor-pointer' : ''}`}
         >
-            <div className="flex justify-between items-center mb-3">
-                {/* Icon */}
-                <div className={`p-2.5 ${bgColor} ${color} rounded-lg`}>
-                    <Icon className="w-5 h-5" />
+            <div className="flex justify-between items-start mb-8">
+                <div className={`w-14 h-14 ${bgColor} ${color} rounded-[1.2rem] flex items-center justify-center transition-transform group-hover:scale-110 shadow-inner border border-white/50`}>
+                    <Icon size={24} strokeWidth={2.5} />
                 </div>
-
-                {/* Value */}
-                <div className="text-2xl font-bold text-slate-900">
-                    {displayValue}
-                </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-                <div className="font-medium text-xs text-slate-500">
-                    {label}
-                </div>
-
-                {/* Trend indicator */}
+                
                 {trend && (
-                    <div className={`text-xs font-medium ${trend.isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <div className={`px-2.5 py-1 rounded-full text-[10px] font-black tracking-widest uppercase flex items-center gap-1.5 ${
+                        trend.isPositive ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+                    }`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${trend.isPositive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
                         {trend.value}
                     </div>
                 )}
+            </div>
+
+            <div className="space-y-4">
+                <div className="text-4xl font-black text-slate-900 tracking-tighter leading-none mb-2">
+                    {value}
+                </div>
+                <div>
+                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{label}</div>
+                     <p className="text-xs text-slate-500 font-medium leading-none opacity-0 group-hover:opacity-100 transition-opacity">Cloud-synced metrics • Live</p>
+                </div>
             </div>
         </CardWrapper>
     );

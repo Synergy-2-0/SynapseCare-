@@ -37,6 +37,30 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
+  appointment-service:
+    build: ./appointment-service
+    container_name: synapscare-appointment-service
+    ports:
+      - '8083:8083'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_APPLICATION_NAME=appointment-service'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
   auth-service:
     build: ./auth-service
     container_name: synapscare-auth-service
@@ -88,6 +112,30 @@ services:
       - healthcare-network
     restart: unless-stopped
 
+  patient-service:
+    build: ./patient-service
+    container_name: synapscare-patient-service
+    ports:
+      - '8084:8084'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_APPLICATION_NAME=patient-service'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
   ai-symptom-checker-service:
     build: ./AI-SymptomChecker-Service
     container_name: synapscare-ai-symptom-checker
@@ -96,6 +144,136 @@ services:
     environment:
       - 'MISTRAL_API_KEY=${MISTRAL_API_KEY:-yAgB9m01JEg3YaFmT2OMa9iAuowSkhkA}'
       - 'JWT_SECRET=ejedVZ4KIRRaAy8kWjs4QSadL823O1WKUDanGentLY3'
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  payment-service:
+    build: ./payment-service
+    container_name: synapscare-payment-service
+    ports:
+      - '8086:8086'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_APPLICATION_NAME=payment-service'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+      - 'PAYHERE_MERCHANT_ID=1233989'
+      - 'PAYHERE_MERCHANT_SECRET=MzYzNDIwNTQyNTMyNTUwNDU4MTM0'
+      - 'APP_NOTIFY_URL=https://synapscare-payment.loca.lt/api/payments/payhere/notify'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  telemedicine-service:
+    build: ./telemedicine-service
+    container_name: synapscare-telemedicine-service
+    ports:
+      - '8087:8087'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_APPLICATION_NAME=telemedicine-service'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+      - 'JITSI_SERVER_URL=https://meet.jit.si'
+      - 'JITSI_APP_ID=synapscare'
+      - 'JITSI_APP_SECRET=synapscare-jitsi-secret-2024'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  prescription-service:
+    build: ./prescription-service
+    container_name: synapscare-prescription-service
+    ports:
+      - '8088:8088'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_APPLICATION_NAME=prescription-service'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  notification-service:
+    build: ./notification-service
+    container_name: synapscare-notification-service
+    ports:
+      - '8089:8089'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_APPLICATION_NAME=notification-service'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: synapscare-api-gateway
+    ports:
+      - '8080:8080'
+    environment:
+      - 'AUTH_SERVICE_URL=http://auth-service:8081'
+      - 'DOCTOR_SERVICE_URL=http://doctor-service:8082'
+      - 'APPOINTMENT_SERVICE_URL=http://appointment-service:8083'
+      - 'PATIENT_SERVICE_URL=http://patient-service:8084'
+      - 'INTEGRATION_SERVICE_URL=http://ai-symptom-checker-service:8085'
+      - 'PAYMENT_SERVICE_URL=http://payment-service:8086'
+      - 'TELEMEDICINE_SERVICE_URL=http://telemedicine-service:8087'
+      - 'PRESCRIPTION_SERVICE_URL=http://prescription-service:8088'
+      - 'NOTIFICATION_SERVICE_URL=http://notification-service:8089'
+    depends_on:
+      - auth-service
+      - doctor-service
+      - appointment-service
+      - patient-service
+      - payment-service
+      - telemedicine-service
+      - prescription-service
+      - notification-service
     networks:
       - healthcare-network
     restart: unless-stopped

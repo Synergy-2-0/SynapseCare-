@@ -1,18 +1,9 @@
 import React from 'react';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, ChevronRight, Check, X, User } from 'lucide-react';
 import Badge from '../ui/Badge';
-import { formatDate, formatTime, getStatusColor } from '../../lib/utils';
+import { formatDate, formatTime } from '../../lib/utils';
+import { motion } from 'framer-motion';
 
-/**
- * AppointmentCard Component
- *
- * Displays a single appointment with patient info and actions
- *
- * @param {object} appointment - Appointment data
- * @param {function} onViewDetails - View details handler
- * @param {function} onAccept - Accept appointment handler (optional)
- * @param {function} onReject - Reject appointment handler (optional)
- */
 const AppointmentCard = ({
     appointment,
     onViewDetails,
@@ -22,23 +13,21 @@ const AppointmentCard = ({
     if (!appointment) return null;
 
     return (
-        <div className="p-4 bg-white rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-slate-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md">
-            <div className="flex items-center gap-4 flex-1">
-                {/* Patient Avatar */}
-                <div className="w-12 h-12 bg-blue-50 border border-blue-200 text-blue-600 rounded-lg flex items-center justify-center font-bold shadow-sm shrink-0">
-                    <span className="text-sm">
-                        {appointment.patientName
-                            ? appointment.patientName.substring(0, 2).toUpperCase()
-                            : 'PT'
-                        }
-                    </span>
+        <motion.div 
+            whileHover={{ y: -3, scale: 1.01 }}
+            className="p-6 bg-white rounded-[2rem] border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-6 hover:border-indigo-100 hover:shadow-premium transition-all duration-300 group"
+        >
+            <div className="flex items-center gap-6 flex-1 min-w-0">
+                {/* Visual Avatar */}
+                <div className="w-16 h-16 bg-slate-100 border border-slate-200 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 group-hover:border-indigo-100 rounded-2xl flex items-center justify-center font-black transition-all duration-500 shadow-inner">
+                    <User size={24} strokeWidth={2.5} />
                 </div>
 
-                {/* Appointment Info */}
+                {/* Patient Case Info */}
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="text-base font-semibold text-slate-900 leading-none truncate">
-                            {appointment.patientName || `Patient #${appointment.patientId}`}
+                    <div className="flex items-center gap-3 mb-2 flex-wrap sm:flex-nowrap">
+                        <div className="text-xl font-black text-slate-900 tracking-tighter truncate leading-none">
+                            {appointment.patientName || `Patient Node-${appointment.patientId}`}
                         </div>
                         <Badge
                             variant={
@@ -47,59 +36,57 @@ const AppointmentCard = ({
                                 appointment.status === 'CANCELLED' ? 'danger' :
                                 'warning'
                             }
-                            size="sm"
+                            pulse={appointment.status === 'CONFIRMED'}
                         >
                             {appointment.status}
                         </Badge>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium">
-                        <div className="flex items-center gap-1">
-                            <CalendarIcon className="w-3 h-3" />
+                    <div className="flex flex-wrap items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                        <div className="flex items-center gap-2">
+                            <CalendarIcon size={12} className="text-indigo-600" />
                             {formatDate(appointment.appointmentDate)}
                         </div>
                         {appointment.appointmentTime && (
-                            <div className="text-xs">
+                            <div className="flex items-center gap-2">
+                                <Clock size={12} className="text-indigo-600" />
                                 {formatTime(appointment.appointmentTime)}
                             </div>
                         )}
+                        <span className="opacity-40">• Token #{appointment.tokenNumber || '---'}</span>
                     </div>
                 </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-2 items-center shrink-0">
-                {onViewDetails && (
-                    <button
-                        onClick={() => onViewDetails(appointment)}
-                        className="px-3 py-1.5 bg-white border border-slate-200 text-blue-600 rounded-lg text-xs font-medium flex items-center gap-1 hover:bg-blue-50 hover:border-blue-200 transition-all whitespace-nowrap"
-                    >
-                        Details
-                    </button>
-                )}
+            {/* Specialized Actions */}
+            <div className="flex gap-3 items-center shrink-0">
                 {onAccept && (
                     <button
                         onClick={() => onAccept(appointment)}
-                        className="p-2 bg-emerald-100 text-emerald-700 rounded-lg shadow-sm hover:bg-emerald-600 hover:text-white transition-all"
-                        title="Accept appointment"
+                        className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm group/btn"
+                        title="Accept Consultation"
                     >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
+                        <Check size={18} strokeWidth={3} className="group-hover/btn:scale-110 transition-transform" />
                     </button>
                 )}
                 {onReject && (
                     <button
                         onClick={() => onReject(appointment)}
-                        className="p-2 bg-rose-100 text-rose-700 rounded-lg shadow-sm hover:bg-rose-600 hover:text-white transition-all"
-                        title="Cancel appointment"
+                        className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all shadow-sm group/btn"
+                        title="Decline Request"
                     >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X size={18} strokeWidth={3} className="group-hover/btn:scale-110 transition-transform" />
+                    </button>
+                )}
+                {onViewDetails && (
+                    <button
+                        onClick={() => onViewDetails(appointment)}
+                        className="h-10 px-5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-100"
+                    >
+                        Details <ChevronRight size={14} strokeWidth={3} />
                     </button>
                 )}
             </div>
-        </div>
+        </motion.div>
     );
 };
 

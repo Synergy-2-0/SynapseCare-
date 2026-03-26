@@ -32,10 +32,10 @@ public class AppointmentDto {
 
     @NotNull(message = "Time is required")
     private LocalTime time;
-
-    private String meetingLink;
-    private String reason;
-
+    private Double fee;
+    private String notes;
+    private String consultationType;
+    private Integer tokenNumber;
     private AppointmentStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
