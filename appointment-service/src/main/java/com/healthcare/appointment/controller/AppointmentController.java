@@ -1,39 +1,27 @@
 package com.healthcare.appointment.controller;
 
+import com.healthcare.appointment.client.DoctorServiceClient;
 import com.healthcare.appointment.dto.ApiResponse;
 import com.healthcare.appointment.dto.AppointmentDto;
+import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
+import com.healthcare.appointment.entity.AppointmentStatus;
 import com.healthcare.appointment.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.healthcare.appointment.client.DoctorServiceClient;
 
 import java.math.BigDecimal;
-
 import java.util.List;
 
-
 @RestController
-@RequestMapping("")
+@RequestMapping("/api/v1/appointments")
 @RequiredArgsConstructor
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
     private final DoctorServiceClient doctorServiceClient;
-
-    @GetMapping("/doctor/{doctorId}")
-    public ResponseEntity<List<AppointmentDto>> getAppointmentsByDoctor(@PathVariable Long doctorId) {
-        List<AppointmentDto> appointments = appointmentService.getAppointmentsByDoctor(doctorId);
-        return ResponseEntity.ok(appointments);
-    }
-
-    @GetMapping("/patient/{patientId}")
-    public ResponseEntity<List<AppointmentDto>> getAppointmentsByPatient(@PathVariable Long patientId) {
-        List<AppointmentDto> appointments = appointmentService.getAppointmentsByPatient(patientId);
-        return ResponseEntity.ok(appointments);
-    }
 
     @PostMapping("/book")
     public ResponseEntity<ApiResponse<AppointmentDto>> bookAppointment(@Valid @RequestBody AppointmentDto dto) {
@@ -50,12 +38,13 @@ public class AppointmentController {
 
     @PutMapping("/{id}/reschedule")
     public ResponseEntity<ApiResponse<AppointmentDto>> rescheduleAppointment(
-            @PathVariable Long id,
-            @RequestBody AppointmentDto dto) {
-        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rescheduled", appointmentService.rescheduleAppointment(id, dto)));
+            @PathVariable("id") Long id,
+            @Valid @RequestBody AppointmentDto dto) {
+        AppointmentDto rescheduled = appointmentService.rescheduleAppointment(id, dto);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rescheduled", rescheduled));
     }
 
-        @PutMapping("/{id}/accept")
+    @PutMapping("/{id}/accept")
     public ResponseEntity<ApiResponse<String>> acceptAppointment(@PathVariable Long id) {
         appointmentService.confirmAppointment(id);
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment accepted successfully", "CONFIRMED"));
@@ -65,6 +54,18 @@ public class AppointmentController {
     public ResponseEntity<ApiResponse<String>> rejectAppointment(@PathVariable Long id) {
         appointmentService.rejectAppointment(id);
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rejected", "REJECTED"));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<AppointmentDto>> getAppointmentById(@PathVariable("id") Long id) {
+        AppointmentDto appointment = appointmentService.getAppointmentById(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment fetched", appointment));
+    }
+
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<ApiResponse<List<AppointmentDto>>> getAppointmentsByPatient(@PathVariable("patientId") Long patientId) {
+        List<AppointmentDto> appointments = appointmentService.getAppointmentsByPatient(patientId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Patient appointments fetched", appointments));
     }
 
     @GetMapping("/doctor/{doctorId}")
@@ -90,5 +91,4 @@ public class AppointmentController {
         AppointmentDto updated = appointmentService.updateStatus(id, status);
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment status updated", updated));
     }
-    
 }

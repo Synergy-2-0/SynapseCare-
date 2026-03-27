@@ -1,8 +1,11 @@
 package com.healthcare.appointment.service;
 
+import com.healthcare.appointment.client.DoctorServiceClient;
 import com.healthcare.appointment.client.PatientServiceClient;
 import com.healthcare.appointment.dto.AppointmentDto;
 import com.healthcare.appointment.dto.AppointmentEvent;
+import com.healthcare.appointment.dto.client.AvailableSlotClientDto;
+import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
 import com.healthcare.appointment.entity.Appointment;
 import com.healthcare.appointment.entity.AppointmentStatus;
 import com.healthcare.appointment.exception.ResourceNotFoundException;
@@ -11,7 +14,9 @@ import com.healthcare.appointment.repository.AppointmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -63,11 +68,13 @@ public class AppointmentService {
                 .doctorId(dto.getDoctorId())
                 .date(dto.getDate())
                 .time(dto.getTime())
+            .meetingLink(dto.getMeetingLink())
+            .reason(dto.getReason())
                 .fee(dto.getFee() != null ? dto.getFee() : 1500.0)
                 .notes(dto.getNotes())
                 .consultationType(dto.getConsultationType() != null ? dto.getConsultationType() : "VIDEO")
                 .tokenNumber(tokenNumber)
-                .status(AppointmentStatus.PENDING) 
+            .status(AppointmentStatus.PENDING)
                 .build();
 
         appointment = appointmentRepository.save(appointment);
@@ -78,50 +85,29 @@ public class AppointmentService {
 
     public void completeAppointment(Long id) {
         Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
-        
+            .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
+
         appointment.setStatus(AppointmentStatus.COMPLETED);
-        appointmentRepository.save(appointment);
+        appointment = appointmentRepository.save(appointment);
+        publishEvent("APPOINTMENT_COMPLETED", appointment);
     }
 
     public void rejectAppointment(Long id) {
         Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
-        
+            .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
+
         appointment.setStatus(AppointmentStatus.REJECTED);
-        appointmentRepository.save(appointment);
+        appointment = appointmentRepository.save(appointment);
+        publishEvent("APPOINTMENT_REJECTED", appointment);
     }
 
     public void confirmAppointment(Long id) {
         Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
-        
+            .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
+
         appointment.setStatus(AppointmentStatus.CONFIRMED);
-        appointmentRepository.save(appointment);
-    }
-
-    public void completeAppointment(Long id) {
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
-        
-        appointment.setStatus(AppointmentStatus.COMPLETED);
-        appointmentRepository.save(appointment);
-    }
-
-    public void rejectAppointment(Long id) {
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
-        
-        appointment.setStatus(AppointmentStatus.REJECTED);
-        appointmentRepository.save(appointment);
-    }
-
-    public void confirmAppointment(Long id) {
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
-        
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
-        appointmentRepository.save(appointment);
+        appointment = appointmentRepository.save(appointment);
+        publishEvent("APPOINTMENT_CONFIRMED", appointment);
     }
 
     public AppointmentDto cancelAppointment(Long id) {
@@ -135,18 +121,6 @@ public class AppointmentService {
         return mapToDto(appointment);
     }
     
-    public List<AppointmentDto> getAppointmentsByDoctor(Long doctorId) {
-        return appointmentRepository.findByDoctorId(doctorId).stream()
-                .map(this::mapToDto)
-                .collect(java.util.stream.Collectors.toList());
-    }
-
-    public List<AppointmentDto> getAppointmentsByPatient(Long patientId) {
-        return appointmentRepository.findByPatientId(patientId).stream()
-                .map(this::mapToDto)
-                .collect(java.util.stream.Collectors.toList());
-    }
-
     public AppointmentDto rescheduleAppointment(Long id, AppointmentDto dto) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
@@ -176,6 +150,15 @@ public class AppointmentService {
         }
         if (dto.getMeetingLink() != null) {
             appointment.setMeetingLink(dto.getMeetingLink());
+        }
+        if (dto.getFee() != null) {
+            appointment.setFee(dto.getFee());
+        }
+        if (dto.getNotes() != null) {
+            appointment.setNotes(dto.getNotes());
+        }
+        if (dto.getConsultationType() != null) {
+            appointment.setConsultationType(dto.getConsultationType());
         }
         appointment = appointmentRepository.save(appointment);
 
@@ -221,6 +204,8 @@ public class AppointmentService {
                 .doctorId(entity.getDoctorId())
                 .date(entity.getDate())
                 .time(entity.getTime())
+                .meetingLink(entity.getMeetingLink())
+                .reason(entity.getReason())
                 .fee(entity.getFee())
                 .notes(entity.getNotes())
                 .consultationType(entity.getConsultationType())
