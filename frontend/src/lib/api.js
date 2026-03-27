@@ -62,6 +62,10 @@ export const medicalHistoryApi = createApiInstance(CONFIG.API_GATEWAY + '/medica
 export const integrationApi = createApiInstance(CONFIG.API_GATEWAY + '/integration');
 export const adminApi = createApiInstance(CONFIG.API_GATEWAY + '/admin');
 export const symptomApi = createApiInstance(CONFIG.API_GATEWAY + '/symptoms');
+export const paymentApi = createApiInstance(CONFIG.API_GATEWAY + '/payments');
+export const telemedicineApi = createApiInstance(CONFIG.API_GATEWAY + '/telemedicine');
+export const prescriptionApi = createApiInstance(CONFIG.API_GATEWAY + '/prescriptions');
+export const notificationApi = createApiInstance(CONFIG.API_GATEWAY + '/notifications');
 
 const api = axios.create({ baseURL: CONFIG.API_GATEWAY, headers: { 'Content-Type': 'application/json' } });
 export default api;
