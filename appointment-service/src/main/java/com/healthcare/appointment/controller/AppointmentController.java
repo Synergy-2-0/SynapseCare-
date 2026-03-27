@@ -80,4 +80,5 @@ public class AppointmentController {
         AppointmentDto updated = appointmentService.updateStatus(id, status);
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment status updated", updated));
     }
+    
 }
