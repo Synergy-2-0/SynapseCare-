@@ -1,30 +1,20 @@
 package com.healthcare.appointment.dto;
 
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.healthcare.appointment.entity.AppointmentStatus;
-
-import jakarta.validation.constraints.FutureOrPresent;
-import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AppointmentDto {
-    private Long id;
-
-    @NotNull(message = "Patient id is required")
-    private Long patientId;
-
-    @NotNull(message = "Doctor id is required")
-    private Long doctorId;
+public class RescheduleAppointmentDto {
 
     @NotNull(message = "Date is required")
     @FutureOrPresent(message = "Date must be today or future")
@@ -33,15 +23,9 @@ public class AppointmentDto {
     @NotNull(message = "Time is required")
     private LocalTime time;
 
-    private String meetingLink;
     private String reason;
-
+    private String meetingLink;
     private Double fee;
     private String notes;
     private String consultationType;
-    private Integer tokenNumber;
-    private AppointmentStatus status;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    
 }

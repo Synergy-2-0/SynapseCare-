@@ -4,7 +4,7 @@ import org.springframework.amqp.core.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
+@Configuration("mqRabbitMQConfig")
 public class RabbitMQConfig {
 
     public static final String EXCHANGE = "healthcare.exchange";
@@ -29,16 +29,16 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding appointmentConfirmBinding(Queue appointmentConfirmQueue, TopicExchange healthcareExchange) {
-        return BindingBuilder.bind(appointmentConfirmQueue)
-                .to(healthcareExchange)
+    public Binding appointmentConfirmBinding() {
+        return BindingBuilder.bind(appointmentConfirmQueue())
+                .to(healthcareExchange())
                 .with(PAYMENT_SUCCESS_ROUTING_KEY);
     }
 
     @Bean
-    public Binding appointmentCompleteBinding(Queue appointmentCompleteQueue, TopicExchange healthcareExchange) {
-        return BindingBuilder.bind(appointmentCompleteQueue)
-                .to(healthcareExchange)
+    public Binding appointmentCompleteBinding() {
+        return BindingBuilder.bind(appointmentCompleteQueue())
+                .to(healthcareExchange())
                 .with(PRESCRIPTION_CREATED_ROUTING_KEY);
     }
 }

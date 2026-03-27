@@ -21,6 +21,10 @@ public class AppointmentEvent {
     private Long doctorId;
     private LocalDate date;
     private LocalTime time;
+    private String meetingLink;
+    private Double fee;
+    private String consultationType;
+    private String reason;
     private AppointmentStatus status;
     private LocalDateTime occurredAt;
 }

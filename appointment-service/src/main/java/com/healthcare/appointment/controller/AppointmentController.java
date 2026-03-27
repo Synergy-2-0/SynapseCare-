@@ -3,6 +3,7 @@ package com.healthcare.appointment.controller;
 import com.healthcare.appointment.client.DoctorServiceClient;
 import com.healthcare.appointment.dto.ApiResponse;
 import com.healthcare.appointment.dto.AppointmentDto;
+import com.healthcare.appointment.dto.RescheduleAppointmentDto;
 import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
 import com.healthcare.appointment.entity.AppointmentStatus;
 import com.healthcare.appointment.service.AppointmentService;
@@ -39,7 +40,7 @@ public class AppointmentController {
     @PutMapping("/{id}/reschedule")
     public ResponseEntity<ApiResponse<AppointmentDto>> rescheduleAppointment(
             @PathVariable("id") Long id,
-            @Valid @RequestBody AppointmentDto dto) {
+            @Valid @RequestBody RescheduleAppointmentDto dto) {
         AppointmentDto rescheduled = appointmentService.rescheduleAppointment(id, dto);
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rescheduled", rescheduled));
     }
