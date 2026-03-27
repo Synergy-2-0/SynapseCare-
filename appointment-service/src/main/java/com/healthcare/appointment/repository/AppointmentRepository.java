@@ -18,4 +18,5 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> findByPatientIdOrderByDateAscTimeAsc(Long patientId);
 
     List<Appointment> findByDoctorIdOrderByDateAscTimeAsc(Long doctorId);
+    
 }
