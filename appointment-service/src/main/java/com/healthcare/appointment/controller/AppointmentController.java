@@ -66,4 +66,29 @@ public class AppointmentController {
         appointmentService.rejectAppointment(id);
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rejected", "REJECTED"));
     }
+
+    @GetMapping("/doctor/{doctorId}")
+    public ResponseEntity<ApiResponse<List<AppointmentDto>>> getAppointmentsByDoctor(@PathVariable("doctorId") Long doctorId) {
+        List<AppointmentDto> appointments = appointmentService.getAppointmentsByDoctor(doctorId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Doctor appointments fetched", appointments));
+    }
+
+    @GetMapping("/doctors/search")
+    public ResponseEntity<ApiResponse<List<DoctorProfileClientDto>>> searchDoctors(
+            @RequestParam(value = "specialization", required = false) String specialization,
+            @RequestParam(value = "minFee", required = false) BigDecimal minFee,
+            @RequestParam(value = "maxFee", required = false) BigDecimal maxFee) {
+
+        List<DoctorProfileClientDto> doctors = doctorServiceClient.searchDoctors(specialization, minFee, maxFee);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Doctors fetched from doctor-service", doctors));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<AppointmentDto>> updateStatus(
+            @PathVariable("id") Long id,
+            @RequestParam("status") AppointmentStatus status) {
+        AppointmentDto updated = appointmentService.updateStatus(id, status);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment status updated", updated));
+    }
+    
 }

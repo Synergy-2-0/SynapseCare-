@@ -39,4 +39,5 @@ public class AppointmentDto {
     private AppointmentStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
 }
