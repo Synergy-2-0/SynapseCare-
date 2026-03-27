@@ -14,43 +14,67 @@ import {
     AlertCircle,
     ArrowLeft
 } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import Header from '../../components/layout/Header';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
+import DashboardLayout from '../../../components/layout/DashboardLayout';
+import Card from '../../../components/ui/Card';
+import Button from '../../../components/ui/Button';
+import { caseApi, prescriptionApi } from '../../../lib/api';
 
 // Medical Components
-import SOAPNotes from '../../components/doctor/SOAPNotes';
-import PrescriptionForm from '../../components/doctor/PrescriptionForm';
-import LabOrderForm from '../../components/doctor/LabOrderForm';
-import DiagnosisCodeSearch from '../../components/doctor/DiagnosisCodeSearch';
+import SOAPNotes from '../../../components/doctor/SOAPNotes';
+import PrescriptionForm from '../../../components/doctor/PrescriptionForm';
+import LabOrderForm from '../../../components/doctor/LabOrderForm';
+import DiagnosisCodeSearch from '../../../components/doctor/DiagnosisCodeSearch';
 
 const NewConsultationPage = () => {
     const router = useRouter();
-    const { patientId } = router.query;
+    const { patientId, appointmentId, patientName, patientAge, patientGender } = router.query;
+
+    const [caseId, setCaseId] = useState(null);
 
     // Consultation State
     const [consultationData, setConsultationData] = useState({
         patientInfo: {
             id: patientId || '',
-            name: 'John Doe',
-            age: 45,
-            gender: 'Male',
-            phone: '+1-234-567-8900',
-            email: 'john.doe@email.com'
+            name: patientName || 'Patient',
+            age: patientAge ? parseInt(patientAge) : null,
+            gender: patientGender || ''
         },
+        chiefComplaint: '',
         soapNotes: {},
         prescriptions: [],
         labOrders: [],
         diagnoses: [],
-        status: 'draft',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        status: 'DRAFT'
     });
 
     const [activeTab, setActiveTab] = useState('soap');
     const [isSaving, setIsSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Create case on mount if appointmentId exists
+    useEffect(() => {
+        if (appointmentId && !caseId) {
+            createInitialCase();
+        }
+    }, [appointmentId]);
+
+    const createInitialCase = async () => {
+        try {
+            const response = await caseApi.post('', {
+                appointmentId: parseInt(appointmentId),
+                patientId: patientId ? parseInt(patientId) : null,
+                patientName: patientName || 'Patient',
+                patientAge: patientAge ? parseInt(patientAge) : null,
+                patientGender: patientGender || null,
+                chiefComplaint: ''
+            });
+            setCaseId(response.data.data.id);
+        } catch (err) {
+            console.error('Failed to create case:', err);
+            setError('Failed to create consultation case');
+        }
+    };
 
     // Tab Configuration
     const tabs = [
@@ -97,27 +121,60 @@ const NewConsultationPage = () => {
     // Save consultation
     const handleSave = async (finalize = false) => {
         setIsSaving(true);
+        setError(null);
+
         try {
-            const dataToSave = {
-                ...consultationData,
-                status: finalize ? 'completed' : 'draft',
-                finalizedAt: finalize ? new Date().toISOString() : null
+            // Prepare update data
+            const updateData = {
+                chiefComplaint: consultationData.chiefComplaint,
+                soapNotesJson: JSON.stringify(consultationData.soapNotes),
+                diagnosesJson: JSON.stringify(consultationData.diagnoses),
+                labOrdersJson: JSON.stringify(consultationData.labOrders),
+                status: finalize ? 'COMPLETED' : 'IN_PROGRESS'
             };
 
-            // Here you would make API call to save the consultation
-            console.log('Saving consultation:', dataToSave);
+            // Update case
+            if (caseId) {
+                await caseApi.put(`/${caseId}`, updateData);
+            }
 
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Create prescriptions if any
+            if (finalize && consultationData.prescriptions.length > 0) {
+                const doctorId = localStorage.getItem('user_id');
+                const doctorName = localStorage.getItem('user_name');
+
+                for (const prescription of consultationData.prescriptions) {
+                    await prescriptionApi.post('/create', {
+                        appointmentId: parseInt(appointmentId),
+                        doctorId: parseInt(doctorId),
+                        patientId: patientId ? parseInt(patientId) : null,
+                        doctorName: doctorName,
+                        patientName: consultationData.patientInfo.name,
+                        patientAge: consultationData.patientInfo.age,
+                        patientGender: consultationData.patientInfo.gender,
+                        medicineName: prescription.medication,
+                        dosage: prescription.dosage,
+                        duration: prescription.duration,
+                        instructions: prescription.instructions,
+                        diagnosis: consultationData.diagnoses[0]?.description || '',
+                        diagnosisCode: consultationData.diagnoses[0]?.code || ''
+                    });
+                }
+            }
+
+            // Finalize case if needed
+            if (finalize && caseId) {
+                await caseApi.post(`/${caseId}/finalize`);
+            }
 
             setHasUnsavedChanges(false);
 
             if (finalize) {
-                // Redirect to consultations list or patient profile
-                router.push('/doctor/consultations');
+                router.push('/doctor/dashboard');
             }
-        } catch (error) {
-            console.error('Failed to save consultation:', error);
+        } catch (err) {
+            console.error('Failed to save consultation:', err);
+            setError('Failed to save consultation. Please try again.');
         } finally {
             setIsSaving(false);
         }

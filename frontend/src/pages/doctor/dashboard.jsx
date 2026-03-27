@@ -113,6 +113,19 @@ const DoctorDashboard = () => {
         router.push(`/doctor/appointments/${appointment.id}`);
     };
 
+    const handleStartConsultation = (appointment) => {
+        router.push({
+            pathname: '/doctor/cases/new',
+            query: {
+                appointmentId: appointment.id,
+                patientId: appointment.patientId,
+                patientName: appointment.patientName,
+                patientAge: appointment.patientAge || 30,
+                patientGender: appointment.patientGender || 'Unknown'
+            }
+        });
+    };
+
     if (profileLoading || appointmentsLoading) {
         return <LoadingSpinner size="fullscreen" message="Accessing Secure Clinical Hub..." />;
     }
@@ -194,6 +207,7 @@ const DoctorDashboard = () => {
                                                 key={appt.id}
                                                 appointment={appt}
                                                 onViewDetails={handleViewDetails}
+                                                onStartConsultation={handleStartConsultation}
                                             />
                                         ))}
                                     </div>

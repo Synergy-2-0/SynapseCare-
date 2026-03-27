@@ -27,8 +27,9 @@ import {
     CreditCard,
     ArrowRight
 } from 'lucide-react';
-import { patientApi, appointmentApi, medicalHistoryApi, paymentApi, prescriptionApi, notificationApi } from '../../lib/api';
+import { patientApi, appointmentApi, medicalHistoryApi, paymentApi, prescriptionApi, notificationApi, fileUploadApi } from '../../lib/api';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import FileUpload from '../../components/ui/FileUpload';
 
 const PatientDashboard = () => {
     const [userData, setUserData] = useState(null);
@@ -41,6 +42,9 @@ const PatientDashboard = () => {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [uploadDescription, setUploadDescription] = useState('');
+    const [uploadReportType, setUploadReportType] = useState('LAB_RESULT');
     const router = useRouter();
 
     useEffect(() => {
@@ -100,6 +104,55 @@ const PatientDashboard = () => {
     const logout = () => {
         localStorage.clear();
         router.push('/login');
+    };
+
+    const handleFileUpload = async (file) => {
+        const patientId = localStorage.getItem('user_id');
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('description', uploadDescription);
+        formData.append('reportType', uploadReportType);
+
+        const response = await fileUploadApi.post(`/${patientId}/reports`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        // Refresh reports list
+        const reportRes = await patientApi.get(`/${patientId}/reports`).catch(() => ({ data: { data: [] } }));
+        setReports(reportRes.data?.data || []);
+        setShowUploadModal(false);
+        setUploadDescription('');
+        setUploadReportType('LAB_RESULT');
+    };
+
+    const handleDownloadReport = async (report) => {
+        try {
+            if (report.fileUrl) {
+                window.open(report.fileUrl, '_blank');
+            }
+        } catch (err) {
+            console.error('Download failed', err);
+        }
+    };
+
+    const downloadPrescriptionPdf = async (prescriptionId) => {
+        try {
+            const response = await prescriptionApi.get(`/${prescriptionId}/pdf`, {
+                responseType: 'blob'
+            });
+
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `prescription_${prescriptionId}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Failed to download prescription PDF', err);
+        }
     };
 
     const navItems = [
@@ -387,8 +440,8 @@ const PatientDashboard = () => {
                                                         <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><CheckCircle2 size={16} /></div>
                                                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Digital Authentication Signature</p>
                                                     </div>
-                                                    <button className="h-12 px-6 bg-indigo-600 text-white rounded-2xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center gap-3 shadow-lg shadow-indigo-100">
-                                                        <Download size={16} /> View Digital PDF
+                                                    <button onClick={() => downloadPrescriptionPdf(px.id)} className="h-12 px-6 bg-indigo-600 text-white rounded-2xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center gap-3 shadow-lg shadow-indigo-100">
+                                                        <Download size={16} /> Download PDF
                                                     </button>
                                                 </div>
                                             </div>
@@ -534,27 +587,88 @@ const PatientDashboard = () => {
                                             <h2 className="title-display text-4xl leading-tight tracking-tighter text-slate-900">Records <span className="text-indigo-600">Vault.</span></h2>
                                             <p className="text-lg text-slate-500 font-medium mt-2">Secure repository for medical reports, lab results, and history.</p>
                                         </div>
-                                        <button className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 flex items-center gap-2">
+                                        <button onClick={() => setShowUploadModal(true)} className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 flex items-center gap-2">
                                             <Plus size={18} /> Upload New Record
                                         </button>
                                     </div>
+
+                                    {/* Upload Modal */}
+                                    {showUploadModal && (
+                                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                                            <div className="bg-white rounded-2xl p-8 max-w-lg w-full space-y-6">
+                                                <div className="flex justify-between items-center">
+                                                    <h3 className="text-2xl font-bold text-slate-900">Upload Medical Report</h3>
+                                                    <button onClick={() => setShowUploadModal(false)} className="text-slate-400 hover:text-slate-600">
+                                                        <Plus size={24} className="rotate-45" />
+                                                    </button>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-2">Report Type</label>
+                                                        <select
+                                                            value={uploadReportType}
+                                                            onChange={(e) => setUploadReportType(e.target.value)}
+                                                            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                        >
+                                                            <option value="LAB_RESULT">Lab Result</option>
+                                                            <option value="IMAGING">Imaging / X-Ray</option>
+                                                            <option value="PRESCRIPTION">Prescription</option>
+                                                            <option value="OTHER">Other</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                                                        <input
+                                                            type="text"
+                                                            value={uploadDescription}
+                                                            onChange={(e) => setUploadDescription(e.target.value)}
+                                                            placeholder="e.g., Blood test results from City Hospital"
+                                                            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                        />
+                                                    </div>
+
+                                                    <FileUpload
+                                                        onUpload={handleFileUpload}
+                                                        accept=".pdf,.jpg,.jpeg,.png"
+                                                        maxSize={10}
+                                                        label="Drop your file here"
+                                                        description="PDF, JPG, or PNG up to 10MB"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                         {reports.length > 0 ? reports.map((r, i) => (
                                             <div key={i} className="surface-card p-8 surface-card-hover group border border-slate-100">
                                                 <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6">
                                                     <FileText size={24} />
                                                 </div>
-                                                <h4 className="text-lg font-black text-slate-900 tracking-tight">{r.title || 'Medical Report'}</h4>
-                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Issued: {r.date}</p>
+                                                <h4 className="text-lg font-black text-slate-900 tracking-tight">{r.fileName || r.description || 'Medical Report'}</h4>
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">
+                                                    {r.uploadedAt ? new Date(r.uploadedAt).toLocaleDateString() : r.date}
+                                                </p>
+                                                <p className="text-sm text-slate-500 mt-2 line-clamp-2">{r.description}</p>
                                                 <div className="mt-8 flex justify-between items-center">
-                                                    <Badge variant="primary">{r.type || 'LAB'}</Badge>
-                                                    <button className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Download size={20} /></button>
+                                                    <Badge variant="primary">{r.reportType || r.type || 'OTHER'}</Badge>
+                                                    <button
+                                                        onClick={() => handleDownloadReport(r)}
+                                                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                    >
+                                                        <Download size={20} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         )) : (
                                             <div className="col-span-full py-32 text-center surface-card border-dashed">
                                                 <FileText size={48} className="mx-auto text-slate-200 mb-6" />
-                                                <p className="text-slate-400 font-bold tracking-tight">No scientific records archived yet.</p>
+                                                <p className="text-slate-400 font-bold tracking-tight">No medical records uploaded yet.</p>
+                                                <button onClick={() => setShowUploadModal(true)} className="mt-4 text-indigo-600 font-medium hover:underline">
+                                                    Upload your first report
+                                                </button>
                                             </div>
                                         )}
                                     </div>

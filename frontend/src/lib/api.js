@@ -66,6 +66,38 @@ export const paymentApi = createApiInstance(CONFIG.API_GATEWAY + '/payments');
 export const telemedicineApi = createApiInstance(CONFIG.API_GATEWAY + '/telemedicine');
 export const prescriptionApi = createApiInstance(CONFIG.API_GATEWAY + '/prescriptions');
 export const notificationApi = createApiInstance(CONFIG.API_GATEWAY + '/notifications');
+export const caseApi = createApiInstance(CONFIG.API_GATEWAY + '/doctors/cases');
+
+// Create a special instance for file uploads (multipart/form-data)
+export const createFileUploadInstance = (baseURL) => {
+    const instance = axios.create({
+        baseURL,
+        timeout: 60000, // Longer timeout for file uploads
+        withCredentials: false
+    });
+
+    instance.interceptors.request.use((config) => {
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('auth_token');
+            const userId = localStorage.getItem('user_id');
+            if (token) config.headers.Authorization = `Bearer ${token}`;
+            if (userId) config.headers['X-User-Id'] = userId;
+        }
+        return config;
+    });
+
+    instance.interceptors.response.use(
+        response => response,
+        error => {
+            console.error('[File Upload Error]', error.response?.data || error.message);
+            return Promise.reject(error);
+        }
+    );
+
+    return instance;
+};
+
+export const fileUploadApi = createFileUploadInstance(CONFIG.API_GATEWAY + '/patients');
 
 const api = axios.create({ baseURL: CONFIG.API_GATEWAY, headers: { 'Content-Type': 'application/json' } });
 export default api;
