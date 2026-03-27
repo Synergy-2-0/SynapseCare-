@@ -4,6 +4,7 @@ import com.healthcare.appointment.client.DoctorServiceClient;
 import com.healthcare.appointment.client.PatientServiceClient;
 import com.healthcare.appointment.dto.AppointmentDto;
 import com.healthcare.appointment.dto.AppointmentEvent;
+import com.healthcare.appointment.dto.RescheduleAppointmentDto;
 import com.healthcare.appointment.dto.client.AvailableSlotClientDto;
 import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
 import com.healthcare.appointment.entity.Appointment;
@@ -13,9 +14,11 @@ import com.healthcare.appointment.exception.SlotConflictException;
 import com.healthcare.appointment.repository.AppointmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -80,6 +83,7 @@ public class AppointmentService {
         appointment = appointmentRepository.save(appointment);
 
         publishEvent("APPOINTMENT_BOOKED", appointment);
+        publishEvent("PAYMENT_REQUESTED", appointment);
         return mapToDto(appointment);
     }
 
@@ -105,9 +109,14 @@ public class AppointmentService {
         Appointment appointment = appointmentRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
 
+        if (!StringUtils.hasText(appointment.getMeetingLink())) {
+            appointment.setMeetingLink(generateMeetingLink(appointment));
+        }
         appointment.setStatus(AppointmentStatus.CONFIRMED);
         appointment = appointmentRepository.save(appointment);
         publishEvent("APPOINTMENT_CONFIRMED", appointment);
+        publishEvent("TELEMEDICINE_LINK_READY", appointment);
+        publishEvent("PAYMENT_REQUESTED", appointment);
     }
 
     public AppointmentDto cancelAppointment(Long id) {
@@ -121,7 +130,7 @@ public class AppointmentService {
         return mapToDto(appointment);
     }
     
-    public AppointmentDto rescheduleAppointment(Long id, AppointmentDto dto) {
+    public AppointmentDto rescheduleAppointment(Long id, RescheduleAppointmentDto dto) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
 
@@ -190,10 +199,17 @@ public class AppointmentService {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
 
+        if (status == AppointmentStatus.CONFIRMED && !StringUtils.hasText(appointment.getMeetingLink())) {
+            appointment.setMeetingLink(generateMeetingLink(appointment));
+        }
         appointment.setStatus(status);
         appointment = appointmentRepository.save(appointment);
 
         publishEvent("APPOINTMENT_STATUS_UPDATED", appointment);
+        if (status == AppointmentStatus.CONFIRMED) {
+            publishEvent("TELEMEDICINE_LINK_READY", appointment);
+            publishEvent("PAYMENT_REQUESTED", appointment);
+        }
         return mapToDto(appointment);
     }
 
@@ -231,10 +247,19 @@ public class AppointmentService {
                         .doctorId(appointment.getDoctorId())
                         .date(appointment.getDate())
                         .time(appointment.getTime())
+                        .meetingLink(appointment.getMeetingLink())
+                        .fee(appointment.getFee())
+                        .consultationType(appointment.getConsultationType())
+                        .reason(appointment.getReason())
                         .status(appointment.getStatus())
                         .occurredAt(LocalDateTime.now())
                         .build()
         );
+    }
+
+    private String generateMeetingLink(Appointment appointment) {
+        String roomToken = appointment.getId() + "-" + UUID.randomUUID().toString().substring(0, 8);
+        return "https://meet.jit.si/medilink-" + roomToken;
     }
     
 }
