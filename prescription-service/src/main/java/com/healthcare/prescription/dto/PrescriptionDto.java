@@ -12,10 +12,27 @@ public class PrescriptionDto {
     private Long appointmentId;
     private Long doctorId;
     private Long patientId;
+
+    // Doctor info for PDF
+    private String doctorName;
+    private String doctorSpecialization;
+    private String doctorLicenseNumber;
+
+    // Patient info for PDF
+    private String patientName;
+    private Integer patientAge;
+    private String patientGender;
+
+    // Medication details
     private String medicineName;
     private String dosage;
     private String duration;
     private String instructions;
+
     private LocalDateTime createdDate;
     private String followUpNotes;
+
+    // Diagnosis
+    private String diagnosis;
+    private String diagnosisCode;
 }

@@ -24,6 +24,14 @@ public class Prescription {
     @Column(nullable = false)
     private Long patientId;
 
+    // Denormalized fields for PDF generation
+    private String doctorName;
+    private String doctorSpecialization;
+    private String doctorLicenseNumber;
+    private String patientName;
+    private Integer patientAge;
+    private String patientGender;
+
     @Column(nullable = false)
     private String medicineName;
 
@@ -41,4 +49,11 @@ public class Prescription {
 
     @Column(length = 1000)
     private String followUpNotes;
+
+    // Diagnosis for prescription context
+    @Column(length = 500)
+    private String diagnosis;
+
+    @Column(length = 100)
+    private String diagnosisCode;
 }
