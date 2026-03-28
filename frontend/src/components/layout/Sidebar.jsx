@@ -67,7 +67,7 @@ const Sidebar = ({ onClose }) => {
     const adminMainNav = [
         { id: 'admin-dashboard', icon: LayoutDashboard, label: 'Admin Dashboard', path: ADMIN_ROUTES.DASHBOARD },
         { id: 'admin-appointments', icon: Calendar, label: 'Appointments', path: '/appointments' },
-        { id: 'admin-doctors', icon: ShieldCheck, label: 'Doctor Directory', path: '/doctors' },
+        { id: 'admin-doctors', icon: ShieldCheck, label: 'Doctor Directory', path: ADMIN_ROUTES.DASHBOARD, tab: 'doctors' },
     ];
 
     const adminBottomNav = [];
@@ -84,7 +84,19 @@ const Sidebar = ({ onClose }) => {
         router.push('/login');
     };
 
-    const isActive = (path) => router.pathname === path || router.pathname.startsWith(path + '/');
+    const activeTabFromPath = (() => {
+        const queryString = router.asPath.split('?')[1] || '';
+        const params = new URLSearchParams(queryString);
+        return params.get('tab');
+    })();
+
+    const isActive = (item) => {
+        if (item.tab) {
+            return router.pathname === item.path && activeTabFromPath === item.tab;
+        }
+
+        return router.pathname === item.path || router.pathname.startsWith(item.path + '/');
+    };
 
     return (
         <aside className="w-[240px] glass-morphism border-r border-[var(--border-color)]/30 flex flex-col pt-6 pb-6 sticky top-0 h-screen z-50 overflow-y-auto selection:bg-teal-100 selection:text-teal-900 border-0">
@@ -100,12 +112,16 @@ const Sidebar = ({ onClose }) => {
             {/* Navigation */}
             <div className="flex-1 flex flex-col space-y-1">
                 {mainNav.map((item) => {
-                    const active = isActive(item.path);
+                    const active = isActive(item);
                     return (
                         <button
                             key={item.id}
                             onClick={() => {
-                                router.push(item.path);
+                                if (item.tab) {
+                                    router.push(`${item.path}?tab=${item.tab}`);
+                                } else {
+                                    router.push(item.path);
+                                }
                                 if (onClose) onClose();
                             }}
                             className={`w-full flex items-center justify-between px-6 py-3 text-[14px] font-medium transition-all duration-200 relative group
@@ -136,7 +152,7 @@ const Sidebar = ({ onClose }) => {
             {/* Footer Items */}
             <div className="space-y-1 mt-auto pt-6 border-t border-[var(--border-color)]">
                 {bottomNav.map((item) => {
-                    const active = isActive(item.path);
+                    const active = isActive(item);
                     return (
                         <button
                             key={item.id}

@@ -30,6 +30,8 @@ const formatMoney = (value) => {
     return `LKR ${amount.toLocaleString()}`;
 };
 
+const ADMIN_TABS = ['overview', 'verifications', 'users', 'doctors', 'financials'];
+
 const AdminDashboard = () => {
     const router = useRouter();
 
@@ -51,6 +53,21 @@ const AdminDashboard = () => {
     const [processingId, setProcessingId] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        if (!router.isReady) {
+            return;
+        }
+
+        const queryString = router.asPath.split('?')[1] || '';
+        const params = new URLSearchParams(queryString);
+        const queryTab = params.get('tab');
+        const nextTab = queryTab && ADMIN_TABS.includes(queryTab) ? queryTab : 'overview';
+
+        if (nextTab !== activeTab) {
+            setActiveTab(nextTab);
+        }
+    }, [router.isReady, router.asPath, activeTab]);
 
     const fetchDashboardData = async ({ initialLoad = false } = {}) => {
         if (initialLoad) {
@@ -135,12 +152,16 @@ const AdminDashboard = () => {
     }, [pendingDoctors, searchTerm]);
 
     const filteredUsers = useMemo(() => {
+        const sourceUsers = activeTab === 'doctors'
+            ? users.filter((user) => user.role === 'DOCTOR')
+            : users;
+
         const query = searchTerm.trim().toLowerCase();
         if (!query) {
-            return users;
+            return sourceUsers;
         }
 
-        return users.filter((user) => {
+        return sourceUsers.filter((user) => {
             const text = [
                 user.firstName,
                 user.lastName,
@@ -155,7 +176,7 @@ const AdminDashboard = () => {
 
             return text.includes(query);
         });
-    }, [users, searchTerm]);
+    }, [users, searchTerm, activeTab]);
 
     const verifyDoctor = async (doctorId, status) => {
         try {
@@ -288,6 +309,7 @@ const AdminDashboard = () => {
                     {[
                         { id: 'overview', label: 'Overview' },
                         { id: 'verifications', label: 'Doctor Verification' },
+                        { id: 'doctors', label: 'Doctor Directory' },
                         { id: 'users', label: 'User Management' },
                         { id: 'financials', label: 'Financials' }
                     ].map((tab) => (
@@ -295,7 +317,17 @@ const AdminDashboard = () => {
                             key={tab.id}
                             size="sm"
                             variant={activeTab === tab.id ? 'primary' : 'secondary'}
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => {
+                                setActiveTab(tab.id);
+                                router.replace(
+                                    {
+                                        pathname: '/dashboard/admin',
+                                        query: tab.id === 'overview' ? {} : { tab: tab.id }
+                                    },
+                                    undefined,
+                                    { shallow: true }
+                                );
+                            }}
                         >
                             {tab.label}
                         </Button>
@@ -383,12 +415,12 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {activeTab === 'users' && (
+                {(activeTab === 'users' || activeTab === 'doctors') && (
                     <div className="overflow-x-auto rounded-2xl border border-slate-200">
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                                 <tr>
-                                    <th className="px-6 py-4">User</th>
+                                    <th className="px-6 py-4">{activeTab === 'doctors' ? 'Doctor' : 'User'}</th>
                                     <th className="px-6 py-4">Role</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4 text-right">Action</th>
@@ -398,7 +430,7 @@ const AdminDashboard = () => {
                                 {filteredUsers.length === 0 && (
                                     <tr>
                                         <td colSpan={4} className="px-6 py-14 text-center text-slate-500 font-semibold">
-                                            No matching users found.
+                                            {activeTab === 'doctors' ? 'No matching doctors found.' : 'No matching users found.'}
                                         </td>
                                     </tr>
                                 )}
