@@ -11,7 +11,15 @@ import {
     Search,
     RefreshCw
 } from 'lucide-react';
-import { adminApi, paymentApi } from '../../lib/api';
+import {
+    adminApi,
+    paymentApi,
+    doctorApi,
+    patientApi,
+    appointmentApi,
+    telemedicineApi,
+    prescriptionApi
+} from '../../lib/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Header from '../../components/layout/Header';
 import Card from '../../components/ui/Card';
@@ -30,7 +38,27 @@ const formatMoney = (value) => {
     return `LKR ${amount.toLocaleString()}`;
 };
 
-const ADMIN_TABS = ['overview', 'verifications', 'users', 'doctors', 'financials'];
+const ADMIN_TABS = ['overview', 'verifications', 'doctors', 'patients', 'users', 'operations', 'financials', 'services'];
+
+const extractListData = (response) => {
+    const payload = response?.data;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+};
+
+const extractObjectData = (response) => {
+    const payload = response?.data;
+    if (payload?.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) {
+        return payload.data;
+    }
+
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+        return payload;
+    }
+
+    return {};
+};
 
 const AdminDashboard = () => {
     const router = useRouter();
@@ -41,6 +69,8 @@ const AdminDashboard = () => {
 
     const [users, setUsers] = useState([]);
     const [pendingDoctors, setPendingDoctors] = useState([]);
+    const [doctorDirectory, setDoctorDirectory] = useState([]);
+    const [patients, setPatients] = useState([]);
     const [paymentSummary, setPaymentSummary] = useState({
         total: 0,
         success: 0,
@@ -48,6 +78,25 @@ const AdminDashboard = () => {
         pending: 0,
         refunded: 0,
         totalRevenue: 0
+    });
+    const [serviceHealth, setServiceHealth] = useState({
+        admin: false,
+        payments: false,
+        doctors: false,
+        patients: false,
+        appointments: false,
+        telemedicine: false,
+        prescriptions: false,
+        notifications: false
+    });
+
+    const [selectedDoctorId, setSelectedDoctorId] = useState('');
+    const [operationsLoading, setOperationsLoading] = useState(false);
+    const [operationsError, setOperationsError] = useState('');
+    const [doctorOperations, setDoctorOperations] = useState({
+        appointments: [],
+        sessions: [],
+        prescriptions: []
     });
 
     const [processingId, setProcessingId] = useState(null);
@@ -79,15 +128,56 @@ const AdminDashboard = () => {
         try {
             setError('');
 
-            const [usersRes, pendingRes, paymentRes] = await Promise.all([
-                adminApi.get('/users').catch(() => ({ data: [] })),
-                adminApi.get('/doctors/pending').catch(() => ({ data: [] })),
-                paymentApi.get('/admin/summary').catch(() => ({ data: { data: {} } }))
+            const [
+                usersRes,
+                pendingRes,
+                paymentRes,
+                doctorDirectoryRes,
+                patientRes
+            ] = await Promise.allSettled([
+                adminApi.get('/users'),
+                adminApi.get('/doctors/pending'),
+                paymentApi.get('/admin/summary'),
+                doctorApi.get('/all'),
+                patientApi.get('')
             ]);
 
-            setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
-            setPendingDoctors(Array.isArray(pendingRes.data) ? pendingRes.data : []);
-            setPaymentSummary(paymentRes.data?.data || {});
+            const nextUsers = usersRes.status === 'fulfilled' ? extractListData(usersRes.value) : [];
+            const nextPending = pendingRes.status === 'fulfilled' ? extractListData(pendingRes.value) : [];
+            const nextDoctorDirectory = doctorDirectoryRes.status === 'fulfilled' ? extractListData(doctorDirectoryRes.value) : [];
+            const nextPatients = patientRes.status === 'fulfilled' ? extractListData(patientRes.value) : [];
+            const nextPaymentSummary = paymentRes.status === 'fulfilled' ? extractObjectData(paymentRes.value) : {};
+
+            setUsers(nextUsers);
+            setPendingDoctors(nextPending);
+            setDoctorDirectory(nextDoctorDirectory);
+            setPatients(nextPatients);
+            setPaymentSummary({
+                total: nextPaymentSummary.total || 0,
+                success: nextPaymentSummary.success || 0,
+                failed: nextPaymentSummary.failed || 0,
+                pending: nextPaymentSummary.pending || 0,
+                refunded: nextPaymentSummary.refunded || 0,
+                totalRevenue: nextPaymentSummary.totalRevenue || 0
+            });
+
+            setServiceHealth((prev) => ({
+                ...prev,
+                admin: usersRes.status === 'fulfilled' && pendingRes.status === 'fulfilled',
+                payments: paymentRes.status === 'fulfilled',
+                doctors: doctorDirectoryRes.status === 'fulfilled',
+                patients: patientRes.status === 'fulfilled'
+            }));
+
+            if (
+                usersRes.status !== 'fulfilled'
+                && pendingRes.status !== 'fulfilled'
+                && paymentRes.status !== 'fulfilled'
+                && doctorDirectoryRes.status !== 'fulfilled'
+                && patientRes.status !== 'fulfilled'
+            ) {
+                setError('Unable to reach backend services. Verify api-gateway and microservices are running.');
+            }
         } catch (err) {
             console.error('Failed to load admin dashboard data', err);
             setError('Unable to load admin data right now. Please try again.');
@@ -114,6 +204,68 @@ const AdminDashboard = () => {
         fetchDashboardData({ initialLoad: true });
     }, [router]);
 
+    useEffect(() => {
+        if (selectedDoctorId || doctorDirectory.length === 0) {
+            return;
+        }
+
+        const firstDoctor = doctorDirectory[0];
+        if (firstDoctor?.id) {
+            setSelectedDoctorId(String(firstDoctor.id));
+        }
+    }, [doctorDirectory, selectedDoctorId]);
+
+    const fetchDoctorOperations = async (doctorId) => {
+        if (!doctorId) {
+            return;
+        }
+
+        try {
+            setOperationsLoading(true);
+            setOperationsError('');
+
+            const [appointmentRes, sessionRes, prescriptionRes] = await Promise.allSettled([
+                appointmentApi.get(`/doctor/${doctorId}`),
+                telemedicineApi.get(`/sessions/doctor/${doctorId}`),
+                prescriptionApi.get(`/doctor/${doctorId}`)
+            ]);
+
+            setDoctorOperations({
+                appointments: appointmentRes.status === 'fulfilled' ? extractListData(appointmentRes.value) : [],
+                sessions: sessionRes.status === 'fulfilled' ? extractListData(sessionRes.value) : [],
+                prescriptions: prescriptionRes.status === 'fulfilled' ? extractListData(prescriptionRes.value) : []
+            });
+
+            setServiceHealth((prev) => ({
+                ...prev,
+                appointments: appointmentRes.status === 'fulfilled',
+                telemedicine: sessionRes.status === 'fulfilled',
+                prescriptions: prescriptionRes.status === 'fulfilled'
+            }));
+
+            if (
+                appointmentRes.status !== 'fulfilled'
+                && sessionRes.status !== 'fulfilled'
+                && prescriptionRes.status !== 'fulfilled'
+            ) {
+                setOperationsError('Unable to load doctor operations from appointments, telemedicine, and prescriptions services.');
+            }
+        } catch (err) {
+            console.error('Failed to load doctor operations', err);
+            setOperationsError('Failed to load doctor operations. Please try again.');
+        } finally {
+            setOperationsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab !== 'operations' || !selectedDoctorId) {
+            return;
+        }
+
+        fetchDoctorOperations(selectedDoctorId);
+    }, [activeTab, selectedDoctorId]);
+
     const stats = useMemo(() => {
         const doctors = users.filter((u) => u.role === 'DOCTOR');
         const patients = users.filter((u) => u.role === 'PATIENT');
@@ -124,10 +276,12 @@ const AdminDashboard = () => {
             totalDoctors: doctors.length,
             totalPatients: patients.length,
             activeUsers,
+            doctorProfiles: doctorDirectory.length,
+            patientRegistry: patients.length,
             pendingVerifications: pendingDoctors.length,
             totalRevenue: Number(paymentSummary.totalRevenue || 0)
         };
-    }, [users, pendingDoctors, paymentSummary]);
+    }, [users, pendingDoctors, paymentSummary, doctorDirectory, patients]);
 
     const filteredPendingDoctors = useMemo(() => {
         const query = searchTerm.trim().toLowerCase();
@@ -152,16 +306,12 @@ const AdminDashboard = () => {
     }, [pendingDoctors, searchTerm]);
 
     const filteredUsers = useMemo(() => {
-        const sourceUsers = activeTab === 'doctors'
-            ? users.filter((user) => user.role === 'DOCTOR')
-            : users;
-
         const query = searchTerm.trim().toLowerCase();
         if (!query) {
-            return sourceUsers;
+            return users;
         }
 
-        return sourceUsers.filter((user) => {
+        return users.filter((user) => {
             const text = [
                 user.firstName,
                 user.lastName,
@@ -176,7 +326,58 @@ const AdminDashboard = () => {
 
             return text.includes(query);
         });
-    }, [users, searchTerm, activeTab]);
+    }, [users, searchTerm]);
+
+    const filteredDoctorDirectory = useMemo(() => {
+        const query = searchTerm.trim().toLowerCase();
+        if (!query) {
+            return doctorDirectory;
+        }
+
+        return doctorDirectory.filter((doctor) => {
+            const linkedUser = users.find((u) => u.id === doctor.userId);
+            const text = [
+                doctor.specialization,
+                doctor.qualifications,
+                doctor.licenseNumber,
+                doctor.verificationStatus,
+                linkedUser?.firstName,
+                linkedUser?.lastName,
+                linkedUser?.email,
+                linkedUser?.username,
+                String(doctor.id || ''),
+                String(doctor.userId || '')
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return text.includes(query);
+        });
+    }, [doctorDirectory, users, searchTerm]);
+
+    const filteredPatients = useMemo(() => {
+        const query = searchTerm.trim().toLowerCase();
+        if (!query) {
+            return patients;
+        }
+
+        return patients.filter((patient) => {
+            const text = [
+                patient.name,
+                patient.email,
+                patient.phone,
+                patient.gender,
+                patient.bloodGroup,
+                String(patient.id || '')
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return text.includes(query);
+        });
+    }, [patients, searchTerm]);
 
     const verifyDoctor = async (doctorId, status) => {
         try {
