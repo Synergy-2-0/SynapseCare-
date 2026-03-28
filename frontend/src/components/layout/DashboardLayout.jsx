@@ -72,12 +72,10 @@ const DashboardLayout = ({ children }) => {
 
     return (
         <div className="min-h-screen bg-[var(--bg-base)] flex text-[var(--text-primary)] selection:bg-teal-100 selection:text-teal-900">
-            {/* Desktop Sidebar Overlay */}
             <div className="hidden xl:block shrink-0 sticky top-0 h-screen w-[240px]">
                 <Sidebar />
             </div>
 
-            {/* Mobile/Tablet Sidebar Drawer */}
             <AnimatePresence>
                 {sidebarOpen && (
                     <>
@@ -101,9 +99,7 @@ const DashboardLayout = ({ children }) => {
                 )}
             </AnimatePresence>
 
-            {/* Main Application Interface */}
             <main className="flex-1 flex flex-col min-w-0 max-h-screen overflow-hidden">
-                {/* Enterprise Header */}
                 <header className="h-20 glass-morphism !border-x-0 !border-t-0 flex items-center justify-between px-6 lg:px-8 shrink-0 z-40 relative sticky top-0 shadow-sm">
                     <div className="flex items-center gap-6 flex-1">
                         <button
@@ -145,7 +141,6 @@ const DashboardLayout = ({ children }) => {
                     </div>
                 </header>
 
-                {/* Main Content Viewport */}
                 <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-[var(--bg-base)] scroll-smooth relative">
                     <div className="max-w-7xl mx-auto pb-20">
                         <motion.div

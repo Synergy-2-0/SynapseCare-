@@ -36,7 +36,6 @@ const Sidebar = ({ onClose }) => {
                 : 'DOCTOR')
     ));
 
-    // PRD Exact Nav Structure
     const doctorMainNav = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: DOCTOR_ROUTES.DASHBOARD },
         { id: 'appointments', icon: Calendar, label: 'Appointments', path: DOCTOR_ROUTES.APPOINTMENTS },
@@ -100,7 +99,6 @@ const Sidebar = ({ onClose }) => {
 
     return (
         <aside className="w-[240px] glass-morphism border-r border-[var(--border-color)]/30 flex flex-col pt-6 pb-6 sticky top-0 h-screen z-50 overflow-y-auto selection:bg-teal-100 selection:text-teal-900 border-0">
-            {/* Branding */}
             <div className="flex items-center gap-3 px-6 mb-8 group cursor-pointer transition-transform hover:scale-105 active:scale-95" onClick={() => router.push('/')}>
                 <div className="relative">
                     <div className="absolute inset-0 bg-[var(--accent-teal)] blur-lg opacity-20 group-hover:opacity-40 transition-opacity" />
@@ -109,7 +107,6 @@ const Sidebar = ({ onClose }) => {
                 <span className="text-xl font-bold tracking-tight font-serif text-[var(--text-primary)]">Synapse<span className="text-[var(--accent-teal)]">Care</span></span>
             </div>
 
-            {/* Navigation */}
             <div className="flex-1 flex flex-col space-y-1">
                 {mainNav.map((item) => {
                     const active = isActive(item);
@@ -124,16 +121,13 @@ const Sidebar = ({ onClose }) => {
                                 }
                                 if (onClose) onClose();
                             }}
-                            className={`w-full flex items-center justify-between px-6 py-3 text-[14px] font-medium transition-all duration-200 relative group
-                                ${active ? 'bg-[var(--bg-hover)] text-[var(--accent-teal)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}
-                            `}
+                            className={`w-full flex items-center justify-between px-6 py-3 text-[14px] font-medium transition-all duration-200 relative group ${active ? 'bg-[var(--bg-hover)] text-[var(--accent-teal)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}
                         >
                             <div className="flex items-center gap-3">
                                 <item.icon className={`w-[18px] h-[18px] transition-transform group-hover:scale-110 ${active ? 'text-[var(--accent-teal)]' : 'text-[var(--text-muted)] group-hover:text-[var(--accent-teal)]'}`} strokeWidth={active ? 2.5 : 2} />
                                 {item.label}
                             </div>
 
-                            {/* Live Badge for consultations */}
                             {item.id === 'consultations' && active && (
                                 <span className="flex h-2 w-2 relative">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -149,7 +143,6 @@ const Sidebar = ({ onClose }) => {
                 })}
             </div>
 
-            {/* Footer Items */}
             <div className="space-y-1 mt-auto pt-6 border-t border-[var(--border-color)]">
                 {bottomNav.map((item) => {
                     const active = isActive(item);
@@ -160,9 +153,7 @@ const Sidebar = ({ onClose }) => {
                                 router.push(item.path);
                                 if (onClose) onClose();
                             }}
-                            className={`w-full flex items-center gap-3 px-6 py-3 text-[14px] font-medium transition-all duration-200 relative group
-                                ${active ? 'bg-[var(--bg-hover)] text-[var(--accent-teal)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}
-                            `}
+                            className={`w-full flex items-center gap-3 px-6 py-3 text-[14px] font-medium transition-all duration-200 relative group ${active ? 'bg-[var(--bg-hover)] text-[var(--accent-teal)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}
                         >
                             <item.icon className={`w-[18px] h-[18px] ${active ? 'text-[var(--accent-teal)]' : 'text-[var(--text-muted)] group-hover:text-[var(--accent-teal)]'}`} strokeWidth={active ? 2.5 : 2} />
                             {item.label}
