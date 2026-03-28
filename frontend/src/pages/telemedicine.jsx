@@ -42,19 +42,29 @@ const TelemedicinePage = () => {
                 const userId = localStorage.getItem('user_id');
                 const role = localStorage.getItem('user_role');
 
-                let res;
+                // Step 1: Get or create session by appointmentId
+                const sessionRes = await telemedicineApi.get(`/sessions/appointment/${appointmentId}`);
+                const sessionData = sessionRes.data.data;
+
+                if (!sessionData) {
+                    throw new Error('Session not found for this appointment');
+                }
+
+                // Step 2: Join session with role-based endpoint
+                let joinRes;
                 if (role === 'DOCTOR') {
-                    res = await telemedicineApi.post('/sessions/doctor/join', null, {
-                        params: { appointmentId, doctorId: userId }
+                    joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/doctor`, null, {
+                        params: { doctorId: userId }
                     });
                 } else {
-                    res = await telemedicineApi.post('/sessions/patient/join', null, {
-                        params: { appointmentId, patientId: userId }
+                    joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/patient`, null, {
+                        params: { patientId: userId }
                     });
                 }
 
-                setSession(res.data.data);
-                
+                setSession(joinRes.data.data);
+
+                // Load Jitsi script
                 const script = document.createElement('script');
                 script.src = 'https://meet.jit.si/external_api.js';
                 script.async = true;
@@ -70,7 +80,8 @@ const TelemedicinePage = () => {
         };
 
         fetchData();
-        
+
+
         const timer = setInterval(() => setDuration(d => d + 1), 1000);
         return () => {
             clearInterval(timer);
@@ -111,7 +122,7 @@ const TelemedicinePage = () => {
             }
 
             jitsiApiRef.current = new window.JitsiMeetExternalAPI(domain, options);
-            
+
             jitsiApiRef.current.addEventListeners({
                 videoConferenceJoined: () => console.log('Node Integrated Successfully'),
                 videoConferenceLeft: () => handleEndCall()
@@ -121,18 +132,24 @@ const TelemedicinePage = () => {
 
     const handleEndCall = async () => {
         if (jitsiApiRef.current) jitsiApiRef.current.dispose();
-        
+
         try {
             const role = localStorage.getItem('user_role');
+            const userId = localStorage.getItem('user_id');
+
             if (role === 'DOCTOR' && session) {
-                await telemedicineApi.put(`/sessions/${session.id}/end`, {
-                    notes: 'Session terminated by specialist terminal'
+                await telemedicineApi.post(`/sessions/${session.sessionId}/end`, null, {
+                    params: {
+                        doctorId: userId,
+                        notes: 'Session terminated by specialist terminal'
+                    }
                 });
             }
         } catch (e) {
             console.error('Session end signal failed', e);
         }
-        
+
+
         const role = localStorage.getItem('user_role');
         router.push(role === 'DOCTOR' ? '/doctor/dashboard' : '/dashboard/patient');
     };
@@ -156,7 +173,7 @@ const TelemedicinePage = () => {
                         <h2 className="text-3xl font-black text-white tracking-tighter mb-4 italic uppercase tracking-widest">Access Terminated</h2>
                         <p className="text-slate-400 font-medium mb-10 leading-relaxed text-sm">"{error}"</p>
                         <Button variant="danger" size="lg" className="w-full" onClick={() => router.back()}>
-                             Return to Safety
+                            Return to Safety
                         </Button>
                     </Card>
                 </motion.div>
@@ -175,7 +192,7 @@ const TelemedicinePage = () => {
                     >
                         <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                     </button>
-                    
+
                     <div className="flex flex-col">
                         <div className="flex items-center gap-4 mb-1">
                             <h1 className="text-xl font-black text-white tracking-tighter leading-none italic uppercase tracking-widest">Neural Link <span className="text-indigo-500">#{appointmentId}</span></h1>
@@ -190,47 +207,47 @@ const TelemedicinePage = () => {
 
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-4 px-6 py-3 bg-white/5 border border-white/5 rounded-2xl">
-                         <div className="flex flex-col items-end">
-                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active Duration</span>
-                             <span className="text-sm font-black text-white leading-none mt-1">{formatTime(duration)}</span>
-                         </div>
-                         <div className="w-px h-6 bg-white/10" />
-                         <Clock className="w-5 h-5 text-indigo-400 animate-pulse" />
+                        <div className="flex flex-col items-end">
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active Duration</span>
+                            <span className="text-sm font-black text-white leading-none mt-1">{formatTime(duration)}</span>
+                        </div>
+                        <div className="w-px h-6 bg-white/10" />
+                        <Clock className="w-5 h-5 text-indigo-400 animate-pulse" />
                     </div>
                 </div>
             </header>
 
             {/* Immersive Video Canvas */}
             <main className="flex-1 overflow-hidden relative flex bg-black">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 1 }}
-                    ref={jitsiContainerRef} 
+                    ref={jitsiContainerRef}
                     className="flex-1"
                 />
 
                 {/* Cyber HUD Overlays */}
                 <div className="absolute top-8 left-8 pointer-events-none z-50 space-y-4">
-                     <div className="px-4 py-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl flex items-center gap-3">
-                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                         <span className="text-[10px] font-black text-white uppercase tracking-widest">Carrier Signal Optimal</span>
-                     </div>
-                     <div className="px-4 py-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl flex items-center gap-3">
-                         <Wifi size={14} className="text-indigo-400" />
-                         <span className="text-[10px] font-black text-white uppercase tracking-widest">Latency: 24ms</span>
-                     </div>
+                    <div className="px-4 py-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Carrier Signal Optimal</span>
+                    </div>
+                    <div className="px-4 py-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl flex items-center gap-3">
+                        <Wifi size={14} className="text-indigo-400" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Latency: 24ms</span>
+                    </div>
                 </div>
 
                 <div className="absolute bottom-10 right-10 pointer-events-none z-50">
                     <div className="p-4 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl flex items-center gap-3">
-                         <div className="text-right">
-                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Authenticated Node</p>
-                             <p className="text-xs font-bold text-white uppercase tracking-widest leading-none">Specialist Terminal</p>
-                         </div>
-                         <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white border border-indigo-500/50 shadow-lg shadow-indigo-600/20">
-                             <User size={18} strokeWidth={2.5} />
-                         </div>
+                        <div className="text-right">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Authenticated Node</p>
+                            <p className="text-xs font-bold text-white uppercase tracking-widest leading-none">Specialist Terminal</p>
+                        </div>
+                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white border border-indigo-500/50 shadow-lg shadow-indigo-600/20">
+                            <User size={18} strokeWidth={2.5} />
+                        </div>
                     </div>
                 </div>
             </main>
@@ -239,19 +256,19 @@ const TelemedicinePage = () => {
             <footer className="h-28 px-10 border-t border-white/5 bg-slate-950/80 backdrop-blur-3xl flex justify-between items-center z-50 shrink-0">
                 <div className="flex items-center gap-8">
                     <div className="flex items-center gap-4 text-xs font-black text-slate-500 uppercase tracking-widest italic group">
-                         <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/10 group-hover:bg-indigo-500/10 group-hover:border-indigo-500/20 transition-all">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/10 group-hover:bg-indigo-500/10 group-hover:border-indigo-500/20 transition-all">
                             <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_5px_rgba(99,102,241,0.5)]" />
                             <span>Neural Stream: Synchronized</span>
-                         </div>
-                         <span className="hidden lg:inline-block opacity-40">Global Healthcare Infrastructure v3.0</span>
+                        </div>
+                        <span className="hidden lg:inline-block opacity-40">Global Healthcare Infrastructure v3.0</span>
                     </div>
                 </div>
 
                 <div className="flex gap-4">
                     <button className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 text-slate-400 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all active:scale-90">
-                         <Maximize size={22} />
+                        <Maximize size={22} />
                     </button>
-                    <button 
+                    <button
                         onClick={handleEndCall}
                         className="px-12 h-14 bg-rose-600 text-white rounded-[1.8rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-rose-900/50 hover:bg-rose-700 active:scale-95 transition-all flex items-center gap-4"
                     >

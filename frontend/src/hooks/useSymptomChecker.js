@@ -50,13 +50,17 @@ const useSymptomChecker = () => {
                 const doctorResults = await Promise.all(doctorPromises);
 
                 // Combine and deduplicate doctors
-                const allDoctors = doctorResults.flatMap(r => r.data || []);
+                const allDoctors = doctorResults.flatMap((response) => {
+                    const payload = response?.data?.data ?? response?.data ?? [];
+                    return Array.isArray(payload) ? payload : [];
+                });
                 const uniqueDoctors = [...new Map(allDoctors.map(d => [d.id, d])).values()];
+                const availableDoctors = uniqueDoctors.filter((doctor) => doctor?.isAvailable !== false);
 
                 // Sort by consultation fee (lowest first)
-                uniqueDoctors.sort((a, b) => (a.consultationFee || 0) - (b.consultationFee || 0));
+                availableDoctors.sort((a, b) => (a.consultationFee || 0) - (b.consultationFee || 0));
 
-                setDoctors(uniqueDoctors);
+                setDoctors(availableDoctors);
             }
 
             setLoading(false);

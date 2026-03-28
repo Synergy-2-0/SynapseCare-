@@ -1,0 +1,304 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FileText, Image as ImageIcon, Upload, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
+import { useRouter } from 'next/router';
+import { doctorApi, doctorFileApi } from '../../lib/api';
+import toast, { Toaster } from 'react-hot-toast';
+
+export default function DoctorSetupPage() {
+    const router = useRouter();
+    
+    // Status states
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    
+    // File states
+    const [licenseFile, setLicenseFile] = useState(null);
+    const [photoFile, setPhotoFile] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(null);
+
+    // Form fields mapped to Doctor.java & CreateDoctorProfileRequest
+    const [formData, setFormData] = useState({
+        specialization: '',
+        qualifications: '',
+        experience: '',
+        licenseNumber: '',
+        consultationFee: '',
+        bio: ''
+    });
+
+    useEffect(() => {
+        const fetchInitialProfile = async () => {
+            try {
+                const res = await doctorApi.get('/profile/me');
+                if (res.data) {
+                    setFormData({
+                        specialization: res.data.specialization || '',
+                        qualifications: res.data.qualifications || '',
+                        experience: res.data.experience || '',
+                        licenseNumber: res.data.licenseNumber || '',
+                        consultationFee: res.data.consultationFee || '',
+                        bio: res.data.bio || ''
+                    });
+                    if (res.data.profileImageUrl) setPhotoPreview(res.data.profileImageUrl);
+                    if (res.data.verificationStatus === 'PENDING' && res.data.licenseNumber) {
+                        // If they have a license number and are pending, they might have already submitted
+                        // But let them edit if they want
+                    }
+                }
+            } catch (err) {
+                console.log("No profile found yet, using empty form");
+            }
+        };
+        fetchInitialProfile();
+    }, []);
+
+    // Refs for hidden inputs
+    const licenseInputRef = useRef(null);
+    const photoInputRef = useRef(null);
+
+    const handleLogout = () => {
+        localStorage.clear();
+        router.push('/login');
+    };
+
+    const handleFileSelect = (e, type) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (type === 'license') {
+            setLicenseFile(file);
+        } else if (type === 'photo') {
+            setPhotoFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPhotoPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        
+        try {
+            let profileImageUrl = photoPreview;
+
+            // 1. Upload files if selected
+            if (photoFile) {
+                const photoFD = new FormData();
+                photoFD.append('file', photoFile);
+                photoFD.append('type', 'profile-photo');
+                const photoRes = await doctorFileApi.post('/profile/upload', photoFD);
+                profileImageUrl = photoRes.data.url;
+            }
+
+            if (licenseFile) {
+                const licenseFD = new FormData();
+                licenseFD.append('file', licenseFile);
+                licenseFD.append('type', 'medical-license');
+                await doctorFileApi.post('/profile/upload', licenseFD);
+                // We just upload license, usually we don't display it as a public URL for doctor
+            }
+
+            // 2. Submit Profile Data
+            const payload = {
+                ...formData,
+                profileImageUrl,
+                experience: parseInt(formData.experience) || 0,
+                consultationFee: parseFloat(formData.consultationFee) || 0
+            };
+
+            await doctorApi.post('/profile', payload);
+            
+            toast.success("Profile submitted successfully!");
+            setIsSubmitted(true);
+        } catch (err) {
+            console.error("Submission error:", err);
+            toast.error(err.response?.data?.message || "Failed to submit profile. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+            <Toaster position="top-right" />
+            {/* Header with Logout */}
+            <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">S</span>
+                    </div>
+                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-700 to-teal-500">
+                        SynapCare
+                    </span>
+                </div>
+                <button 
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100"
+                >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                </button>
+            </header>
+
+            <main className="flex-1 py-10 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-4xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100 mb-10"
+                >
+                    <div className="bg-teal-600 px-8 py-10 text-white relative overflow-hidden">
+                        <div className="absolute inset-0 opacity-10">
+                            <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full border-4 border-white"></div>
+                            <div className="absolute right-20 -bottom-10 w-32 h-32 rounded-full border-4 border-white"></div>
+                        </div>
+                        
+                        <div className="relative z-10 flex items-center gap-4 mb-2">
+                            <AlertCircle className="w-8 h-8 text-teal-100" />
+                            <h2 className="text-3xl font-serif font-bold">Complete Your Profile</h2>
+                        </div>
+                        <p className="text-teal-50 text-lg relative z-10">
+                            Provide your professional details to establish your doctor account for review.
+                        </p>
+                    </div>
+
+                    <div className="p-8">
+                        {isSubmitted ? (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-amber-50 border border-amber-200 p-8 rounded-xl text-center shadow-inner"
+                            >
+                                <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-6 shadow-sm border border-amber-200">
+                                    <AlertCircle className="w-8 h-8 text-amber-600" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-slate-800 mb-3">Pending Admin Verification</h3>
+                                <p className="text-slate-600 text-base leading-relaxed max-w-lg mx-auto mb-6">
+                                    Your professional profile has been submitted and is currently in the review queue. 
+                                    A platform administrator will verify your medical license and credentials shortly.
+                                </p>
+                                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                    <div className="inline-block bg-white px-6 py-3 rounded-lg border border-amber-100 text-amber-800 font-medium font-mono text-sm shadow-sm">
+                                        Status: UNDER_REVIEW
+                                    </div>
+                                    <button 
+                                        onClick={() => setIsSubmitted(false)}
+                                        className="text-sm font-semibold text-teal-600 hover:text-teal-700 underline underline-offset-2"
+                                    >
+                                        Edit Submitted Info
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <form onSubmit={handleFormSubmit} className="space-y-8">
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {/* Left Column: Form Fields */}
+                                    <div className="space-y-5">
+                                        <h3 className="text-lg font-bold text-slate-800 border-b pb-2">Professional Details</h3>
+                                        
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1">Medical License Number *</label>
+                                            <input required name="licenseNumber" value={formData.licenseNumber} onChange={handleInputChange} type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all" placeholder="e.g. MED-123456" />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1">Specialization *</label>
+                                            <input required name="specialization" value={formData.specialization} onChange={handleInputChange} type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all" placeholder="e.g. Cardiologist" />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1">Qualifications</label>
+                                            <input name="qualifications" value={formData.qualifications} onChange={handleInputChange} type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all" placeholder="e.g. MD, MBBS, FACC" />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-semibold text-slate-700 mb-1">Years of Experience</label>
+                                                <input name="experience" value={formData.experience} onChange={handleInputChange} type="number" min="0" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all" placeholder="0" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-semibold text-slate-700 mb-1">Consultation Fee ($) *</label>
+                                                <input required name="consultationFee" value={formData.consultationFee} onChange={handleInputChange} type="number" step="0.01" min="0.01" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all" placeholder="150.00" />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1">Professional Bio</label>
+                                            <textarea name="bio" value={formData.bio} onChange={handleInputChange} rows="4" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all resize-none" placeholder="Briefly describe your background, approach to patient care, etc."></textarea>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Column: Files Upload */}
+                                    <div className="space-y-5">
+                                        <h3 className="text-lg font-bold text-slate-800 border-b pb-2">Documents & Photo</h3>
+
+                                        {/* Profile Photo */}
+                                        <div 
+                                            onClick={() => photoInputRef.current?.click()}
+                                            className={`flex p-4 border-2 ${photoFile ? 'border-teal-500 bg-teal-50/50' : 'border-dashed border-slate-300 hover:bg-slate-50'} rounded-xl transition-colors cursor-pointer group items-center gap-4`}
+                                        >
+                                            <input type="file" ref={photoInputRef} onChange={(e) => handleFileSelect(e, 'photo')} accept=".jpg,.jpeg,.png" className="hidden" />
+                                            
+                                            <div className="flex-shrink-0">
+                                                {photoPreview ? (
+                                                    <img src={photoPreview} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" />
+                                                ) : (
+                                                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+                                                        <ImageIcon className="w-6 h-6 text-slate-400" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="text-slate-700 font-bold text-sm">Profile Photo *</p>
+                                                <p className="text-slate-500 text-xs mt-0.5">{photoFile ? photoFile.name : 'Standard headshot (JPG/PNG)'}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Medical License */}
+                                        <div 
+                                            onClick={() => licenseInputRef.current?.click()}
+                                            className={`flex p-4 border-2 ${licenseFile ? 'border-teal-500 bg-teal-50/50' : 'border-dashed border-slate-300 hover:bg-slate-50'} rounded-xl transition-colors cursor-pointer group items-center gap-4`}
+                                        >
+                                            <input type="file" ref={licenseInputRef} onChange={(e) => handleFileSelect(e, 'license')} accept=".pdf,.jpg,.jpeg,.png" className="hidden" required />
+                                            
+                                            <div className="flex-shrink-0">
+                                                <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${licenseFile ? 'bg-teal-100' : 'bg-slate-100 group-hover:bg-slate-200'} transition-colors`}>
+                                                    <FileText className={`w-6 h-6 ${licenseFile ? 'text-teal-600' : 'text-slate-400'}`} />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 overflow-hidden">
+                                                <p className="text-slate-700 font-bold text-sm">Medical License Document *</p>
+                                                <p className="text-slate-500 text-xs mt-0.5 truncate">{licenseFile ? licenseFile.name : 'PDF, JPG, or PNG (Max 10MB)'}</p>
+                                            </div>
+                                            {licenseFile && <CheckCircle className="w-5 h-5 text-teal-500 flex-shrink-0 ml-2" />}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-6 border-t border-slate-100 flex justify-end">
+                                    <button 
+                                        type="submit"
+                                        disabled={isLoading || (!photoFile && !photoPreview) || (!licenseFile && !formData.licenseNumber)}
+                                        className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    >
+                                        {isLoading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+                                        {isLoading ? 'Submitting...' : 'Submit Profile for Review'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </motion.div>
+            </main>
+        </div>
+    );
+}

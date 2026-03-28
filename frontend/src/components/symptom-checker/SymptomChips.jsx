@@ -11,6 +11,8 @@ import { COMMON_SYMPTOMS } from '../../constants/symptoms';
 const SymptomChips = ({
     selectedSymptoms = [],
     onSymptomToggle,
+    additionalSymptoms = '',
+    onAdditionalSymptomsChange,
     className = ''
 }) => {
 
@@ -83,6 +85,8 @@ const SymptomChips = ({
                 <textarea
                     rows={3}
                     placeholder="Describe any other symptoms or provide more details about the selected symptoms..."
+                    value={additionalSymptoms}
+                    onChange={(event) => onAdditionalSymptomsChange?.(event.target.value)}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 text-sm resize-none"
                 />
                 <p className="text-xs text-slate-500 mt-1">

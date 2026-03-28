@@ -26,11 +26,13 @@ const AppointmentsPage = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filter, setFilter] = useState('all');
+    const [userRole, setUserRole] = useState('PATIENT');
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const userId = localStorage.getItem('user_id');
             const role = localStorage.getItem('user_role');
+            setUserRole(role || 'PATIENT');
 
             const fetchData = async () => {
                 try {
@@ -38,7 +40,16 @@ const AppointmentsPage = () => {
                         ? `/doctor/${userId}`
                         : `/patient/${userId}`;
                     const res = await appointmentApi.get(endpoint);
-                    setAppointments(res.data || []);
+                    const payload = res?.data?.data ?? res?.data ?? [];
+                    const normalized = Array.isArray(payload)
+                        ? payload.map((appointment) => ({
+                            ...appointment,
+                            appointmentDate: appointment.appointmentDate || appointment.date,
+                            appointmentTime: appointment.appointmentTime || appointment.time
+                        }))
+                        : [];
+
+                    setAppointments(normalized);
                 } catch (err) {
                     console.error('Failed to load appointments', err);
                 } finally {
@@ -50,13 +61,30 @@ const AppointmentsPage = () => {
     }, []);
 
     const filteredAppointments = appointments.filter(appt => {
+        const appointmentDate = appt.appointmentDate || appt.date;
+
         if (filter === 'upcoming') {
-            return new Date(appt.appointmentDate) >= new Date();
+            return new Date(appointmentDate) >= new Date();
         }
         if (filter === 'past') {
-            return new Date(appt.appointmentDate) < new Date();
+            return new Date(appointmentDate) < new Date();
         }
+
         return true;
+    }).filter((appt) => {
+        if (!searchQuery.trim()) {
+            return true;
+        }
+
+        const query = searchQuery.trim().toLowerCase();
+        const doctorDisplay = (appt.doctorName || `doctor #${appt.doctorId || ''}`).toLowerCase();
+        const patientDisplay = (appt.patientName || `patient #${appt.patientId || ''}`).toLowerCase();
+        const statusDisplay = (appt.status || '').toLowerCase();
+
+        return doctorDisplay.includes(query)
+            || patientDisplay.includes(query)
+            || statusDisplay.includes(query)
+            || String(appt.id || '').includes(query);
     });
 
     const getStatusVariant = (status) => {
@@ -83,7 +111,7 @@ const AppointmentsPage = () => {
         <DashboardLayout>
             <Header
                 title="Appointments"
-                subtitle="View and manage your appointments"
+                subtitle={userRole === 'DOCTOR' ? 'View and manage your patient appointments' : 'View and manage your appointments'}
             />
 
             {/* Search and Filters */}
@@ -113,10 +141,17 @@ const AppointmentsPage = () => {
                     <Button
                         variant="primary"
                         size="md"
-                        onClick={() => router.push('/patient/find-doctors')}
+                        onClick={() => {
+                            if (userRole === 'DOCTOR') {
+                                router.push('/doctor/dashboard');
+                                return;
+                            }
+
+                            router.push('/patient/find-doctors');
+                        }}
                     >
                         <Plus size={16} />
-                        Book Appointment
+                        {userRole === 'DOCTOR' ? 'Go to Dashboard' : 'Book Appointment'}
                     </Button>
                 </div>
             </Card>
@@ -131,9 +166,16 @@ const AppointmentsPage = () => {
                         action={
                             <Button
                                 variant="primary"
-                                onClick={() => router.push('/patient/find-doctors')}
+                                onClick={() => {
+                                    if (userRole === 'DOCTOR') {
+                                        router.push('/doctor/dashboard');
+                                        return;
+                                    }
+
+                                    router.push('/patient/find-doctors');
+                                }}
                             >
-                                Find a Doctor
+                                {userRole === 'DOCTOR' ? 'Go to Dashboard' : 'Find a Doctor'}
                             </Button>
                         }
                     />
@@ -150,10 +192,10 @@ const AppointmentsPage = () => {
                                     {/* Date Block */}
                                     <div className="w-16 h-16 bg-blue-50 rounded-xl flex flex-col items-center justify-center">
                                         <span className="text-xl font-bold text-blue-600">
-                                            {new Date(appt.date).getDate()}
+                                            {new Date(appt.appointmentDate || appt.date).getDate()}
                                         </span>
                                         <span className="text-xs text-blue-600 uppercase">
-                                            {new Date(appt.date).toLocaleString('default', { month: 'short' })}
+                                            {new Date(appt.appointmentDate || appt.date).toLocaleString('default', { month: 'short' })}
                                         </span>
                                     </div>
 
@@ -168,12 +210,14 @@ const AppointmentsPage = () => {
                                             </span>
                                         </div>
                                         <h3 className="font-semibold text-slate-900">
-                                            {appt.doctorName || `Doctor #${appt.doctorId}`}
+                                            {userRole === 'DOCTOR'
+                                                ? (appt.patientName || `Patient #${appt.patientId}`)
+                                                : (appt.doctorName || `Doctor #${appt.doctorId}`)}
                                         </h3>
                                         <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
                                             <span className="flex items-center gap-1">
                                                 <Clock size={14} />
-                                                {appt.time || '10:00 AM'}
+                                                {appt.appointmentTime || appt.time || '10:00 AM'}
                                             </span>
                                             {appt.status === 'CONFIRMED' && (
                                                 <span className="flex items-center gap-1 text-blue-600">
