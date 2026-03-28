@@ -3,10 +3,12 @@
     "@fontsource/dm-sans": "^5.2.8",
     "@fontsource/lora": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^1.7.0",
     "react-hook-form": "^7.72.0",
     "react-hot-toast": "^2.6.0",
+    "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6"
   }
 }

@@ -17,16 +17,16 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
         try {
             for (const med of medications) {
                 if (med.name) {
-                    await prescriptionApi.post('/', {
+                    await prescriptionApi.post('/create', {
                         appointmentId: session.id,
                         doctorId: parseInt(doctorId),
                         patientId: parseInt(session.patientId || 0),
                         medicineName: med.name,
                         dosage: med.dosage,
                         duration: med.duration,
-                        labTest: med.labTest || '',
                         instructions: med.instructions,
-                        issuedDate: new Date().toISOString().split('T')[0]
+                        followUpNotes: session.inheritedNotes || '',
+                        createdDate: new Date().toISOString()
                     });
                 }
             }

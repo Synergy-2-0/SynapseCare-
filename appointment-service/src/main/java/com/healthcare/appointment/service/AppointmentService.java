@@ -195,6 +195,22 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    public List<com.healthcare.appointment.dto.client.PatientClientDto> getPatientsByDoctor(Long doctorId) {
+        return appointmentRepository.findByDoctorIdOrderByDateAscTimeAsc(doctorId)
+                .stream()
+                .map(Appointment::getPatientId)
+                .distinct()
+                .map(patientId -> {
+                    try {
+                        return patientServiceClient.getPatientById(patientId);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .filter(p -> p != null)
+                .collect(Collectors.toList());
+    }
+
     public AppointmentDto updateStatus(Long id, AppointmentStatus status) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));

@@ -18,54 +18,61 @@ const TelemedicineTab = ({ appointments = [], userData, onCompleteSession, onEnd
 
     const joinSession = async (appt) => {
         try {
-            // Match the Curex Integration build logic (calls /session to get/create active session)
-            const res = await telemedicineApi.post(`/appointments/${appt.id}/session`, {
-                doctorId: userData?.id,
-                patientId: appt.patientId,
-                forceNew: false
-            });
-            const sessionData = res.data?.data || res.data;
-            setActiveSession({ ...sessionData, appointment: appt });
+            let sessionData;
+            toast.loading("Connecting to secure room...", { id: 'join-session' });
+            // 1. Try to get existing session
+            try {
+                const getRes = await telemedicineApi.get(`/sessions/appointment/${appt.id}`);
+                sessionData = getRes.data?.data;
+            } catch (e) {
+                // If it doesn't exist, create a new session
+                const now = new Date();
+                const end = new Date(now.getTime() + 30 * 60000); // 30 mins later
+                const createRes = await telemedicineApi.post(`/sessions`, {
+                    appointmentId: appt.id,
+                    doctorId: userData?.id,
+                    patientId: appt.patientId,
+                    scheduledStartTime: now.toISOString(),
+                    scheduledEndTime: end.toISOString()
+                });
+                sessionData = createRes.data?.data;
+            }
+
+            // JOIN via doctor role
+            const joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/doctor?doctorId=${userData?.id}`);
+            const joinedData = joinRes.data?.data;
             
-            // Generate the Secure Room URL locally as fallback if backend misses it
-            const roomName = sessionData?.roomName || `synapcare-room-${appt.id}-${Date.now()}`;
-            const baseUrl = sessionData?.sessionUrl || `https://meet.jit.si/${roomName}`;
-            
-            setJitsiUrl(baseUrl);
-            toast.success('Connected to Secure Room');
+            setActiveSession({ ...joinedData, appointment: appt });
+            setJitsiUrl(joinedData.meetingUrl || `https://meet.jit.si/${joinedData.roomName}`);
+            toast.success('Connected via Medical Gateway', { id: 'join-session' });
         } catch (err) {
-            console.error(err);
-            // Fallback for UI demonstration if backend throws 404/500 connection refused
+            console.error("Session init failed:", err);
+            // Fallback for UI demonstration
             const roomName = `synapcare-app-${appt.id}`;
             setJitsiUrl(`https://meet.jit.si/${roomName}`);
-            setActiveSession({ appointment: appt, roomName });
-            toast.error('Local Simulation Mode: APIs unavailable, connected to Jitsi via default proxy.', { duration: 4000 });
+            setActiveSession({ appointment: appt, roomName, sessionId: 'LOCAL-FALLBACK' });
+            toast.error('API Error: Connecting via fallback proxy', { id: 'join-session', duration: 4000 });
         }
     };
 
     const endSession = async () => {
         if (!activeSession) return;
         setSubmitting(true);
+        toast.loading("Encrypting and uploading notes...", { id: 'end-session' });
         try {
-            // Signal Backend Session Ended Logic (Curex spec)
-            await telemedicineApi.post(`/appointments/${activeSession.appointment.id}/end`, {
-                endedBy: userData?.id,
-                notes: notes,
-                markAppointmentCompleted: true
-            });
+            if (activeSession.sessionId !== 'LOCAL-FALLBACK') {
+                await telemedicineApi.post(`/sessions/${activeSession.sessionId}/end?doctorId=${userData?.id}&notes=${encodeURIComponent(notes)}`);
+            }
             
-            // Optionally update the core appointment service directly as fallback
-            try { await appointmentApi.put(`/${activeSession.appointment.id}/completed`); } catch(e){}
+            // Mark appointment complete
+            try { await appointmentApi.patch(`/${activeSession.appointment.id}/status?status=COMPLETED`); } catch(e){}
             
-            toast.success('Session Completed. Notes uploaded securely.');
+            toast.success('Consultation ended safely.', { id: 'end-session' });
             onCompleteSession && onCompleteSession(activeSession.appointment.id);
             onEndSession && onEndSession(activeSession.appointment, notes);
         } catch (err) {
             console.error(err);
-            toast.error('Failed to sync end session with servers, but disconnected locally.');
-            onCompleteSession && onCompleteSession(activeSession.appointment.id);
-            onEndSession && onEndSession(activeSession.appointment, notes);
-        } finally {
+            toast.error('Encountered error while syncing, disconnected locally.', { id: 'end-session' });
             setSubmitting(false);
             setActiveSession(null);
             setJitsiUrl('');
@@ -128,7 +135,10 @@ const TelemedicineTab = ({ appointments = [], userData, onCompleteSession, onEnd
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="surface-card bg-white p-5 border-dashed border-2 border-slate-200 cursor-pointer hover:border-indigo-400 transition-colors group flex flex-col items-center justify-center text-center">
+                            <div 
+                                onClick={() => onEndSession && onEndSession(activeSession.appointment, notes)}
+                                className="surface-card bg-white p-5 border-dashed border-2 border-slate-200 cursor-pointer hover:border-indigo-400 transition-colors group flex flex-col items-center justify-center text-center"
+                            >
                                 <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm mb-3">
                                     <CheckCircle className="w-5 h-5" />
                                 </div>
@@ -136,7 +146,10 @@ const TelemedicineTab = ({ appointments = [], userData, onCompleteSession, onEnd
                                 <div className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-semibold">Post-call draft</div>
                             </div>
                             
-                            <div className="surface-card bg-white p-5 border-dashed border-2 border-slate-200 cursor-pointer hover:border-emerald-400 transition-colors group flex flex-col items-center justify-center text-center">
+                            <div 
+                                onClick={() => toast("Lab interface not linked yet", { icon: "🧪" })}
+                                className="surface-card bg-white p-5 border-dashed border-2 border-slate-200 cursor-pointer hover:border-emerald-400 transition-colors group flex flex-col items-center justify-center text-center"
+                            >
                                 <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm mb-3">
                                     <UploadCloud className="w-5 h-5" />
                                 </div>

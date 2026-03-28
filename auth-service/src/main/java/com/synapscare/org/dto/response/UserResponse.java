@@ -23,6 +23,7 @@ public class UserResponse {
     private User.Role role;
     private Boolean isActive;
     private Boolean isVerified;
+    private String verificationStatus;
 
     private LocalDateTime createdAt;
 
@@ -37,6 +38,7 @@ public class UserResponse {
                 .role(user.getRole())
                 .isActive(user.getIsActive())
                 .isVerified(user.getIsVerified())
+                .verificationStatus(user.getVerificationStatus() != null ? user.getVerificationStatus().name() : null)
                 .createdAt(user.getCreatedAt())
                 .build();
     }

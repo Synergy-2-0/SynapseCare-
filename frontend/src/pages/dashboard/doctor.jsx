@@ -2,16 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { 
     LayoutDashboard, Users, Calendar, ClipboardList, 
     Video, LogOut, Search, Bell, CheckCircle, XCircle,
-    Activity, Shield, AlertCircle, ArrowUpRight, Stethoscope, Clock
+    Activity, Shield, AlertCircle, ArrowUpRight, Stethoscope, Clock, Wallet,
+    BarChart2, Settings
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { appointmentApi, prescriptionApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isToday, isTomorrow, compareAsc, startOfWeek, addDays, format, isSameDay } from 'date-fns';
 import ScheduleTab from '@/components/doctor/ScheduleTab';
 import TelemedicineTab from '@/components/doctor/TelemedicineTab';
 import SessionPrescriptionModal from '@/components/doctor/SessionPrescriptionModal';
 import PatientContextDrawer from '@/components/doctor/PatientContextDrawer';
+import PatientRosterTab from '@/components/doctor/PatientRosterTab';
 
 
 const Badge = ({ children, variant }) => {
@@ -36,8 +39,6 @@ const DoctorDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
 const [activePostSession, setActivePostSession] = useState(null);
-    const [prescForm, setPrescForm] = useState({ appointmentId: '', patientId: '', medicineName: '', dosage: '', duration: '', instructions: '' });
-    const [submitting, setSubmitting] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -69,34 +70,10 @@ const [activePostSession, setActivePostSession] = useState(null);
         }
     }, [router]);
 
-    const handlePrescriptionSubmit = async (e) => {
-        e.preventDefault();
-        setSubmitting(true);
+    const handleApptAction = async (id, action, reason = null) => {
         try {
-            await prescriptionApi.post('/', {
-                appointmentId: parseInt(prescForm.appointmentId),
-                doctorId: parseInt(userData.id),
-                patientId: parseInt(prescForm.patientId),
-                medicineName: prescForm.medicineName,
-                dosage: prescForm.dosage,
-                duration: prescForm.duration,
-                instructions: prescForm.instructions,
-                issuedDate: new Date().toISOString().split('T')[0]
-            });
-            toast.success("Prescription issued beautifully!");
-            setActiveTab('overview');
-            setPrescForm({ appointmentId: '', patientId: '', medicineName: '', dosage: '', duration: '', instructions: '' });
-        } catch (err) {
-            toast.error("Failed to issue. Please review details.");
-            console.error(err);
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const handleApptAction = async (id, action) => {
-        try {
-            await appointmentApi.put(`/${id}/${action}`);
+            const payload = reason ? { data: { reason } } : {};
+            await appointmentApi.put(`/${id}/${action}`, payload);
             setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: action === 'accept' ? 'CONFIRMED' : 'REJECTED' } : a));
             toast.success(`Visit ${action === 'accept' ? 'Confirmed' : 'Rejected'}`);
         } catch (err) {
@@ -122,10 +99,10 @@ const [activePostSession, setActivePostSession] = useState(null);
                 <div className="inline-flex items-center gap-2 mb-16 px-2 group cursor-pointer">
                     <div className="relative">
                         <div className="absolute inset-0 rounded-full bg-indigo-500 blur-lg opacity-20 group-hover:opacity-40 transition-opacity" />
-                        <img src="/logo.png" alt="SynapCare" className="w-10 h-10 object-contain relative drop-shadow-sm transition-transform group-hover:scale-110" />
+                        <img src="/logo.png" alt="SynapseDoc" className="w-10 h-10 object-contain relative drop-shadow-sm transition-transform group-hover:scale-110" />
                     </div>
                     <span className="text-2xl font-black tracking-tight text-slate-900 font-display">
-                        Synap<span className="text-indigo-600">Care</span>
+                        Synapse<span className="text-indigo-600">Doc</span>
                     </span>
                 </div>
                 
@@ -135,6 +112,8 @@ const [activePostSession, setActivePostSession] = useState(null);
                         { id: 'patients', icon: Users, label: 'My Patients' },
                         { id: 'schedule', icon: Calendar, label: 'My Schedule' },
                         { id: 'telemedicine', icon: Video, label: 'Telemedicine' },
+                        { id: 'statistics', icon: BarChart2, label: 'Statistic' },
+                        { id: 'settings', icon: Settings, label: 'Settings' },
                     ].map((item) => (
                         <button 
                             key={item.id} 
@@ -162,28 +141,36 @@ const [activePostSession, setActivePostSession] = useState(null);
             <main className="flex-1 p-10 xl:p-14 overflow-y-auto w-full relative">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-teal-200/20 blur-[100px] -z-10 rounded-full pointer-events-none"></div>
 
-                <header className="flex justify-between items-end mb-12">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-4">
-                            <h1 className="text-4xl xl:text-5xl font-serif text-slate-900 tracking-tight">Good morning, Dr. {userData?.name?.split(' ')[0] || 'Doctor'}</h1>
-                            <div className="px-3 py-1 bg-emerald-100/50 text-emerald-700 rounded-full border border-emerald-200/50 text-xs font-semibold flex items-center gap-1.5 shadow-sm">
-                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                                Verified
-                            </div>
+                <header className="flex justify-between items-center mb-8">
+                    <div className="flex items-center gap-4 flex-1">
+                        <div className="relative w-64">
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input type="text" placeholder="Search Appointments..." className="w-full pl-10 pr-4 py-2.5 rounded-full border border-[var(--border-color)] bg-white text-sm focus:outline-none focus:border-teal-500 transition-colors shadow-sm" />
                         </div>
-                        <p className="text-slate-500 font-medium text-sm tracking-widest pl-1 uppercase opacity-80">Medical Practitioner ID: #DOC-{userData?.id}</p>
                     </div>
                     
-                    <div className="flex items-center gap-4">
-                        <button className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-400 hover:text-teal-600 shadow-sm border border-[var(--border-color)] transition-all hover:shadow-md">
-                            <Search className="w-5 h-5" />
+                    <div className="flex items-center gap-6">
+                        <button className="px-5 py-2.5 bg-teal-600 text-white rounded-full text-sm font-semibold hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-sm" onClick={() => setActiveTab('schedule')}>
+                            <div className="w-4 h-4 flex items-center justify-center bg-white/20 rounded-full">+</div> Book Walk-in
                         </button>
-                        <button className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-400 hover:text-teal-600 shadow-sm border border-[var(--border-color)] transition-all hover:shadow-md relative">
+                        <div className="h-6 w-px bg-slate-200 mx-2"></div>
+                        <button className="w-10 h-10 rounded-full flex items-center justify-center text-teal-600 hover:bg-teal-50 transition-colors">
+                            <Settings className="w-5 h-5" />
+                        </button>
+                        <button className="w-10 h-10 rounded-full flex items-center justify-center text-teal-600 hover:bg-teal-50 transition-colors relative">
                             <Bell className="w-5 h-5" />
-                            <div className="absolute top-3 right-3 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></div>
+                            {appointments.some(a => a.status === 'PENDING') && (
+                                <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+                            )}
                         </button>
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-md">
-                            <img src={`https://ui-avatars.com/api/?name=${userData?.name}&background=0D8B93&color=fff`} alt="Profile" />
+                        <div className="flex items-center gap-3 pl-2">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-sm font-semibold text-slate-900">{userData?.name || 'Dr. Doctor'}</p>
+                                <p className="text-xs text-slate-500">Your Profile</p>
+                            </div>
+                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-1 ring-slate-100">
+                                <img src={`https://ui-avatars.com/api/?name=${userData?.name}&background=0D8B93&color=fff`} alt="Profile" />
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -193,129 +180,159 @@ const [activePostSession, setActivePostSession] = useState(null);
                           
                           {activeTab === 'overview' && (
                               <>
-                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                                      {[
-                                          { label: 'Active Clinic Queue', value: stats.appointmentsToday, icon: Activity, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100/50' },
-                                { label: 'Assigned Patients', value: stats.activePatients, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100/50' }, 
-                                { label: 'Daily Hours Logged', value: `${stats.hours}h`, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100/50' }
-                            ].map((s, i) => (
-                                <motion.div key={i} whileHover={{ y: -4 }} className={`surface-card p-6 border ${s.border} bg-white group flex flex-col justify-between h-[160px]`}>
-                                    <div className="flex justify-between items-start">
-                                        <div className={`p-4 ${s.bg} ${s.color} rounded-[1.2rem] group-hover:scale-110 transition-transform shadow-sm`}>
-                                            <s.icon className="w-6 h-6" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="text-[13px] font-semibold text-slate-500 uppercase tracking-widest mb-1">{s.label}</div>
-                                        <div className="text-4xl font-serif text-slate-900">{s.value}</div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
+                                  <div className="bg-gradient-to-r from-teal-50 to-indigo-50 rounded-3xl p-8 flex justify-between items-center relative overflow-hidden">
+                                      <div className="z-10">
+                                          <h2 className="text-3xl font-serif text-teal-900 mb-2">Good Morning, {userData?.name || 'Dr. Doctor'}</h2>
+                                          <p className="text-teal-700/80 font-medium">Have a nice day at work</p>
+                                      </div>
+                                      <div className="absolute right-0 bottom-0 pointer-events-none opacity-90 h-[120%] flex items-end">
+                                          {/* Placeholder for illustration */}
+                                          <div className="w-48 h-48 bg-teal-200/40 rounded-full blur-3xl absolute -right-10 -bottom-10"></div>
+                                          <div className="w-32 h-32 bg-indigo-200/40 rounded-full blur-2xl absolute right-20 top-0"></div>
+                                          <div className="relative flex items-center gap-4 px-12 pb-4">
+                                              <div className="w-16 h-32 bg-teal-600/10 rounded-t-full"></div>
+                                              <div className="w-20 h-40 bg-indigo-600/10 rounded-t-full"></div>
+                                              <div className="w-16 h-32 bg-teal-600/10 rounded-t-full"></div>
+                                          </div>
+                                      </div>
+                                  </div>
 
+                                  <div>
+                                      <div className="flex justify-between items-center mb-4">
+                                          <h3 className="text-lg font-serif text-slate-800">Weekly Reports</h3>
+                                          <button className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1">
+                                              Current View <Calendar className="w-4 h-4" />
+                                          </button>
+                                      </div>
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                          {[
+                                              { label: 'Total Patients', value: new Set(appointments.filter(a => a.status !== 'CANCELLED').map(a => a.patientId)).size || 0, icon: Users, bg: 'bg-teal-600', text: 'text-white', iconColor: 'text-white', iconBg: 'bg-white/20' },
+                                              { label: 'Avg. Severity', value: 'Normal', icon: Activity, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-amber-500', iconBg: 'bg-amber-50' },
+                                              { label: "Today's Visits", value: appointments.filter(a => a.date && isToday(new Date(a.date)) && a.status !== 'CANCELLED').length || 0, icon: Calendar, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-rose-500', iconBg: 'bg-rose-50' },
+                                              { label: 'Telemedicine', value: appointments.filter(a => (a.mode === 'TELEMEDICINE' || a.type === 'TELEMEDICINE') && a.status !== 'CANCELLED').length || 0, icon: Video, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-indigo-500', iconBg: 'bg-indigo-50' },
+                                          ].map((s, i) => (
+                                              <div key={i} className={`p-4 rounded-2xl ${s.bg} flex flex-col items-center justify-center shadow-sm border border-slate-100/50 hover:-translate-y-1 transition-transform`}>
+                                                  <div className={`w-10 h-10 ${s.iconBg} rounded-full flex items-center justify-center mb-3`}>
+                                                      <s.icon className={`w-5 h-5 ${s.iconColor}`} />
+                                                  </div>
+                                                  <div className={`text-xs font-semibold uppercase tracking-wider mb-1 opacity-80 ${s.text}`}>{s.label}</div>
+                                                  <div className={`text-2xl font-bold ${s.text}`}>{s.value}</div>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  </div>
 
-                            <div className="surface-card bg-white overflow-hidden flex flex-col min-h-[400px]">
-                                <div className="p-8 border-b border-[var(--border-color)] flex justify-between items-center bg-slate-50/30">
-                                    <h3 className="text-2xl font-serif text-slate-900">Today's Practice Schedule</h3>
-                                    <button className="text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors uppercase tracking-widest flex items-center gap-1 group">
-                                        View Manifest <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                                    </button>
-                                </div>
-                                <div className="p-8 space-y-4 flex-1">
-                                    {appointments.length > 0 ? appointments.map((appt, i) => (
-                                        <div key={i} className="p-6 bg-slate-50/50 rounded-[var(--radius-2xl)] flex justify-between items-center border border-slate-100 group hover:border-teal-500/30 hover:bg-white hover:shadow-md transition-all duration-300">
-                                            <div className="flex items-center gap-6">
-                                                <div className="w-14 h-14 bg-white border border-slate-200 text-teal-600 rounded-[1rem] flex items-center justify-center font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
-                                                    #{appt.tokenNumber || (i+1)}
-                                                </div>
-                                                <div>
-                                                    <div className="text-lg font-serif text-slate-900 font-medium mb-1.5 flex items-center gap-3">
-                                                        Patient Record #{appt.patientId}
-                                                        {appt.status === 'PENDING' && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>}
-                                                    </div>
-                                                    <div className="flex gap-3 items-center">
-                                                        <Badge variant={appt.status === 'CONFIRMED' ? 'success' : appt.status === 'PAID' ? 'primary' : 'warning'}>{appt.status}</Badge>
-                                                        <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">{appt.date} • {appt.time}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-3 items-center">
-                                                {appt.status === 'PENDING' && (
-                                                    <>
-                                                        <button onClick={(e) => { e.stopPropagation(); handleApptAction(appt.id, 'accept'); }} className="w-10 h-10 flex items-center justify-center bg-white border border-emerald-200 text-emerald-600 rounded-full shadow-sm hover:bg-emerald-50 hover:scale-105 transition-all" title="Accept Visit">
-                                                            <CheckCircle className="w-5 h-5" />
-                                                        </button>
-                                                        <button onClick={(e) => { e.stopPropagation(); handleApptAction(appt.id, 'reject'); }} className="w-10 h-10 flex items-center justify-center bg-white border border-rose-200 text-rose-600 rounded-full shadow-sm hover:bg-rose-50 hover:scale-105 transition-all" title="Reject Visit">
-                                                            <XCircle className="w-5 h-5" />
-                                                        </button>
-                                                    </>
-                                                )}
-                                                {(appt.status === 'CONFIRMED' || appt.status === 'PAID') && (
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); setActivePostSession(appt); }}
-                                                        className="px-5 py-2.5 bg-teal-600 text-white rounded-[1rem] text-sm font-semibold flex items-center gap-2 hover:bg-teal-700 hover:shadow-lg shadow-teal-600/20 transition-all active:scale-95"
-                                                    >
-                                                        <ClipboardList className="w-4 h-4" /> Issue Rx
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
-                                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                                                <Calendar className="w-8 h-8 text-slate-300" />
-                                            </div>
-                                            <div className="text-lg font-serif text-slate-500 mb-2">No active appointments</div>
-                                            <p className="text-sm font-medium opacity-70">Your schedule for off-hours is currently clear.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>                              </>                        )}
+                                  <div className="surface-card bg-white overflow-hidden flex flex-col mt-8">
+                                      <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center bg-slate-50/30">
+                                          <h3 className="text-xl font-serif text-slate-900">Upcoming Appointments</h3>
+                                          <button className="text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors flex items-center gap-1">
+                                              See all
+                                          </button>
+                                      </div>
+                                      <div className="overflow-x-auto">
+                                          <table className="w-full text-left border-collapse min-w-[600px]">
+                                              <thead>
+                                                  <tr className="border-b border-slate-100 bg-slate-50/50 text-xs uppercase tracking-widest text-slate-500">
+                                                      <th className="font-medium p-4 pl-6">Name</th>
+                                                      <th className="font-medium p-4">Location</th>
+                                                      <th className="font-medium p-4">Date</th>
+                                                      <th className="font-medium p-4">Time</th>
+                                                      <th className="font-medium p-4">Status</th>
+                                                      <th className="font-medium p-4 pr-6 text-right">Action</th>
+                                                  </tr>
+                                              </thead>
+                                              <tbody className="divide-y divide-slate-100">
+                                                  {appointments.filter(a => a.status !== 'PENDING').slice(0, 5).map((appt, i) => (
+                                                      <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                          <td className="p-4 pl-6">
+                                                              <div className="flex items-center gap-3">
+                                                                  <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex-shrink-0">
+                                                                      <img src={`https://ui-avatars.com/api/?name=Patient+${appt.patientId}&background=random&color=fff`} alt="Patient" />
+                                                                  </div>
+                                                                  <span className="font-medium text-slate-900">Patient #{appt.patientId}</span>
+                                                              </div>
+                                                          </td>
+                                                          <td className="p-4 text-sm text-slate-600">{appt.mode === 'TELEMEDICINE' || appt.type === 'TELEMEDICINE' ? 'Online' : 'Clinic'}</td>
+                                                          <td className="p-4 text-sm text-slate-600">{appt.date}</td>
+                                                          <td className="p-4 text-sm text-slate-600 font-medium">{appt.time}</td>
+                                                          <td className="p-4">
+                                                              <Badge variant={appt.status === 'CONFIRMED' ? 'success' : appt.status === 'PAID' ? 'primary' : 'warning'}>{appt.status}</Badge>
+                                                          </td>
+                                                          <td className="p-4 pr-6 text-right">
+                                                              {(appt.status === 'CONFIRMED' || appt.status === 'PAID') && (
+                                                                  <button 
+                                                                      onClick={(e) => { e.stopPropagation(); setActivePostSession(appt); }}
+                                                                      className="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center hover:bg-teal-100 transition-colors ml-auto"
+                                                                      title="Issue Rx"
+                                                                  >
+                                                                      <ClipboardList className="w-4 h-4" />
+                                                                  </button>
+                                                              )}
+                                                          </td>
+                                                      </tr>
+                                                  ))}
+                                                  {appointments.filter(a => a.status !== 'PENDING').length === 0 && (
+                                                      <tr>
+                                                          <td colSpan="6" className="p-8 text-center text-slate-500">
+                                                              No upcoming appointments.
+                                                          </td>
+                                                      </tr>
+                                                  )}
+                                              </tbody>
+                                          </table>
+                                      </div>
+                                  </div>
+                              </>                        )}
 
                         {activeTab === 'patients' && (
-                            <div className="surface-card bg-white overflow-hidden flex flex-col min-h-[400px]">
-                                <div className="p-8 border-b border-[var(--border-color)] bg-slate-50/30">
-                                    <h3 className="text-2xl font-serif text-slate-900">Patient Roster</h3>
-                                    <p className="text-slate-500 font-medium mt-2">Manage your clinical patient histories</p>
-                                </div>
-                                <div className="p-0">
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr className="bg-slate-50/50 border-b border-slate-100 text-xs uppercase tracking-widest text-slate-500">
-                                                <th className="p-6 font-semibold">ID</th>
-                                                <th className="p-6 font-semibold">Patient Name</th>
-                                                <th className="p-6 font-semibold">Age</th>
-                                                <th className="p-6 font-semibold">Last Visit</th>
-                                                <th className="p-6 font-semibold">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {[ {id: 101, name: 'Sarah Jenkins', age: 34, lastVisit: '2023-10-14', status: 'Active'}, {id: 204, name: 'Marcus Reed', age: 45, lastVisit: '2023-10-22', status: 'Monitoring'}, {id: 308, name: 'Eleanor Vance', age: 62, lastVisit: '2023-11-05', status: 'Active'}, {id: 412, name: 'James Holden', age: 28, lastVisit: '2023-11-12', status: 'Discharged'} ].map(p => (
-                                                <tr key={p.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
-                                                    <td className="p-6 font-medium text-slate-500">#{p.id}</td>
-                                                    <td className="p-6 font-serif text-slate-900 font-medium text-lg flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold">{p.name.charAt(0)}</div>{p.name}</td>
-                                                    <td className="p-6 text-slate-600">{p.age} yrs</td>
-                                                    <td className="p-6 text-slate-600">{p.lastVisit}</td>
-                                                    <td className="p-6">
-                                                        <span className={{'Active': 'px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700', 'Monitoring': 'px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700', 'Discharged': 'px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600'}[p.status] || 'px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600'}>{p.status}</span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                            <PatientRosterTab 
+                                userData={userData}
+                                onViewPatient={(appt) => {
+                                setSelectedAppointment(appt);
+                                setIsDrawerOpen(true);
+                            }} />
                         )}
 
                         {activeTab === 'schedule' && (
-                            <ScheduleTab appointments={appointments} />
+                            <ScheduleTab 
+                                appointments={appointments} 
+                                doctorId={userData?.id}
+                                onAppointmentClick={(appt) => {
+                                    setSelectedAppointment(appt);
+                                    setIsDrawerOpen(true);
+                                }}
+                            />
                         )}
 
                         {activeTab === 'telemedicine' && (
-                            <TelemedicineTab appointments={appointments} userData={userData} onCompleteSession={(id) => {
-                                // optional reload or optimistic update here
-                                setAppointments(prev => prev.filter(a => a.id !== id));
-                            }} onEndSession={(appt, notes) => setActivePostSession({ ...appt, inheritedNotes: notes })} />
+                            <TelemedicineTab 
+                                appointments={appointments} 
+                                userData={userData} 
+                                onCompleteSession={(id) => {
+                                    setAppointments(prev => prev.filter(a => a.id !== id));
+                                }} 
+                                onEndSession={(appt, notes) => setActivePostSession({ ...appt, inheritedNotes: notes })} 
+                            />
+                        )}
+
+                        {activeTab === 'statistics' && (
+                            <div className="surface-card bg-white p-12 flex flex-col items-center justify-center min-h-[500px]">
+                                <div className="w-24 h-24 bg-slate-50 rounded-full flex flex-col items-center justify-center mb-6 border border-slate-100 shadow-sm">
+                                    <BarChart2 className="w-10 h-10 text-teal-300" />
+                                </div>
+                                <h3 className="text-2xl font-serif text-slate-800 mb-2">Practice Statistics</h3>
+                                <p className="text-slate-500 font-medium">Detailed patient metrics and income reports will appear here.</p>
+                            </div>
+                        )}
+
+                        {activeTab === 'settings' && (
+                            <div className="surface-card bg-white p-12 flex flex-col items-center justify-center min-h-[500px]">
+                                <div className="w-24 h-24 bg-slate-50 rounded-full flex flex-col items-center justify-center mb-6 border border-slate-100 shadow-sm">
+                                    <Settings className="w-10 h-10 text-teal-300" />
+                                </div>
+                                <h3 className="text-2xl font-serif text-slate-800 mb-2">Account Settings</h3>
+                                <p className="text-slate-500 font-medium">Manage your profile, integrations, and preferences.</p>
+                            </div>
                         )}
                         
                     </div>
@@ -323,20 +340,69 @@ const [activePostSession, setActivePostSession] = useState(null);
                     <div className="space-y-8">
                         {activeTab === 'overview' && (
                             <>
-                                <div className="glass-morphism bg-gradient-to-b from-indigo-900 to-slate-900 rounded-[var(--radius-3xl)] p-8 text-white relative overflow-hidden group">
-                                     <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl group-hover:bg-indigo-500/30 transition-all duration-700"></div>
-                                     <h4 className="text-xl font-serif mb-6 relative z-10">Active Shift Hours</h4>
-                                     <div className="space-y-4 relative z-10">
-                                        {['09:00 AM - 01:00 PM', '02:00 PM - 06:00 PM'].map((s, i) => (
-                                            <div key={i} className="flex items-center gap-3 text-sm font-medium text-indigo-100 bg-white/5 p-3 rounded-[1rem] border border-white/5">
-                                                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div> {s}
-                                            </div>
-                                        ))}
-                                        <button className="w-full py-3.5 bg-white text-indigo-900 rounded-[1rem] font-semibold text-xs tracking-widest uppercase shadow-lg shadow-white/10 mt-6 hover:bg-slate-50 transition-colors active:scale-95">Modify Shift</button>
+                                <div className="bg-white p-6 rounded-3xl border border-[var(--border-color)]">
+                                     <div className="flex justify-between items-center mb-6">
+                                         <h4 className="font-serif text-slate-900 text-lg">Schedule Calendar</h4>
+                                         <div className="flex gap-2">
+                                             <button className="px-3 py-1 text-xs font-semibold text-teal-600 bg-teal-50 rounded-full">{format(new Date(), 'MMM')}</button>
+                                             <button className="px-3 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50 rounded-full">{format(new Date(), 'yyyy')}</button>
+                                         </div>
+                                     </div>
+                                     <div className="flex justify-between text-center pb-4">
+                                         {[0, 1, 2, 3, 4, 5, 6].map((i) => {
+                                             const dayDate = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
+                                             const isCurrentDay = isSameDay(dayDate, new Date());
+                                             return (
+                                                 <div key={i} className={`flex flex-col items-center gap-2 p-2 rounded-2xl ${isCurrentDay ? 'bg-teal-600 text-white shadow-md shadow-teal-500/30' : 'text-slate-500'}`}>
+                                                     <span className="text-xs">{format(dayDate, 'EEE')}</span>
+                                                     <span className={`text-sm font-bold ${isCurrentDay ? 'text-white' : 'text-slate-900'}`}>{format(dayDate, 'd')}</span>
+                                                 </div>
+                                             );
+                                         })}
+                                     </div>
+                                     <div className="border-t border-slate-100 pt-4">
+                                         <h4 className="font-serif text-slate-900 text-lg mb-4">Activity Reports</h4>
+                                         <div className="grid grid-cols-2 gap-3">
+                                             <div className="p-3 bg-teal-50 rounded-2xl border border-teal-100/50 text-center">
+                                                 <div className="w-8 h-8 mx-auto bg-white rounded-full flex items-center justify-center mb-2 shadow-sm">
+                                                     <CheckCircle className="w-4 h-4 text-teal-600" />
+                                                 </div>
+                                                 <div className="text-[10px] font-semibold text-slate-600 uppercase">Completed Cases</div>
+                                                 <div className="text-xs font-bold text-teal-700">{appointments.filter(a => a.status === 'PAID' || a.status === 'CONFIRMED').length}</div>
+                                             </div>
+                                             <div className="p-3 bg-indigo-50 rounded-2xl border border-indigo-100/50 text-center">
+                                                 <div className="w-8 h-8 mx-auto bg-white rounded-full flex items-center justify-center mb-2 shadow-sm">
+                                                     <Clock className="w-4 h-4 text-indigo-600" />
+                                                 </div>
+                                                 <div className="text-[10px] font-semibold text-slate-600 uppercase">Active Hours</div>
+                                                 <div className="text-xs font-bold text-indigo-700">{stats.hours}</div>
+                                             </div>
+                                         </div>
                                      </div>
                                 </div>
 
-
+                                <div className="bg-gradient-to-b from-teal-500 to-teal-700 rounded-3xl p-6 text-white relative overflow-hidden shadow-lg shadow-teal-600/20">
+                                    <h4 className="font-serif text-lg mb-6">Patient Flow This Week</h4>
+                                    <div className="h-40 flex items-end justify-between gap-2 px-2">
+                                        {[0, 1, 2, 3, 4, 5, 6].map((i) => {
+                                            const dayDate = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
+                                            // Mock data generation based on date for the chart to look dynamic
+                                            const dayAppointments = appointments.filter(a => a.date && isSameDay(new Date(a.date), dayDate)).length;
+                                            const h = dayAppointments > 0 ? Math.min(100, Math.max(10, dayAppointments * 20)) : 10 + (i * 15 % 50); // Fallback to mockup data if empty
+                                            return (
+                                                <div key={i} className="flex flex-col items-center gap-2">
+                                                    <div className="flex items-end gap-1 h-28">
+                                                        <div className="w-2 bg-teal-300/40 rounded-t-full transition-all duration-1000" style={{ height: `${h}%` }}></div>
+                                                        <div className="w-2 bg-white/80 rounded-t-full shadow-sm transition-all duration-1000" style={{ height: `${h * 0.8}%` }}></div>
+                                                    </div>
+                                                    <span className="text-[10px] font-medium opacity-80">
+                                                        {format(dayDate, 'EEE')}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </>
                         )}
 
@@ -352,21 +418,58 @@ const [activePostSession, setActivePostSession] = useState(null);
                             </div>
                         )}
 
-                        {activeTab === 'schedule' && (
-                            <div className="surface-card bg-white p-8">
-                                <h4 className="text-xl font-serif text-slate-900 mb-4">Schedule Summary</h4>
-                                <p className="text-slate-500 text-sm">Only today & tomorrow appointments shown below.</p>
-                                <div className="mt-4 space-y-3">
-                                    {appointments.slice(0, 4).map((appt, i) => (
-                                        <div key={i} className="flex justify-between p-3 rounded-lg border border-slate-100">
-                                            <span className="text-sm text-slate-600">#{appt.patientId}</span>
-                                            <span className="text-sm text-slate-600">{appt.time}</span>
-                                            <Badge variant={appt.status === 'CONFIRMED' ? 'success' : appt.status === 'PAID' ? 'primary' : 'warning'}>{appt.status}</Badge>
-                                        </div>
-                                    ))}
+                        {activeTab === 'schedule' && (() => {
+                            const upcomingAppts = appointments
+                                .filter(a => {
+                                    if (!a.date) return false;
+                                    const d = new Date(a.date);
+                                    return isToday(d) || isTomorrow(d);
+                                })
+                                .sort((a, b) => {
+                                    const dateA = new Date(`${a.date}T${a.time || '00:00'}`);
+                                    const dateB = new Date(`${b.date}T${b.time || '00:00'}`);
+                                    return compareAsc(dateA, dateB);
+                                });
+
+                            return (
+                                <div className="surface-card bg-white p-8">
+                                    <h4 className="text-xl font-serif text-slate-900 mb-4">Schedule Summary</h4>
+                                    <p className="text-slate-500 text-sm">Upcoming appointments for today and tomorrow.</p>
+                                    <div className="mt-4 space-y-3">
+                                        {upcomingAppts.length > 0 ? (
+                                            upcomingAppts.map((appt, i) => (
+                                                <div key={i} className="flex flex-col p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-sm font-semibold text-slate-700">Patient #{appt.patientId}</span>
+                                                        <Badge variant={appt.status === 'CONFIRMED' ? 'success' : appt.status === 'PAID' ? 'primary' : 'warning'}>
+                                                            {appt.status}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="flex items-center justify-between text-xs text-slate-500">
+                                                        <div className="flex gap-2">
+                                                            <span className="font-medium text-slate-600">{isToday(new Date(appt.date)) ? 'Today' : 'Tomorrow'}</span>
+                                                            <span>•</span>
+                                                            <span>{appt.time}</span>
+                                                        </div>
+                                                        <span className="font-medium flex items-center gap-1">
+                                                            {appt.mode === 'TELEMEDICINE' || appt.type === 'TELEMEDICINE' ? (
+                                                                <><Video className="w-3 h-3 text-indigo-500" /> Video</>
+                                                            ) : (
+                                                                <><Users className="w-3 h-3 text-emerald-500" /> Clinic</>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center p-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-slate-500 text-sm">
+                                                No appointments scheduled for today or tomorrow.
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
 
                         {activeTab === 'telemedicine' && (
                             <div className="surface-card bg-white p-8">
@@ -379,6 +482,36 @@ const [activePostSession, setActivePostSession] = useState(null);
                                             <div className="text-xs text-slate-500">{appt.date} • {appt.time}</div>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'statistics' && (
+                            <div className="surface-card bg-white p-8">
+                                <h4 className="text-xl font-serif text-slate-900 mb-4">Quick Insights</h4>
+                                <p className="text-slate-500 text-sm">Key performance indicators and analytics.</p>
+                                <div className="mt-6 flex flex-col gap-3">
+                                    <div className="p-4 bg-teal-50 rounded-xl border border-teal-100 flex items-center justify-between">
+                                        <div className="text-sm font-bold text-teal-800">Total Consultations</div>
+                                        <div className="text-lg font-serif text-teal-900">{appointments.length}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'settings' && (
+                            <div className="surface-card bg-white p-8">
+                                <h4 className="text-xl font-serif text-slate-900 mb-4">Quick Preferences</h4>
+                                <p className="text-slate-500 text-sm">Adjust notifications and display themes.</p>
+                                <div className="mt-6 space-y-4">
+                                    <label className="flex items-center gap-3">
+                                        <input type="checkbox" className="w-4 h-4 text-teal-600 rounded" defaultChecked />
+                                        <span className="text-sm font-medium text-slate-700">Email Notifications</span>
+                                    </label>
+                                    <label className="flex items-center gap-3">
+                                        <input type="checkbox" className="w-4 h-4 text-teal-600 rounded" defaultChecked />
+                                        <span className="text-sm font-medium text-slate-700">SMS Alerts</span>
+                                    </label>
                                 </div>
                             </div>
                         )}

@@ -35,11 +35,19 @@ const LoginPage = () => {
             if (email) localStorage.setItem('user_email', email);
             if (userId !== undefined && userId !== null) localStorage.setItem('user_id', String(userId));
             if (name) localStorage.setItem('user_name', name);
+            if (user.verificationStatus) localStorage.setItem('user_verificationStatus', user.verificationStatus);
 
             // Role based routing
             if (role === 'ADMIN') router.push('/dashboard/admin');
-            else if (role === 'DOCTOR') router.push('/dashboard/doctor');
-            else router.push('/dashboard/patient');
+            else if (role === 'DOCTOR') {
+                if (user.verificationStatus === 'APPROVED' || user.isVerified) {
+                    router.push('/dashboard/doctor');
+                } else if (user.verificationStatus === 'PENDING') {
+                    router.push('/doctor/setup');
+                } else {
+                    router.push('/doctor/setup');
+                }
+            } else router.push('/dashboard/patient');
 
         } catch (err) {
             setError(err.response?.data?.message || 'Invalid credentials. Please try again.');
