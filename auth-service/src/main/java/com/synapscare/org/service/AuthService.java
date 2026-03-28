@@ -135,15 +135,16 @@ public class AuthService {
 
         // Check doctor verification status
         if (user.getRole() == User.Role.DOCTOR) {
+            // WE NOW ALLOW PENDING TO LOGIN TO UPLOAD PROFILE DETAILS!
+            /*
             if (user.getVerificationStatus() == null ||
                 user.getVerificationStatus() == com.synapscare.org.enums.VerificationStatus.PENDING) {
                 throw new BadRequestException("Doctor account is pending verification. Please wait for admin approval.");
             }
+            */
             if (user.getVerificationStatus() == com.synapscare.org.enums.VerificationStatus.REJECTED) {
                 String reason = user.getVerificationRejectionReason();
-                String message = "Doctor account verification was rejected" +
-                               (reason != null ? ": " + reason : "");
-                throw new BadRequestException(message);
+                throw new BadRequestException("Doctor verification rejected: " + reason);
             }
         }
 

@@ -19,6 +19,9 @@ public class UpdateDoctorProfileRequest {
     @Min(value = 0, message = "Experience cannot be negative")
     private Integer experience;
 
+    @Size(max = 100)
+    private String licenseNumber;
+
     @DecimalMin(value = "0.0", inclusive = false, message = "Consultation fee must be greater than 0")
     private BigDecimal consultationFee;
 

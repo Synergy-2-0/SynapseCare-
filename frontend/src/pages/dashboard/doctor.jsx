@@ -9,7 +9,7 @@ import { useRouter } from 'next/router';
 import { appointmentApi, prescriptionApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { isToday, isTomorrow, compareAsc } from 'date-fns';
+import { isToday, isTomorrow, compareAsc, startOfWeek, addDays, format, isSameDay } from 'date-fns';
 import ScheduleTab from '@/components/doctor/ScheduleTab';
 import TelemedicineTab from '@/components/doctor/TelemedicineTab';
 import SessionPrescriptionModal from '@/components/doctor/SessionPrescriptionModal';
@@ -150,11 +150,8 @@ const [activePostSession, setActivePostSession] = useState(null);
                     </div>
                     
                     <div className="flex items-center gap-6">
-                        <button className="text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors">
-                            Appointment History
-                        </button>
-                        <button className="px-5 py-2.5 bg-teal-600 text-white rounded-full text-sm font-semibold hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-sm">
-                            <div className="w-4 h-4 flex items-center justify-center bg-white/20 rounded-full">+</div> Add Patients
+                        <button className="px-5 py-2.5 bg-teal-600 text-white rounded-full text-sm font-semibold hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-sm" onClick={() => setActiveTab('schedule')}>
+                            <div className="w-4 h-4 flex items-center justify-center bg-white/20 rounded-full">+</div> Book Walk-in
                         </button>
                         <div className="h-6 w-px bg-slate-200 mx-2"></div>
                         <button className="w-10 h-10 rounded-full flex items-center justify-center text-teal-600 hover:bg-teal-50 transition-colors">
@@ -162,7 +159,9 @@ const [activePostSession, setActivePostSession] = useState(null);
                         </button>
                         <button className="w-10 h-10 rounded-full flex items-center justify-center text-teal-600 hover:bg-teal-50 transition-colors relative">
                             <Bell className="w-5 h-5" />
-                            <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+                            {appointments.some(a => a.status === 'PENDING') && (
+                                <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+                            )}
                         </button>
                         <div className="flex items-center gap-3 pl-2">
                             <div className="text-right hidden sm:block">
@@ -202,15 +201,15 @@ const [activePostSession, setActivePostSession] = useState(null);
                                       <div className="flex justify-between items-center mb-4">
                                           <h3 className="text-lg font-serif text-slate-800">Weekly Reports</h3>
                                           <button className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1">
-                                              Last Week <Calendar className="w-4 h-4" />
+                                              Current View <Calendar className="w-4 h-4" />
                                           </button>
                                       </div>
-                                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                           {[
-                                              { label: 'Total Patients', value: '265', icon: Users, bg: 'bg-teal-600', text: 'text-white', iconColor: 'text-white', iconBg: 'bg-white/20' },
-                                              { label: 'Phone Calls', value: '260', icon: Activity, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-amber-500', iconBg: 'bg-amber-50' },
-                                              { label: 'Appointments', value: '128', icon: Calendar, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-rose-500', iconBg: 'bg-rose-50' },
-                                              { label: 'Annual Visits', value: '321', icon: Clock, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-indigo-500', iconBg: 'bg-indigo-50' },
+                                              { label: 'Total Patients', value: new Set(appointments.filter(a => a.status !== 'CANCELLED').map(a => a.patientId)).size || 0, icon: Users, bg: 'bg-teal-600', text: 'text-white', iconColor: 'text-white', iconBg: 'bg-white/20' },
+                                              { label: 'Avg. Severity', value: 'Normal', icon: Activity, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-amber-500', iconBg: 'bg-amber-50' },
+                                              { label: "Today's Visits", value: appointments.filter(a => a.date && isToday(new Date(a.date)) && a.status !== 'CANCELLED').length || 0, icon: Calendar, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-rose-500', iconBg: 'bg-rose-50' },
+                                              { label: 'Telemedicine', value: appointments.filter(a => (a.mode === 'TELEMEDICINE' || a.type === 'TELEMEDICINE') && a.status !== 'CANCELLED').length || 0, icon: Video, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-indigo-500', iconBg: 'bg-indigo-50' },
                                           ].map((s, i) => (
                                               <div key={i} className={`p-4 rounded-2xl ${s.bg} flex flex-col items-center justify-center shadow-sm border border-slate-100/50 hover:-translate-y-1 transition-transform`}>
                                                   <div className={`w-10 h-10 ${s.iconBg} rounded-full flex items-center justify-center mb-3`}>
@@ -220,9 +219,6 @@ const [activePostSession, setActivePostSession] = useState(null);
                                                   <div className={`text-2xl font-bold ${s.text}`}>{s.value}</div>
                                               </div>
                                           ))}
-                                          <div className="p-4 rounded-2xl bg-white border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors">
-                                              <div className="w-10 h-10 rounded-full border-2 border-slate-300 flex items-center justify-center text-2xl font-light mb-2">+</div>
-                                          </div>
                                       </div>
                                   </div>
 
@@ -348,53 +344,63 @@ const [activePostSession, setActivePostSession] = useState(null);
                                      <div className="flex justify-between items-center mb-6">
                                          <h4 className="font-serif text-slate-900 text-lg">Schedule Calendar</h4>
                                          <div className="flex gap-2">
-                                             <button className="px-3 py-1 text-xs font-semibold text-teal-600 bg-teal-50 rounded-full">Mon</button>
-                                             <button className="px-3 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50 rounded-full">Oct</button>
+                                             <button className="px-3 py-1 text-xs font-semibold text-teal-600 bg-teal-50 rounded-full">{format(new Date(), 'MMM')}</button>
+                                             <button className="px-3 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50 rounded-full">{format(new Date(), 'yyyy')}</button>
                                          </div>
                                      </div>
                                      <div className="flex justify-between text-center pb-4">
-                                         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-                                             <div key={i} className={`flex flex-col items-center gap-2 p-2 rounded-2xl ${i === 3 ? 'bg-teal-600 text-white shadow-md shadow-teal-500/30' : 'text-slate-500'}`}>
-                                                 <span className="text-xs">{day}</span>
-                                                 <span className={`text-sm font-bold ${i === 3 ? 'text-white' : 'text-slate-900'}`}>{14 + i}</span>
-                                             </div>
-                                         ))}
+                                         {[0, 1, 2, 3, 4, 5, 6].map((i) => {
+                                             const dayDate = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
+                                             const isCurrentDay = isSameDay(dayDate, new Date());
+                                             return (
+                                                 <div key={i} className={`flex flex-col items-center gap-2 p-2 rounded-2xl ${isCurrentDay ? 'bg-teal-600 text-white shadow-md shadow-teal-500/30' : 'text-slate-500'}`}>
+                                                     <span className="text-xs">{format(dayDate, 'EEE')}</span>
+                                                     <span className={`text-sm font-bold ${isCurrentDay ? 'text-white' : 'text-slate-900'}`}>{format(dayDate, 'd')}</span>
+                                                 </div>
+                                             );
+                                         })}
                                      </div>
                                      <div className="border-t border-slate-100 pt-4">
-                                         <h4 className="font-serif text-slate-900 text-lg mb-4">Monthly Reports</h4>
+                                         <h4 className="font-serif text-slate-900 text-lg mb-4">Activity Reports</h4>
                                          <div className="grid grid-cols-2 gap-3">
                                              <div className="p-3 bg-teal-50 rounded-2xl border border-teal-100/50 text-center">
                                                  <div className="w-8 h-8 mx-auto bg-white rounded-full flex items-center justify-center mb-2 shadow-sm">
-                                                     <Users className="w-4 h-4 text-teal-600" />
+                                                     <CheckCircle className="w-4 h-4 text-teal-600" />
                                                  </div>
-                                                 <div className="text-[10px] font-semibold text-slate-600 uppercase">Consulting</div>
-                                                 <div className="text-xs font-bold text-teal-700">120</div>
+                                                 <div className="text-[10px] font-semibold text-slate-600 uppercase">Completed Cases</div>
+                                                 <div className="text-xs font-bold text-teal-700">{appointments.filter(a => a.status === 'PAID' || a.status === 'CONFIRMED').length}</div>
                                              </div>
                                              <div className="p-3 bg-indigo-50 rounded-2xl border border-indigo-100/50 text-center">
                                                  <div className="w-8 h-8 mx-auto bg-white rounded-full flex items-center justify-center mb-2 shadow-sm">
-                                                     <Activity className="w-4 h-4 text-indigo-600" />
+                                                     <Clock className="w-4 h-4 text-indigo-600" />
                                                  </div>
-                                                 <div className="text-[10px] font-semibold text-slate-600 uppercase">Physician PA</div>
-                                                 <div className="text-xs font-bold text-indigo-700">85</div>
+                                                 <div className="text-[10px] font-semibold text-slate-600 uppercase">Active Hours</div>
+                                                 <div className="text-xs font-bold text-indigo-700">{stats.hours}</div>
                                              </div>
                                          </div>
                                      </div>
                                 </div>
 
                                 <div className="bg-gradient-to-b from-teal-500 to-teal-700 rounded-3xl p-6 text-white relative overflow-hidden shadow-lg shadow-teal-600/20">
-                                    <h4 className="font-serif text-lg mb-6">Number of Patients</h4>
+                                    <h4 className="font-serif text-lg mb-6">Patient Flow This Week</h4>
                                     <div className="h-40 flex items-end justify-between gap-2 px-2">
-                                        {[40, 70, 45, 90, 60, 80, 50].map((h, i) => (
-                                            <div key={i} className="flex flex-col items-center gap-2">
-                                                <div className="flex items-end gap-1 h-28">
-                                                    <div className="w-2 bg-teal-300/40 rounded-t-full" style={{ height: `${h}%` }}></div>
-                                                    <div className="w-2 bg-white/80 rounded-t-full shadow-sm" style={{ height: `${h * 0.8}%` }}></div>
+                                        {[0, 1, 2, 3, 4, 5, 6].map((i) => {
+                                            const dayDate = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
+                                            // Mock data generation based on date for the chart to look dynamic
+                                            const dayAppointments = appointments.filter(a => a.date && isSameDay(new Date(a.date), dayDate)).length;
+                                            const h = dayAppointments > 0 ? Math.min(100, Math.max(10, dayAppointments * 20)) : 10 + (i * 15 % 50); // Fallback to mockup data if empty
+                                            return (
+                                                <div key={i} className="flex flex-col items-center gap-2">
+                                                    <div className="flex items-end gap-1 h-28">
+                                                        <div className="w-2 bg-teal-300/40 rounded-t-full transition-all duration-1000" style={{ height: `${h}%` }}></div>
+                                                        <div className="w-2 bg-white/80 rounded-t-full shadow-sm transition-all duration-1000" style={{ height: `${h * 0.8}%` }}></div>
+                                                    </div>
+                                                    <span className="text-[10px] font-medium opacity-80">
+                                                        {format(dayDate, 'EEE')}
+                                                    </span>
                                                 </div>
-                                                <span className="text-[10px] font-medium opacity-80">
-                                                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}
-                                                </span>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </>

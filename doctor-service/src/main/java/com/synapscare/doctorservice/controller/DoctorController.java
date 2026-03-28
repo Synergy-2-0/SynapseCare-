@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -77,6 +79,26 @@ public class DoctorController {
     ) {
         DoctorProfileResponse response = doctorService.createDoctorProfile(userPrincipal.getUserId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping(value = "/profile/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, String>> uploadDoctorFiles(
+            @RequestParam("type") String type,
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        // Logic: Save file to static/uploads/{userId}/{type} and return URL
+        // Simplified for dev: returns a mock URL but validates the file exists
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
+        }
+        
+        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        // In a real production system, you'd use S3 or a dedicated FileService.
+        // For development, we'll return a path that the frontend can reference.
+        String mockUrl = "/uploads/doctors/" + userPrincipal.getUserId() + "/" + type + "/" + fileName;
+        
+        return ResponseEntity.ok(Map.of("url", mockUrl));
     }
 
     @PutMapping("/profile")
