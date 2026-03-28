@@ -45,8 +45,9 @@ const SPECIALIZATIONS = [
 const DoctorProfileSetup = () => {
     const router = useRouter();
     const [step, setStep] = useState(1);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
     const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
         specialization: '',
@@ -59,6 +60,46 @@ const DoctorProfileSetup = () => {
     });
 
     const totalSteps = 2;
+
+    useEffect(() => {
+        const fetchExistingProfile = async () => {
+            try {
+                setLoading(true);
+                const response = await doctorApi.get('/profile/me');
+                const profile = response?.data?.data ?? response?.data;
+
+                if (!profile) {
+                    setIsEditMode(false);
+                    return;
+                }
+
+                setFormData({
+                    specialization: profile.specialization || '',
+                    licenseNumber: profile.licenseNumber || '',
+                    experience: profile.experience ? String(profile.experience) : '',
+                    qualifications: profile.qualifications || '',
+                    consultationFee: profile.consultationFee ? String(profile.consultationFee) : '',
+                    bio: profile.bio || '',
+                    profileImageUrl: profile.profileImageUrl || ''
+                });
+
+                setIsEditMode(true);
+            } catch (err) {
+                // 404 means profile not created yet.
+                if (err.response?.status !== 404) {
+                    console.error('Failed to fetch profile:', err);
+                    setErrors({
+                        submit: 'Unable to load profile details. You can still continue and submit changes.'
+                    });
+                }
+                setIsEditMode(false);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchExistingProfile();
+    }, []);
 
     const handleChange = (field) => (e) => {
         const value = e.target.value;
@@ -117,11 +158,17 @@ const DoctorProfileSetup = () => {
                 profileImageUrl: formData.profileImageUrl || null
             };
 
-            await doctorApi.post('/profile', payload);
+            if (isEditMode) {
+                await doctorApi.put('/profile', payload);
+            } else {
+                await doctorApi.post('/profile', payload);
+            }
+
             router.push(DOCTOR_ROUTES.DASHBOARD);
         } catch (err) {
             console.error('Failed to create profile:', err);
-            const errorMsg = err.response?.data?.message || 'Failed to create profile. Please try again.';
+            const errorMsg = err.response?.data?.message
+                || `Failed to ${isEditMode ? 'update' : 'create'} profile. Please try again.`;
             setErrors({ submit: errorMsg });
         } finally {
             setSubmitting(false);
@@ -155,6 +202,10 @@ const DoctorProfileSetup = () => {
         </div>
     );
 
+    if (loading) {
+        return <LoadingSpinner size="fullscreen" message="Loading profile setup..." />;
+    }
+
     return (
         <DashboardLayout>
             <div className="max-w-2xl mx-auto">
@@ -165,8 +216,14 @@ const DoctorProfileSetup = () => {
                         alt="Doctor Profile"
                         className="w-28 h-28 object-contain mx-auto mb-3"
                     />
-                    <h1 className="text-2xl font-bold text-slate-900">Complete Your Profile</h1>
-                    <p className="text-slate-500 mt-1">Set up your professional profile to start accepting patients</p>
+                    <h1 className="text-2xl font-bold text-slate-900">
+                        {isEditMode ? 'Update Your Profile' : 'Complete Your Profile'}
+                    </h1>
+                    <p className="text-slate-500 mt-1">
+                        {isEditMode
+                            ? 'Maintain your public doctor profile and consultation details'
+                            : 'Set up your professional profile to start accepting patients'}
+                    </p>
                 </div>
 
                 <ProgressIndicator />
@@ -315,7 +372,7 @@ const DoctorProfileSetup = () => {
                                         disabled={submitting}
                                     >
                                         <CheckCircle size={16} />
-                                        Submit for Verification
+                                        {isEditMode ? 'Save Profile Changes' : 'Submit for Verification'}
                                     </Button>
                                 </div>
                             </motion.div>
@@ -326,7 +383,9 @@ const DoctorProfileSetup = () => {
                 {/* Info Note */}
                 <div className="mt-6 text-center">
                     <p className="text-sm text-slate-500">
-                        Your profile will be reviewed by our admin team. You'll be notified once approved.
+                        {isEditMode
+                            ? 'Profile changes are synced immediately. Verification-sensitive fields may require admin review.'
+                            : 'Your profile will be reviewed by our admin team. You\'ll be notified once approved.'}
                     </p>
                 </div>
             </div>

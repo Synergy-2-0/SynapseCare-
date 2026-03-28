@@ -28,6 +28,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { patientApi, appointmentApi, medicalHistoryApi, paymentApi, prescriptionApi, notificationApi, fileUploadApi } from '../../lib/api';
+import { PATIENT_ROUTES } from '../../constants/routes';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import FileUpload from '../../components/ui/FileUpload';
 
@@ -185,10 +186,16 @@ const PatientDashboard = () => {
                     {navItems.map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => setActiveTab(item.id)}
+                            onClick={() => {
+                                if (item.id === 'telemedicine') {
+                                    router.push(PATIENT_ROUTES.TELEMEDICINE);
+                                } else {
+                                    setActiveTab(item.id);
+                                }
+                            }}
                             className={`w-full flex items-center gap-4 px-5 py-4 rounded-3xl text-sm font-bold tracking-tight transition-all duration-300 relative group overflow-hidden ${
-                                activeTab === item.id 
-                                ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200' 
+                                activeTab === item.id
+                                ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200'
                                 : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600'
                             }`}
                         >
