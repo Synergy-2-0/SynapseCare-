@@ -25,7 +25,57 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { publicDoctorApi } from '../../lib/api';
+
+const DOCTOR_MICROSERVICES = [
+    {
+        id: 1,
+        name: "Dr. Elena Rodriguez",
+        specialization: "Cardiology",
+        image: "https://api.dicebear.com/7.x/notionists/svg?seed=Elena",
+        location: "Global Healthcare Node 04, NY",
+        rating: 4.9,
+        reviews: 124,
+        experience: "15+ Years Clinical Research",
+        availableToday: true,
+        fee: "1500"
+    },
+    {
+        id: 2,
+        name: "Dr. James Wilson",
+        specialization: "Neurology",
+        image: "https://api.dicebear.com/7.x/notionists/svg?seed=James",
+        location: "Synapse Neural Hub, Boston",
+        rating: 4.8,
+        reviews: 98,
+        experience: "12+ Years Surgical Practice",
+        availableToday: false,
+        fee: "1800"
+    },
+    {
+        id: 3,
+        name: "Dr. Sarah Chen",
+        specialization: "Pediatrics",
+        image: "https://api.dicebear.com/7.x/notionists/svg?seed=Sarah",
+        location: "Advanced Childrens Clinic, SF",
+        rating: 5.0,
+        reviews: 312,
+        experience: "8+ Years Molecular Pediatrics",
+        availableToday: true,
+        fee: "1200"
+    },
+    {
+        id: 4,
+        name: "Dr. Michael Chang",
+        specialization: "Dermatology",
+        image: "https://api.dicebear.com/7.x/notionists/svg?seed=Michael",
+        location: "Elite Skin Research Institute",
+        rating: 4.7,
+        reviews: 156,
+        experience: "10+ Years Derma-Genetics",
+        availableToday: true,
+        fee: "2000"
+    }
+];
 
 export default function DoctorsList() {
     const router = useRouter();
@@ -33,38 +83,22 @@ export default function DoctorsList() {
     const [doctors, setDoctors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('ALL');
-    const [mounted, setMounted] = useState(false);
-
-    const fetchDoctors = async () => {
-        setLoading(true);
-        try {
-            const response = await publicDoctorApi.get('/search');
-            console.log('Fetched Doctors:', response.data);
-            setDoctors(Array.isArray(response.data) ? response.data : []);
-        } catch (err) {
-            console.error('Failed to fetch doctors:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     useEffect(() => {
-        setMounted(true);
-        fetchDoctors();
+        setLoading(true);
+        setTimeout(() => {
+            setDoctors(DOCTOR_MICROSERVICES);
+            setLoading(false);
+        }, 800);
     }, []);
 
-    const filteredDoctors = doctors.filter(doc => {
-        const docName = (doc.lastName || doc.userId || '').toString().toLowerCase();
-        const docSpec = (doc.specialization || '').toString().toLowerCase();
-        const search = searchTerm.toLowerCase();
-        
-        return (docName.includes(search) || docSpec.includes(search)) &&
-               (activeFilter === 'ALL' || docSpec.toUpperCase() === activeFilter);
-    });
+    const filteredDoctors = doctors.filter(doc => 
+        (doc.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+         doc.specialization.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        (activeFilter === 'ALL' || doc.specialization.toUpperCase() === activeFilter)
+    );
 
     const specializations = ['ALL', 'CARDIOLOGY', 'NEUROLOGY', 'PEDIATRICS', 'DERMATOLOGY'];
-
-    if (!mounted) return null;
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100 overflow-x-hidden">
@@ -171,33 +205,33 @@ export default function DoctorsList() {
                                     <div className="flex justify-between items-start mb-10">
                                         <div className="w-24 h-24 bg-slate-50 rounded-[2rem] border-2 border-slate-100 shadow-inner overflow-hidden p-2 group-hover:border-indigo-500/20 transition-all duration-500">
                                              <div className="w-full h-full rounded-[1.5rem] overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
-                                                <img src={doc.image || "https://api.dicebear.com/7.x/notionists/svg?seed=default"} alt={doc.firstName} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
+                                                <img src={doc.image} alt={doc.name} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
                                              </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-3 text-right">
-                                             {doc.isAvailable !== false ? (
+                                             {doc.availableToday ? (
                                                  <Badge variant="success" size="sm">NODE ACTIVE</Badge>
                                              ) : (
                                                  <Badge variant="warning" size="sm">SYNC: TMRW</Badge>
                                              )}
                                              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-black uppercase tracking-widest">
-                                                 <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> {doc.rating || '4.5'}
+                                                 <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> {doc.rating}
                                              </div>
                                         </div>
                                     </div>
                                     
                                     <div className="space-y-4 mb-10">
-                                        <Badge variant="indigo" size="sm">{(doc.specialization || 'GENERAL').toUpperCase()}</Badge>
-                                        <h2 className="text-3xl font-black text-slate-900 tracking-tighter leading-none italic uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Dr. {doc.lastName || doc.userId || 'Practitioner'}</h2>
+                                        <Badge variant="indigo" size="sm">{doc.specialization.toUpperCase()}</Badge>
+                                        <h2 className="text-3xl font-black text-slate-900 tracking-tighter leading-none italic uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Dr. {doc.name.split(' ').slice(1).join(' ')}</h2>
                                         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-6 border-t border-slate-100">
                                              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                                                 <MapPin className="w-3.5 h-3.5 text-slate-400" /> {doc.location || 'Global Node'}
+                                                 <MapPin className="w-3.5 h-3.5 text-slate-400" /> {doc.location.split(',')[1] || doc.location}
                                              </div>
                                              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                                                 <Award className="w-3.5 h-3.5 text-indigo-500" /> {doc.experienceYears || '5'} SENIORITY
+                                                 <Award className="w-3.5 h-3.5 text-indigo-500" /> {doc.experience.split(' ')[0]} SENIORITY
                                              </div>
                                              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                                                 <Clock className="w-3.5 h-3.5 text-sky-500" /> LKR {doc.consultationFee || '1000'}
+                                                 <Clock className="w-3.5 h-3.5 text-sky-500" /> LKR {doc.fee}
                                              </div>
                                         </div>
                                     </div>

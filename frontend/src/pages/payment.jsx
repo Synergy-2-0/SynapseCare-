@@ -252,7 +252,7 @@ const PaymentPage = () => {
                     <input type="hidden" name="order_id" value={payData.order_id} />
                     <input type="hidden" name="items" value={payData.items} />
                     <input type="hidden" name="currency" value={payData.currency} />
-                    <input type="hidden" name="amount" value={parseFloat(payData.amount).toFixed(2)} />
+                    <input type="hidden" name="amount" value={payData.amount} />
                     <input type="hidden" name="first_name" value={payData.first_name} />
                     <input type="hidden" name="last_name" value={payData.last_name} />
                     <input type="hidden" name="email" value={payData.email} />

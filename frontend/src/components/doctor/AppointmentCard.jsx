@@ -21,10 +21,12 @@ const AppointmentCard = ({
             className="p-6 bg-white rounded-[2rem] border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-6 hover:border-indigo-100 hover:shadow-premium transition-all duration-300 group"
         >
             <div className="flex items-center gap-6 flex-1 min-w-0">
+                {/* Visual Avatar */}
                 <div className="w-16 h-16 bg-slate-100 border border-slate-200 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 group-hover:border-indigo-100 rounded-2xl flex items-center justify-center font-black transition-all duration-500 shadow-inner">
                     <User size={24} strokeWidth={2.5} />
                 </div>
 
+                {/* Patient Case Info */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2 flex-wrap sm:flex-nowrap">
                         <div className="text-xl font-black text-slate-900 tracking-tighter truncate leading-none">
@@ -33,9 +35,9 @@ const AppointmentCard = ({
                         <Badge
                             variant={
                                 appointment.status === 'COMPLETED' ? 'neutral' :
-                                    appointment.status === 'PAID' || appointment.status === 'CONFIRMED' ? 'success' :
-                                        appointment.status === 'CANCELLED' ? 'danger' :
-                                            'warning'
+                                appointment.status === 'PAID' || appointment.status === 'CONFIRMED' ? 'success' :
+                                appointment.status === 'CANCELLED' ? 'danger' :
+                                'warning'
                             }
                             pulse={appointment.status === 'CONFIRMED'}
                         >
@@ -58,6 +60,7 @@ const AppointmentCard = ({
                 </div>
             </div>
 
+            {/* Specialized Actions */}
             <div className="flex gap-3 items-center shrink-0">
                 {onAccept && appointment.status === 'PENDING' && (
                     <button

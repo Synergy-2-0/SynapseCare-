@@ -166,16 +166,16 @@ const AppointmentsPage = () => {
                         action={
                             <Button
                                 variant="primary"
-                                onClick={() => {
-                                    if (userRole === 'DOCTOR') {
-                                        router.push('/doctor/dashboard');
-                                        return;
-                                    }
+                                                onClick={() => {
+                                                    if (userRole === 'DOCTOR') {
+                                                        router.push('/doctor/dashboard');
+                                                        return;
+                                                    }
 
-                                    router.push('/patient/find-doctors');
-                                }}
+                                                    router.push('/patient/find-doctors');
+                                                }}
                             >
-                                {userRole === 'DOCTOR' ? 'Go to Dashboard' : 'Find a Doctor'}
+                                                {userRole === 'DOCTOR' ? 'Go to Dashboard' : 'Find a Doctor'}
                             </Button>
                         }
                     />

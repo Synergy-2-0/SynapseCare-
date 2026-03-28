@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo, useEffect } from 'react';
+﻿import React, { useState, useContext, useMemo } from 'react';
 import DashboardLayout from '../../../components/layout/DashboardLayout';       
 import Header from '../../../components/layout/Header';
 import AppointmentCard from '../../../components/doctor/AppointmentCard';       
@@ -12,11 +12,6 @@ export default function DoctorAppointments() {
     const { appointments, isLoading, updateAppointmentStatus } = useContext(MockDataContext);
     const [activeTab, setActiveTab] = useState('Pending');
     const [searchQuery, setSearchQuery] = useState('');
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     const filtered = useMemo(() => {
         return appointments.filter(appt => {
@@ -26,8 +21,7 @@ export default function DoctorAppointments() {
         });
     }, [appointments, activeTab, searchQuery]);
 
-    if (!mounted || (isLoading && appointments.length === 0)) {
-        if (!mounted) return null;
+    if (isLoading && appointments.length === 0) {
         return (
             <DashboardLayout>
                 <div className="animate-pulse space-y-6 mt-8">

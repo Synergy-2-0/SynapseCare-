@@ -26,23 +26,39 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { publicDoctorApi, appointmentApi } from '../../lib/api';
 
-// Mock data kept as fallback for missing fields
-const FALLBACK_DOCTOR = {
-    bio: "Clinical profile synchronization in progress. Specialist information will be updated upon next network handshake.",
+const MOCK_DOCTOR = {
+    id: 1,
+    name: "Elena Rodriguez",
+    specialization: "Interventional Cardiology",
+    image: "https://api.dicebear.com/7.x/notionists/svg?seed=Elena",
+    location: "Global Healthcare Node 04, NY",
+    rating: 4.9,
+    reviews: 124,
+    experience: "15+ Years Clinical Research",
+    about: "Dr. Rodriguez is a distinguished interventional cardiologist focusing on specialized coronary interventions and vascular diagnostics. With over 15 years of surgical experience at world-leading medical institutions, she currently pioneers the digital cardiovascular diagnostic protocols at SynapseCare.",
     education: [
-        "Doctor of Medicine (MD)",
-        "Clinical Residency",
-        "Strategic Medical Systems Fellowship"
+        "Doctor of Medicine (MD), Harvard Medical School",
+        "Clinical Residency, Johns Hopkins Hospital",
+        "Fellowship in Interventional Cardiology, Mayo Clinic",
+        "Strategic Medical Systems Fellowship, MIT"
     ],
     services: [
-        "General Medical Consultation",
-        "Clinical Signal Diagnostic",
-        "Preventive Care Protocol"
+        "Advanced Echocardiography",
+        "High-Resolution Cardiovascular Screening",
+        "Non-Invasive Arrhythmia Management",
+        "Post-Surgical Neural Integration Audit"
     ],
-    rating: 4.5,
-    reviews: 'Synchronizing...'
+    slots: [
+        { time: "08:30 AM", available: true },
+        { time: "10:15 AM", available: false },
+        { time: "11:00 AM", available: true },
+        { time: "01:30 PM", available: true },
+        { time: "03:00 PM", available: true },
+        { time: "04:45 PM", available: false }
+    ],
+    fee: 1500,
+    verificationStatus: 'APPROVED'
 };
 
 export default function DoctorProfile() {
@@ -53,32 +69,14 @@ export default function DoctorProfile() {
     const [loading, setLoading] = useState(true);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [bookingMode, setBookingMode] = useState('TELEHEALTH');
-    const [mounted, setMounted] = useState(false);
-    const [availableSlots, setAvailableSlots] = useState([]);
-
-    const fetchDoctorData = async (doctorId) => {
-        setLoading(true);
-        try {
-            const [profileRes, slotsRes] = await Promise.all([
-                publicDoctorApi.get(`/${doctorId}`),
-                publicDoctorApi.get(`/${doctorId}/available-slots`, {
-                    params: { date: new Date().toISOString().split('T')[0] }
-                })
-            ]);
-            
-            console.log('Practitioner Dossier Sync:', profileRes.data);
-            setDoctor(profileRes.data);
-            setAvailableSlots(Array.isArray(slotsRes.data) ? slotsRes.data : []);
-        } catch (err) {
-            console.error('Failed to sync practitioner dossier:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     useEffect(() => {
-        setMounted(true);
-        if (id) fetchDoctorData(id);
+        if (!id) return;
+        setLoading(true);
+        setTimeout(() => {
+            setDoctor({ ...MOCK_DOCTOR, id: id });
+            setLoading(false);
+        }, 800);
     }, [id]);
 
     const handleBooking = () => {
@@ -86,16 +84,15 @@ export default function DoctorProfile() {
         router.push({
             pathname: '/payment',
             query: { 
-                id: `ORDER-${Date.now()}`,
-                amount: doctor.consultationFee,
+                id: `APT-${Math.floor(Math.random() * 10000)}`,
+                amount: doctor.fee,
                 patientId: localStorage.getItem('user_id'),
-                doctorId: doctor.id,
-                slotTime: selectedSlot
+                doctorId: doctor.id
             }
         });
     };
 
-    if (!mounted || loading) return <LoadingSpinner size="fullscreen" message="Accessing Specialized Practitioner Dossier..." />;
+    if (loading) return <LoadingSpinner size="fullscreen" message="Accessing Specialized Practitioner Dossier..." />;
 
     if (!doctor) {
         return (
@@ -131,9 +128,9 @@ export default function DoctorProfile() {
                 </div>
 
                 <div className="flex items-center gap-6">
-                    <Badge variant="success" size="sm" pulse>{doctor.verificationStatus === 'APPROVED' ? 'AVAILABLE' : 'PENDING SYNC'}</Badge>
+                    <Badge variant="success" size="sm" pulse>AVAILABLE</Badge>
                     <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden relative group cursor-pointer">
-                         <img src={doctor.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doctor.id}`} alt={doctor.lastName} className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
+                         <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
                     </div>
                 </div>
             </nav>
@@ -146,9 +143,9 @@ export default function DoctorProfile() {
                          <div className="md:col-span-4 lg:col-span-3">
                              <div className="aspect-square bg-white rounded-[3rem] p-6 border-2 border-slate-100 shadow-2xl shadow-indigo-100/30 relative group overflow-hidden">
                                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-indigo-50/50 to-transparent pointer-events-none" />
-                                  <div className="w-full h-full bg-slate-50 rounded-[2.5rem] overflow-hidden border border-slate-100 relative z-10">
-                                     <img src={doctor.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doctor.id}`} alt={doctor.lastName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                  </div>
+                                 <div className="w-full h-full bg-slate-50 rounded-[2.5rem] overflow-hidden border border-slate-100 relative z-10">
+                                     <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                 </div>
                                  <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-200 z-20 group-hover:rotate-12 transition-transform">
                                       <Zap size={24} fill="white" />
                                  </div>
@@ -164,17 +161,17 @@ export default function DoctorProfile() {
                                           <Globe size={12} /> {doctor.location}
                                      </div>
                                  </div>
-                                  <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase tracking-widest mb-4">Dr. {doctor.firstName} {doctor.lastName}</h1>
-                                  <h2 className="text-2xl font-black text-indigo-600 tracking-tight flex items-center gap-3">
-                                      {doctor.specialization || 'Clinical Specialist'} <div className="h-0.5 w-12 bg-indigo-200" />
-                                  </h2>
+                                 <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase tracking-widest mb-4">Dr. {doctor.name}</h1>
+                                 <h2 className="text-2xl font-black text-indigo-600 tracking-tight flex items-center gap-3">
+                                     {doctor.specialization} <div className="h-0.5 w-12 bg-indigo-200" />
+                                 </h2>
                              </div>
 
                              <div className="grid grid-cols-3 gap-6 pt-10 border-t border-slate-100">
-                                  {[
-                                     { label: 'Rating', val: doctor.rating || FALLBACK_DOCTOR.rating, icon: Star, color: 'text-amber-500' },
-                                     { label: 'Seniority', val: doctor.experienceYears || '5', icon: Award, color: 'text-indigo-500' },
-                                     { label: 'Feed', val: doctor.reviews || '48', icon: User, color: 'text-sky-500' }
+                                 {[
+                                     { label: 'Rating', val: doctor.rating, icon: Star, color: 'text-amber-500' },
+                                     { label: 'Seniority', val: doctor.experience.split(' ')[0], icon: Award, color: 'text-indigo-500' },
+                                     { label: 'Feed', val: doctor.reviews, icon: User, color: 'text-sky-500' }
                                  ].map((stat, i) => (
                                      <div key={i} className="space-y-2">
                                          <div className="flex items-center gap-2">
@@ -195,7 +192,7 @@ export default function DoctorProfile() {
                                  <BookOpen size={20} className="text-indigo-600" /> Clinical Statement
                              </h3>
                              <p className="text-lg font-medium text-slate-500 leading-relaxed italic max-w-3xl">
-                                 "{doctor.bio || FALLBACK_DOCTOR.bio}"
+                                 "{doctor.about}"
                              </p>
                              <div className="absolute right-0 bottom-0 p-12 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
                                  <Stethoscope size={180} />
@@ -207,8 +204,8 @@ export default function DoctorProfile() {
                                  <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-8 flex items-center gap-3">
                                      <Verified size={16} /> Academic Pedigree
                                  </h4>
-                                  <ul className="space-y-6">
-                                     {(doctor.education || FALLBACK_DOCTOR.education).map((edu, i) => (
+                                 <ul className="space-y-6">
+                                     {doctor.education.map((edu, i) => (
                                          <li key={i} className="flex gap-4 group cursor-default">
                                              <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 mt-1.5 shrink-0 group-hover:scale-150 transition-transform" />
                                              <p className="text-sm font-bold text-slate-600 group-hover:text-indigo-900 transition-colors">{edu}</p>
@@ -221,8 +218,8 @@ export default function DoctorProfile() {
                                  <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-8 flex items-center gap-3">
                                      <Stethoscope size={16} className="text-indigo-600" /> Practical Operations
                                  </h4>
-                                  <ul className="space-y-6">
-                                     {(doctor.services || FALLBACK_DOCTOR.services).map((srv, i) => (
+                                 <ul className="space-y-6">
+                                     {doctor.services.map((srv, i) => (
                                          <li key={i} className="flex items-center gap-4 group">
                                              <div className="w-8 h-8 rounded-xl bg-slate-50 text-indigo-500 flex items-center justify-center border border-slate-100 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                                                   <Check size={14} strokeWidth={3} />
@@ -275,35 +272,31 @@ export default function DoctorProfile() {
                             <div className="space-y-4">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Available Nodes Today</p>
                                 <div className="grid grid-cols-2 gap-4">
-                                     {availableSlots.length > 0 ? availableSlots.map((slot, i) => (
+                                     {doctor.slots.map((slot, i) => (
                                          <button 
                                             key={i}
                                             disabled={!slot.available}
-                                            onClick={() => setSelectedSlot(slot.startTime)}
+                                            onClick={() => setSelectedSlot(slot.time)}
                                             className={`p-4 rounded-2xl font-black text-xs uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
                                                 !slot.available 
                                                 ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed italic' 
-                                                : selectedSlot === slot.startTime 
+                                                : selectedSlot === slot.time 
                                                 ? 'bg-indigo-600 text-white border-indigo-600 shadow-xl scale-[1.05]' 
                                                 : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-400 hover:text-indigo-600'
                                             }`}
                                          >
-                                             {selectedSlot === slot.startTime && <Check size={12} className="text-white" />}
-                                             {slot.startTime}
+                                             {selectedSlot === slot.time && <Check size={12} className="text-white" />}
+                                             {slot.time}
                                          </button>
-                                     )) : (
-                                         <div className="col-span-2 py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">No Slots Synchronized <br /> for Selected Cycle</p>
-                                         </div>
-                                     )}
+                                     ))}
                                 </div>
                             </div>
 
                             {/* Fee Calculation */}
                             <div className="pt-10 border-t border-slate-100 space-y-6">
-                                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                                       <span className="text-slate-400">Service Authorized Fee</span>
-                                      <span className="text-slate-900 text-base">LKR {(doctor.consultationFee || 1000).toLocaleString()}</span>
+                                      <span className="text-slate-900 text-base">LKR {doctor.fee.toLocaleString()}</span>
                                  </div>
                                  <div className="p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex items-center gap-4">
                                       <div className="w-10 h-10 bg-indigo-600/10 rounded-xl flex items-center justify-center text-indigo-600 shrink-0">

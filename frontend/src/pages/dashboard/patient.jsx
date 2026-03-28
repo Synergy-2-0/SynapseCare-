@@ -66,18 +66,18 @@ const PatientDashboard = () => {
                         patientApi.get(`/${id}`).catch(() => ({ data: { data: {} } })),
                         medicalHistoryApi.get(`/patient/${id}`).catch(() => ({ data: { data: [] } })),
                         patientApi.get(`/${id}/reports`).catch(() => ({ data: { data: [] } })),
-                        paymentApi.get(`/patient/${id}/history`).catch(() => ({ data: { data: [] } })),
+                        paymentApi.get(`/patient/${id}`).catch(() => ({ data: { data: [] } })),
                         prescriptionApi.get(`/patient/${id}`).catch(() => ({ data: [] })),
                         notificationApi.get(`/user/${id}`).catch(() => ({ data: [] }))
                     ]);
 
-                    const allAppts = Array.isArray(apptRes.data) ? apptRes.data : (apptRes.data?.data || []);
-                    const patientInfo = patientRes.data?.data || patientRes.data || {};
-                    const historyInfo = Array.isArray(historyRes.data) ? historyRes.data : (historyRes.data?.data || []);
-                    const reportInfo = Array.isArray(reportRes.data) ? reportRes.data : (reportRes.data?.data || []);
-                    const paymentInfo = Array.isArray(paymentRes.data) ? paymentRes.data : (paymentRes.data?.data || []);
-                    const prescriptionInfo = Array.isArray(prescRes.data) ? prescRes.data : (prescRes.data?.data || []);
-                    const notificationInfo = Array.isArray(notifRes.data) ? notifRes.data : (notifRes.data?.data || []);
+                    const allAppts = apptRes.data || [];
+                    const patientInfo = patientRes.data?.data || {};
+                    const historyInfo = historyRes.data?.data || [];
+                    const reportInfo = reportRes.data?.data || [];
+                    const paymentInfo = paymentRes.data?.data || [];
+                    const prescriptionInfo = prescRes.data || [];
+                    const notificationInfo = notifRes.data || [];
 
                     setUserData({ ...patientInfo, name: patientInfo.name || name, id });
                     setUpcoming(allAppts.filter((a) => a.status === 'CONFIRMED' || a.status === 'PAID'));

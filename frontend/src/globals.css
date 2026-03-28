@@ -1,6 +1,60 @@
 @import "tailwindcss";
 
 @theme {
+  --shadow-premium: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  --shadow-premium-lg: 0 30px 40px -10px rgb(0 0 0 / 0.08), 0 12px 15px -8px rgb(0 0 0 / 0.05);
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-2xl: 40px;
+  --radius-3xl: 48px;
+}
+
+:root {
+  /* Clinical Luxury Light Theme Palette */
+  --bg-base: #f8fafc; /* slate-50 */
+  --bg-card: #ffffff;
+  --bg-hover: #f1f5f9; /* slate-100 */
+  
+  --accent-teal: #0d9488; /* teal-600 */
+  --accent-teal-hover: #0f766e; /* teal-700 */
+  --accent-amber: #d97706; /* amber-600 */
+  --accent-amber-light: #fef3c7; /* amber-50 */
+  --accent-red: #dc2626; /* red-600 */
+  --accent-red-light: #fee2e2; /* red-50 */
+  
+  --text-primary: #0f172a; /* slate-900 */
+  --text-secondary: #334155; /* slate-700 */
+  --text-muted: #64748b; /* slate-500 */
+  
+  --border-color: #e2e8f0; /* slate-200 */
+  
+  /* Fallbacks for existing variables used elsewhere */
+  --color-primary: var(--accent-teal);
+  --color-primary-dark: var(--accent-teal-hover);
+  --color-primary-soft: #f0fdfa; /* teal-50 */
+  
+  --color-secondary: #0ea5e9;
+  --color-accent: var(--accent-teal);
+  
+  --color-bg: var(--bg-base);
+  --color-surface: var(--bg-card);
+  --color-surface-soft: var(--bg-hover);
+  
+  --color-text: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-text-description: var(--text-secondary);
+  
+  --color-border: var(--border-color);
+  --color-border-soft: var(--bg-hover);
+  
+  --color-success: #10b981;
+  --color-warning: var(--accent-amber);
+  --color-danger: var(--accent-red);
+
+  /* Premium Radii consistent with @theme */
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 20px;
@@ -9,63 +63,13 @@
   --radius-3xl: 48px;
   --radius-full: 9999px;
 
+  /* Sophisticated Shadow System */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-premium: 0 20px 25px -5px rgb(0 0 0 / 0.05),
-    0 8px 10px -6px rgb(0 0 0 / 0.05);
-  --shadow-premium-lg: 0 30px 40px -10px rgb(0 0 0 / 0.08),
-    0 12px 15px -8px rgb(0 0 0 / 0.05);
+  --shadow-premium: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  --shadow-premium-lg: 0 30px 40px -10px rgb(0 0 0 / 0.08), 0 12px 15px -8px rgb(0 0 0 / 0.05);
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
-}
-
-
-:root {
-  /* Base surfaces */
-  --bg-base: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-hover: #f1f5f9;
-
-  /* Primary palette */
-  --accent-teal: #0d9488;
-  --accent-teal-hover: #0f766e;
-
-  --accent-amber: #d97706;
-  --accent-amber-light: #fef3c7;
-
-  --accent-red: #dc2626;
-  --accent-red-light: #fee2e2;
-
-  /* Text */
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-
-  /* Borders */
-  --border-color: #e2e8f0;
-
-  /* Compatibility variables */
-  --color-primary: var(--accent-teal);
-  --color-primary-dark: var(--accent-teal-hover);
-  --color-primary-soft: #f0fdfa;
-
-  --color-secondary: #0ea5e9;
-  --color-accent: var(--accent-teal);
-
-  --color-bg: var(--bg-base);
-  --color-surface: var(--bg-card);
-  --color-surface-soft: var(--bg-hover);
-
-  --color-text: var(--text-primary);
-  --color-text-muted: var(--text-muted);
-  --color-text-description: var(--text-secondary);
-
-  --color-border: var(--border-color);
-  --color-border-soft: var(--bg-hover);
-
-  --color-success: #10b981;
-  --color-warning: var(--accent-amber);
-  --color-danger: var(--accent-red);
 }
 
 * {
@@ -75,18 +79,9 @@
 }
 
 body {
-  font-family:
-    'DM Sans',
-    var(--font-dm-sans),
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-
+  font-family: 'DM Sans', var(--font-dm-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg-base);
   color: var(--text-primary);
-
   font-size: 15px;
   line-height: 1.6;
 }
@@ -95,26 +90,21 @@ body {
   font-family: 'Lora', var(--font-lora), serif;
 }
 
-
 .glass-morphism {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-
   border: 1px solid rgba(255, 255, 255, 0.3);
-
   box-shadow: var(--shadow-premium);
 }
 
-
 @layer components {
-
   .surface-card {
     @apply bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[var(--radius-2xl)] shadow-sm transition-all duration-300;
   }
 
   .surface-card-hover {
-    @apply hover:shadow-[var(--shadow-premium)] hover:border-teal-500/30 hover:-translate-y-[2px];
+    @apply hover:shadow-[var(--shadow-premium)] hover:border-teal-500/30 hover:-translate-y-[2px];   
   }
 
   .title-display {
@@ -126,7 +116,7 @@ body {
   }
 
   .btn-primary {
-    @apply px-6 py-3 bg-[var(--accent-teal)] text-white font-medium rounded-[var(--radius-md)] shadow-sm hover:-translate-y-[1px] hover:bg-[var(--accent-teal-hover)] hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50;
+    @apply px-6 py-3 bg-[var(--accent-teal)] text-white font-medium rounded-[var(--radius-md)] shadow-sm hover:translate-y-[-1px] hover:bg-[var(--accent-teal-hover)] hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50;
   }
 
   .btn-secondary {
@@ -141,107 +131,120 @@ body {
     @apply px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wide border;
   }
 
-  .copy-muted {
-    @apply text-[var(--text-muted)];
-  }
-
-  .copy-description {
-    @apply text-[var(--text-secondary)];
-  }
+  .copy-muted { @apply text-[var(--text-muted)]; }
+  .copy-description { @apply text-[var(--text-secondary)]; }
 }
 
+/* ============================================
+   Custom Keyframe Animations
+   ============================================ */
+
+/* Medical heartbeat pulse animation */
 @keyframes heartbeat-pulse {
-
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-
-  30% {
-    transform: scale(1.15);
-    opacity: 0.8;
-  }
+  0%, 100% { transform: scale(1); opacity: 1; }
+  10% { transform: scale(1.05); opacity: 0.9; }
+  20% { transform: scale(1); opacity: 1; }
+  30% { transform: scale(1.15); opacity: 0.8; }
+  40%, 90% { transform: scale(1); opacity: 1; }
 }
 
+/* ECG line animation */
+@keyframes ecg-line {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Shimmer loading effect */
 @keyframes shimmer {
-
-  0% {
-    background-position: -1000px 0;
-  }
-
-  100% {
-    background-position: 1000px 0;
-  }
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
 }
 
-@keyframes fade-slide-up {
+/* Subtle shake for errors */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+  20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
 
+/* Fade slide up */
+@keyframes fade-slide-up {
   from {
     opacity: 0;
     transform: translateY(12px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes shake {
-
-  10%,
-  30%,
-  50%,
-  70%,
-  90% {
-    transform: translateX(-3px);
-  }
-
-  20%,
-  40%,
-  60%,
-  80% {
-    transform: translateX(3px);
-  }
+/* Gradient sweep */
+@keyframes gradient-sweep {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
+/* Pulse (subtle) */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Float animation (for badges, decorative elements) */
 @keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
 
-  0%,
-  100% {
-    transform: translateY(0);
+/* Ripple effect (for buttons) */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.6;
   }
-
-  50% {
-    transform: translateY(-8px);
+  100% {
+    transform: scale(2);
+    opacity: 0;
   }
 }
 
+/* ============================================
+   Utility Classes
+   ============================================ */
 
 @layer utilities {
-
   .animate-heartbeat {
     animation: heartbeat-pulse 1.5s ease-in-out infinite;
   }
 
   .animate-shimmer {
-    background: linear-gradient(90deg,
-        transparent,
-        rgba(255, 255, 255, 0.4),
-        transparent);
-
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
     background-size: 200% 100%;
-
     animation: shimmer 2s infinite;
   }
 
-  .animate-fade-slide-up {
-    animation: fade-slide-up 0.4s ease;
+  .animate-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97);
   }
 
-  .animate-shake {
-    animation: shake 0.4s ease;
+  .animate-fade-slide-up {
+    animation: fade-slide-up 0.4s cubic-bezier(0.43, 0.13, 0.23, 0.96);
+  }
+
+  .gradient-animated {
+    background-size: 200% 200%;
+    animation: gradient-sweep 8s ease infinite;
+  }
+
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s ease-in-out infinite;
   }
 
   .animate-float {
@@ -250,11 +253,12 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
-  * {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

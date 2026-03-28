@@ -11,16 +11,18 @@ const postSessionSchema = z.object({
   notes: z.string().min(10, "Detailed notes to proceed"),
 });
 
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
+}
+
 export default function TelemedicineCenter() {
-    const [mounted, setMounted] = useState(false);
     const [activeTab, setActiveTab] = useState('Upcoming');
     const [inSession, setInSession] = useState(false);
     const [showPostSession, setShowPostSession] = useState(false);
+    
     const [elapsedTime, setElapsedTime] = useState(0);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
         resolver: zodResolver(postSessionSchema)
@@ -52,8 +54,7 @@ export default function TelemedicineCenter() {
         setShowPostSession(false);
     };
 
-    if (!mounted || inSession) {
-        if (!mounted) return null; // Or return a LoadingSpinner if you have it imported
+    if (inSession) {
         return (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[100] bg-black text-white flex flex-col">
                 <div className="h-16 px-6 flex items-center justify-between border-b border-white/10 bg-slate-900">
