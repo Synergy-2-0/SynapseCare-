@@ -13,10 +13,9 @@ import {
     Settings,
     Clock,
     Activity,
-    MessageSquare,
     ShieldCheck
 } from 'lucide-react';
-import { DOCTOR_ROUTES, PATIENT_ROUTES } from '../../constants/routes';
+import { ADMIN_ROUTES, DOCTOR_ROUTES, PATIENT_ROUTES } from '../../constants/routes';
 import { motion } from 'framer-motion';
 
 const Sidebar = ({ onClose }) => {
@@ -29,10 +28,14 @@ const Sidebar = ({ onClose }) => {
         return localStorage.getItem('user_role') || '';
     });
 
-    const currentRole = (storedRole || ((router.pathname.startsWith('/patient') || router.pathname.startsWith('/dashboard/patient'))
-        ? 'PATIENT'
-        : 'DOCTOR'));
-    
+    const currentRole = (storedRole || (
+        router.pathname.startsWith('/dashboard/admin')
+            ? 'ADMIN'
+            : ((router.pathname.startsWith('/patient') || router.pathname.startsWith('/dashboard/patient'))
+                ? 'PATIENT'
+                : 'DOCTOR')
+    ));
+
     // PRD Exact Nav Structure
     const doctorMainNav = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: DOCTOR_ROUTES.DASHBOARD },
@@ -61,15 +64,39 @@ const Sidebar = ({ onClose }) => {
         { id: 'profile', icon: User, label: 'My Profile', path: PATIENT_ROUTES.PROFILE },
     ];
 
-    const mainNav = currentRole === 'PATIENT' ? patientMainNav : doctorMainNav;
-    const bottomNav = currentRole === 'PATIENT' ? patientBottomNav : doctorBottomNav;
+    const adminMainNav = [
+        { id: 'admin-dashboard', icon: LayoutDashboard, label: 'Admin Dashboard', path: ADMIN_ROUTES.DASHBOARD },
+        { id: 'admin-appointments', icon: Calendar, label: 'Appointments', path: '/appointments' },
+        { id: 'admin-doctors', icon: ShieldCheck, label: 'Doctor Directory', path: ADMIN_ROUTES.DASHBOARD, tab: 'doctors' },
+    ];
+
+    const adminBottomNav = [];
+
+    const mainNav = currentRole === 'ADMIN'
+        ? adminMainNav
+        : (currentRole === 'PATIENT' ? patientMainNav : doctorMainNav);
+    const bottomNav = currentRole === 'ADMIN'
+        ? adminBottomNav
+        : (currentRole === 'PATIENT' ? patientBottomNav : doctorBottomNav);
 
     const handleLogout = () => {
         localStorage.clear();
         router.push('/login');
     };
 
-    const isActive = (path) => router.pathname === path || router.pathname.startsWith(path + '/');
+    const activeTabFromPath = (() => {
+        const queryString = router.asPath.split('?')[1] || '';
+        const params = new URLSearchParams(queryString);
+        return params.get('tab');
+    })();
+
+    const isActive = (item) => {
+        if (item.tab) {
+            return router.pathname === item.path && activeTabFromPath === item.tab;
+        }
+
+        return router.pathname === item.path || router.pathname.startsWith(item.path + '/');
+    };
 
     return (
         <aside className="w-[240px] glass-morphism border-r border-[var(--border-color)]/30 flex flex-col pt-6 pb-6 sticky top-0 h-screen z-50 overflow-y-auto selection:bg-teal-100 selection:text-teal-900 border-0">
@@ -85,12 +112,16 @@ const Sidebar = ({ onClose }) => {
             {/* Navigation */}
             <div className="flex-1 flex flex-col space-y-1">
                 {mainNav.map((item) => {
-                    const active = isActive(item.path);
+                    const active = isActive(item);
                     return (
                         <button
                             key={item.id}
                             onClick={() => {
-                                router.push(item.path);
+                                if (item.tab) {
+                                    router.push(`${item.path}?tab=${item.tab}`);
+                                } else {
+                                    router.push(item.path);
+                                }
                                 if (onClose) onClose();
                             }}
                             className={`w-full flex items-center justify-between px-6 py-3 text-[14px] font-medium transition-all duration-200 relative group
@@ -101,12 +132,12 @@ const Sidebar = ({ onClose }) => {
                                 <item.icon className={`w-[18px] h-[18px] transition-transform group-hover:scale-110 ${active ? 'text-[var(--accent-teal)]' : 'text-[var(--text-muted)] group-hover:text-[var(--accent-teal)]'}`} strokeWidth={active ? 2.5 : 2} />
                                 {item.label}
                             </div>
-                            
+
                             {/* Live Badge for consultations */}
                             {item.id === 'consultations' && active && (
                                 <span className="flex h-2 w-2 relative">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                                 </span>
                             )}
 
@@ -121,7 +152,7 @@ const Sidebar = ({ onClose }) => {
             {/* Footer Items */}
             <div className="space-y-1 mt-auto pt-6 border-t border-[var(--border-color)]">
                 {bottomNav.map((item) => {
-                    const active = isActive(item.path);
+                    const active = isActive(item);
                     return (
                         <button
                             key={item.id}
@@ -141,7 +172,7 @@ const Sidebar = ({ onClose }) => {
                         </button>
                     );
                 })}
-                
+
                 <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-6 py-3 text-[14px] font-medium text-[var(--accent-red)] hover:bg-red-50/50 transition-all group mt-2"
