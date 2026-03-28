@@ -13,10 +13,9 @@ import {
     Settings,
     Clock,
     Activity,
-    MessageSquare,
     ShieldCheck
 } from 'lucide-react';
-import { DOCTOR_ROUTES, PATIENT_ROUTES } from '../../constants/routes';
+import { ADMIN_ROUTES, DOCTOR_ROUTES, PATIENT_ROUTES } from '../../constants/routes';
 import { motion } from 'framer-motion';
 
 const Sidebar = ({ onClose }) => {
@@ -29,10 +28,14 @@ const Sidebar = ({ onClose }) => {
         return localStorage.getItem('user_role') || '';
     });
 
-    const currentRole = (storedRole || ((router.pathname.startsWith('/patient') || router.pathname.startsWith('/dashboard/patient'))
-        ? 'PATIENT'
-        : 'DOCTOR'));
-    
+    const currentRole = (storedRole || (
+        router.pathname.startsWith('/dashboard/admin')
+            ? 'ADMIN'
+            : ((router.pathname.startsWith('/patient') || router.pathname.startsWith('/dashboard/patient'))
+                ? 'PATIENT'
+                : 'DOCTOR')
+    ));
+
     // PRD Exact Nav Structure
     const doctorMainNav = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: DOCTOR_ROUTES.DASHBOARD },
@@ -61,8 +64,20 @@ const Sidebar = ({ onClose }) => {
         { id: 'profile', icon: User, label: 'My Profile', path: PATIENT_ROUTES.PROFILE },
     ];
 
-    const mainNav = currentRole === 'PATIENT' ? patientMainNav : doctorMainNav;
-    const bottomNav = currentRole === 'PATIENT' ? patientBottomNav : doctorBottomNav;
+    const adminMainNav = [
+        { id: 'admin-dashboard', icon: LayoutDashboard, label: 'Admin Dashboard', path: ADMIN_ROUTES.DASHBOARD },
+        { id: 'admin-appointments', icon: Calendar, label: 'Appointments', path: '/appointments' },
+        { id: 'admin-doctors', icon: ShieldCheck, label: 'Doctor Directory', path: '/doctors' },
+    ];
+
+    const adminBottomNav = [];
+
+    const mainNav = currentRole === 'ADMIN'
+        ? adminMainNav
+        : (currentRole === 'PATIENT' ? patientMainNav : doctorMainNav);
+    const bottomNav = currentRole === 'ADMIN'
+        ? adminBottomNav
+        : (currentRole === 'PATIENT' ? patientBottomNav : doctorBottomNav);
 
     const handleLogout = () => {
         localStorage.clear();
@@ -101,12 +116,12 @@ const Sidebar = ({ onClose }) => {
                                 <item.icon className={`w-[18px] h-[18px] transition-transform group-hover:scale-110 ${active ? 'text-[var(--accent-teal)]' : 'text-[var(--text-muted)] group-hover:text-[var(--accent-teal)]'}`} strokeWidth={active ? 2.5 : 2} />
                                 {item.label}
                             </div>
-                            
+
                             {/* Live Badge for consultations */}
                             {item.id === 'consultations' && active && (
                                 <span className="flex h-2 w-2 relative">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                                 </span>
                             )}
 
@@ -141,7 +156,7 @@ const Sidebar = ({ onClose }) => {
                         </button>
                     );
                 })}
-                
+
                 <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-6 py-3 text-[14px] font-medium text-[var(--accent-red)] hover:bg-red-50/50 transition-all group mt-2"
