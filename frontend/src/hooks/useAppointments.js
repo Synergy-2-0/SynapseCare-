@@ -25,7 +25,14 @@ const useAppointments = (userId) => {
 
         try {
             const response = await appointmentApi.get(`/doctor/${userId}`);
-            const apptData = response.data || [];
+            const payload = response?.data?.data ?? response?.data ?? [];
+            const apptData = Array.isArray(payload)
+                ? payload.map((appointment) => ({
+                    ...appointment,
+                    appointmentDate: appointment.appointmentDate || appointment.date,
+                    appointmentTime: appointment.appointmentTime || appointment.time
+                }))
+                : [];
             setAppointments(apptData);
             setLoading(false);
         } catch (err) {
@@ -67,13 +74,13 @@ const useAppointments = (userId) => {
         // Filter by date range
         if (filters.startDate) {
             filtered = filtered.filter(appt =>
-                new Date(appt.appointmentDate) >= new Date(filters.startDate)
+                new Date(appt.appointmentDate || appt.date) >= new Date(filters.startDate)
             );
         }
 
         if (filters.endDate) {
             filtered = filtered.filter(appt =>
-                new Date(appt.appointmentDate) <= new Date(filters.endDate)
+                new Date(appt.appointmentDate || appt.date) <= new Date(filters.endDate)
             );
         }
 

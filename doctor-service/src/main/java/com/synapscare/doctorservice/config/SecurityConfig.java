@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/doctors/availability/**").hasRole("DOCTOR")
                         .requestMatchers("/api/doctors/schedule/**").hasRole("DOCTOR")
                         .requestMatchers("/api/doctors/status").hasRole("DOCTOR")
+                        .requestMatchers("/api/doctors/cases/**").hasRole("DOCTOR")
                         // Admin endpoints
                         .requestMatchers("/api/doctors/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/doctors/pending").hasRole("ADMIN")

@@ -42,19 +42,29 @@ const TelemedicinePage = () => {
                 const userId = localStorage.getItem('user_id');
                 const role = localStorage.getItem('user_role');
 
-                let res;
+                // Step 1: Get or create session by appointmentId
+                const sessionRes = await telemedicineApi.get(`/sessions/appointment/${appointmentId}`);
+                const sessionData = sessionRes.data.data;
+
+                if (!sessionData) {
+                    throw new Error('Session not found for this appointment');
+                }
+
+                // Step 2: Join session with role-based endpoint
+                let joinRes;
                 if (role === 'DOCTOR') {
-                    res = await telemedicineApi.post('/sessions/doctor/join', null, {
-                        params: { appointmentId, doctorId: userId }
+                    joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/doctor`, null, {
+                        params: { doctorId: userId }
                     });
                 } else {
-                    res = await telemedicineApi.post('/sessions/patient/join', null, {
-                        params: { appointmentId, patientId: userId }
+                    joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/patient`, null, {
+                        params: { patientId: userId }
                     });
                 }
 
-                setSession(res.data.data);
-                
+                setSession(joinRes.data.data);
+
+                // Load Jitsi script
                 const script = document.createElement('script');
                 script.src = 'https://meet.jit.si/external_api.js';
                 script.async = true;
@@ -70,7 +80,7 @@ const TelemedicinePage = () => {
         };
 
         fetchData();
-        
+
         const timer = setInterval(() => setDuration(d => d + 1), 1000);
         return () => {
             clearInterval(timer);
@@ -121,18 +131,23 @@ const TelemedicinePage = () => {
 
     const handleEndCall = async () => {
         if (jitsiApiRef.current) jitsiApiRef.current.dispose();
-        
+
         try {
             const role = localStorage.getItem('user_role');
+            const userId = localStorage.getItem('user_id');
+
             if (role === 'DOCTOR' && session) {
-                await telemedicineApi.put(`/sessions/${session.id}/end`, {
-                    notes: 'Session terminated by specialist terminal'
+                await telemedicineApi.post(`/sessions/${session.sessionId}/end`, null, {
+                    params: {
+                        doctorId: userId,
+                        notes: 'Session terminated by specialist terminal'
+                    }
                 });
             }
         } catch (e) {
             console.error('Session end signal failed', e);
         }
-        
+
         const role = localStorage.getItem('user_role');
         router.push(role === 'DOCTOR' ? '/doctor/dashboard' : '/dashboard/patient');
     };

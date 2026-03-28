@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -12,6 +14,11 @@ import lombok.NoArgsConstructor;
 public class MedicalReportDto {
     private Long id;
     private Long patientId;
+    private String fileName;
     private String fileUrl;
+    private String fileType;
+    private Long fileSize;
     private String description;
+    private String reportType;
+    private LocalDateTime uploadedAt;
 }

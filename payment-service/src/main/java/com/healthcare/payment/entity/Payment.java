@@ -55,6 +55,17 @@ public class Payment {
 
     private String failureReason;
 
+    // Denormalized fields for invoice generation
+    private String patientName;
+    private String patientEmail;
+    private Long doctorId;
+    private String doctorName;
+    private String doctorSpecialization;
+    private LocalDateTime appointmentDate;
+    private String consultationType;      // VIDEO / PHYSICAL
+    private BigDecimal consultationFee;   // Doctor's consultation fee
+    private BigDecimal serviceFee;        // Platform service fee
+
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();

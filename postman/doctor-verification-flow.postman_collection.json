@@ -1,0 +1,301 @@
+{
+  "info": {
+    "name": "Synapcare Doctor Verification Flow",
+    "description": "End-to-end flow: admin login, doctor login, profile lookup, verify doctor profile, set availability, and public search validation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Admin Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Admin login success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const r = pm.response.json();",
+              "pm.environment.set('adminToken', r.token || r.accessToken || '');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Doctor Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{doctorEmail}}\",\n  \"password\": \"{{doctorPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Doctor login success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const r = pm.response.json();",
+              "pm.environment.set('doctorToken', r.token || r.accessToken || '');",
+              "const user = r.user || {};",
+              "if (user.id) pm.environment.set('doctorUserId', String(user.id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Get Doctor Profile (Me)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{doctorToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/doctors/profile/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "doctors",
+            "profile",
+            "me"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Get doctor profile success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const d = pm.response.json();",
+              "if (d.id) pm.environment.set('doctorId', String(d.id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Admin Verify Doctor Profile",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/doctors/{{doctorUserId}}/verify",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "admin",
+            "doctors",
+            "{{doctorUserId}}",
+            "verify"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Doctor profile verify success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const d = pm.response.json();",
+              "pm.test('Doctor user is verified', function () {",
+              "  pm.expect(d.isVerified).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Doctor Set Availability",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{doctorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"isAvailable\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/doctors/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "doctors",
+            "status"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Availability update success', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Public Search Doctors",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/doctors/search",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "doctors",
+            "search"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Search status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const arr = pm.response.json();",
+              "pm.test('Search response is array', function () {",
+              "  pm.expect(Array.isArray(arr)).to.be.true;",
+              "});",
+              "const did = Number(pm.environment.get('doctorId'));",
+              "pm.test('Verified doctor appears in search', function () {",
+              "  pm.expect(arr.some(x => x.id === did)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "doctorEmail",
+      "value": ""
+    },
+    {
+      "key": "doctorPassword",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "doctorToken",
+      "value": ""
+    },
+    {
+      "key": "doctorUserId",
+      "value": ""
+    },
+    {
+      "key": "doctorId",
+      "value": ""
+    }
+  ]
+}

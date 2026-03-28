@@ -22,4 +22,15 @@ public class PaymentDto {
     private LocalDateTime paidAt;
     private String receiptUrl;
     private String failureReason;
+
+    // Invoice-related fields
+    private String patientName;
+    private String patientEmail;
+    private Long doctorId;
+    private String doctorName;
+    private String doctorSpecialization;
+    private LocalDateTime appointmentDate;
+    private String consultationType;
+    private BigDecimal consultationFee;
+    private BigDecimal serviceFee;
 }

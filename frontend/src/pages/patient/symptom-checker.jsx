@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import {
@@ -48,6 +48,7 @@ const SymptomCheckerPage = () => {
     const [allergies, setAllergies] = useState([]);
     const [age, setAge] = useState('');
     const [gender, setGender] = useState('');
+    const [formError, setFormError] = useState('');
 
     // UI state
     const [symptomsOpen, setSymptomsOpen] = useState(true);
@@ -55,42 +56,24 @@ const SymptomCheckerPage = () => {
     const [locationOpen, setLocationOpen] = useState(false);
     const [historyOpen, setHistoryOpen] = useState(false);
 
-    // Red flag detection
-    const [redFlag, setRedFlag] = useState(null);
-
-    // Real-time red flag detection
-    useEffect(() => {
+    const redFlag = useMemo(() => {
         const allSymptoms = [...selectedSymptoms, additionalSymptoms];
-        const detected = detectRedFlags(allSymptoms, additionalSymptoms, severity);
-        setRedFlag(detected);
+        return detectRedFlags(allSymptoms, additionalSymptoms, severity);
     }, [selectedSymptoms, additionalSymptoms, severity]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setFormError('');
 
         // Validate required fields
         if (selectedSymptoms.length === 0 && !additionalSymptoms.trim()) {
-            alert('Please describe your symptoms');
+            setFormError('Please select or describe your symptoms before analysis.');
             return;
         }
         if (!duration || !onset) {
-            alert('Please specify symptom duration and onset');
+            setFormError('Please specify symptom duration and onset.');
             return;
         }
-
-        // Prepare symptom data
-        const symptomData = {
-            symptoms: [...selectedSymptoms, additionalSymptoms].filter(Boolean),
-            severity,
-            duration,
-            onset,
-            bodyRegions,
-            medicalConditions,
-            medications,
-            allergies,
-            age: age || null,
-            gender: gender || null
-        };
 
         // Format for AI analysis
         const symptomDescription = `
@@ -133,7 +116,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
         setAllergies([]);
         setAge('');
         setGender('');
-        setRedFlag(null);
+        setFormError('');
     };
 
     const handleBookAppointment = (doctor) => {
@@ -189,8 +172,22 @@ Please provide a detailed medical analysis with possible conditions and recommen
                             <SymptomChips
                                 selectedSymptoms={selectedSymptoms}
                                 onSymptomToggle={setSelectedSymptoms}
+                                additionalSymptoms={additionalSymptoms}
+                                onAdditionalSymptomsChange={setAdditionalSymptoms}
                             />
                         </CollapsibleSection>
+
+                        {formError && (
+                            <Card padding="md" className="border-l-4 border-l-rose-600 bg-rose-50">
+                                <div className="flex gap-3">
+                                    <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                                    <div>
+                                        <h4 className="font-medium text-rose-800 mb-1">Missing Required Inputs</h4>
+                                        <p className="text-sm text-rose-700">{formError}</p>
+                                    </div>
+                                </div>
+                            </Card>
+                        )}
 
                         {/* Duration & Severity Section - Required */}
                         <CollapsibleSection
@@ -396,7 +393,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
                     {error && (
                         <Card padding="md" className="mt-6 border-l-4 border-l-rose-600 bg-rose-50">
                             <div className="flex gap-3">
-                                <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+                                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
                                 <div>
                                     <h4 className="font-medium text-rose-800 mb-1">
                                         Analysis Error
@@ -420,7 +417,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
                     {/* AI Assistant Info */}
                     <Card padding="md">
                         <div className="text-center">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-teal-500 rounded-xl mx-auto mb-3 flex items-center justify-center">
+                            <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-teal-500 rounded-xl mx-auto mb-3 flex items-center justify-center">
                                 <Brain className="w-6 h-6 text-white" />
                             </div>
                             <h3 className="font-semibold text-slate-900 mb-1">
@@ -444,19 +441,19 @@ Please provide a detailed medical analysis with possible conditions and recommen
                         </h3>
                         <ol className="space-y-2 text-sm text-slate-600">
                             <li className="flex gap-2">
-                                <span className="font-medium text-blue-600 flex-shrink-0">1.</span>
+                                <span className="font-medium text-blue-600 shrink-0">1.</span>
                                 Select your symptoms from common conditions
                             </li>
                             <li className="flex gap-2">
-                                <span className="font-medium text-blue-600 flex-shrink-0">2.</span>
+                                <span className="font-medium text-blue-600 shrink-0">2.</span>
                                 Rate severity and specify duration
                             </li>
                             <li className="flex gap-2">
-                                <span className="font-medium text-blue-600 flex-shrink-0">3.</span>
+                                <span className="font-medium text-blue-600 shrink-0">3.</span>
                                 Add location and medical history (optional)
                             </li>
                             <li className="flex gap-2">
-                                <span className="font-medium text-blue-600 flex-shrink-0">4.</span>
+                                <span className="font-medium text-blue-600 shrink-0">4.</span>
                                 Get AI analysis and doctor recommendations
                             </li>
                         </ol>
@@ -465,7 +462,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
                     {/* Medical Disclaimer */}
                     <Card padding="md" className="bg-amber-50 border-amber-200">
                         <div className="flex gap-2">
-                            <Shield className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                            <Shield className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                             <div>
                                 <h4 className="font-semibold text-amber-800 text-sm mb-1">
                                     Medical Disclaimer

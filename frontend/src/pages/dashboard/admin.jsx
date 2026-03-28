@@ -93,10 +93,10 @@ const AdminDashboard = () => {
         { id: 'settings', icon: Settings, label: 'Platform Config' },
     ];
 
-    const filteredDoctors = doctors.filter(d => 
-        (d.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredDoctors = doctors.filter(d =>
+        (d.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
          d.specialization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         d.userId?.toLowerCase().includes(searchTerm.toLowerCase()))
+         d.userId?.toString().includes(searchTerm))
     );
 
     return (
