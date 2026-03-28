@@ -53,21 +53,6 @@ const createApiInstance = (baseURL, isPublic = false) => {
     return instance;
 };
 
-export const authApi = createApiInstance(CONFIG.API_GATEWAY + '/auth');
-export const doctorApi = createApiInstance(CONFIG.API_GATEWAY + '/doctors');
-export const publicDoctorApi = createApiInstance(CONFIG.API_GATEWAY + '/doctors', true); // For public endpoints like /search
-export const appointmentApi = createApiInstance(CONFIG.API_GATEWAY + '/appointments');
-export const patientApi = createApiInstance(CONFIG.API_GATEWAY + '/patients');
-export const medicalHistoryApi = createApiInstance(CONFIG.API_GATEWAY + '/medical-history');
-export const integrationApi = createApiInstance(CONFIG.API_GATEWAY + '/integration');
-export const adminApi = createApiInstance(CONFIG.API_GATEWAY + '/admin');
-export const symptomApi = createApiInstance(CONFIG.API_GATEWAY + '/symptoms');
-export const paymentApi = createApiInstance(CONFIG.API_GATEWAY + '/payments');
-export const telemedicineApi = createApiInstance(CONFIG.API_GATEWAY + '/telemedicine');
-export const prescriptionApi = createApiInstance(CONFIG.API_GATEWAY + '/prescriptions');
-export const notificationApi = createApiInstance(CONFIG.API_GATEWAY + '/notifications');
-export const caseApi = createApiInstance(CONFIG.API_GATEWAY + '/doctors/cases');
-
 // Create a special instance for file uploads (multipart/form-data)
 export const createFileUploadInstance = (baseURL) => {
     const instance = axios.create({
@@ -96,6 +81,22 @@ export const createFileUploadInstance = (baseURL) => {
 
     return instance;
 };
+
+export const authApi = createApiInstance(CONFIG.API_GATEWAY + '/auth');
+export const doctorApi = createApiInstance(CONFIG.API_GATEWAY + '/doctors');
+export const doctorFileApi = createFileUploadInstance(CONFIG.API_GATEWAY + '/doctors');
+export const publicDoctorApi = createApiInstance(CONFIG.API_GATEWAY + '/doctors', true);
+export const appointmentApi = createApiInstance(CONFIG.API_GATEWAY + '/appointments');
+export const patientApi = createApiInstance(CONFIG.API_GATEWAY + '/patients');
+export const medicalHistoryApi = createApiInstance(CONFIG.API_GATEWAY + '/medical-history');
+export const integrationApi = createApiInstance(CONFIG.API_GATEWAY + '/integration');
+export const adminApi = createApiInstance(CONFIG.API_GATEWAY + '/admin');
+export const symptomApi = createApiInstance(CONFIG.API_GATEWAY + '/symptoms');
+export const paymentApi = createApiInstance(CONFIG.API_GATEWAY + '/payments');
+export const telemedicineApi = createApiInstance(CONFIG.API_GATEWAY + '/telemedicine');
+export const prescriptionApi = createApiInstance(CONFIG.API_GATEWAY + '/prescriptions');
+export const notificationApi = createApiInstance(CONFIG.API_GATEWAY + '/notifications');
+export const caseApi = createApiInstance(CONFIG.API_GATEWAY + '/doctors/cases');
 
 export const fileUploadApi = createFileUploadInstance(CONFIG.API_GATEWAY + '/patients');
 

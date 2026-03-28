@@ -108,6 +108,9 @@ public class DoctorService {
         if (request.getExperience() != null) {
             doctor.setExperience(request.getExperience());
         }
+        if (request.getLicenseNumber() != null) {
+            doctor.setLicenseNumber(request.getLicenseNumber());
+        }
         if (request.getConsultationFee() != null) {
             doctor.setConsultationFee(request.getConsultationFee());
         }

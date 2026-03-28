@@ -75,6 +75,12 @@ public class AppointmentController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Doctor appointments fetched", appointments));
     }
 
+    @GetMapping("/doctor/{doctorId}/patients")
+    public ResponseEntity<ApiResponse<List<com.healthcare.appointment.dto.client.PatientClientDto>>> getPatientsByDoctor(@PathVariable("doctorId") Long doctorId) {
+        List<com.healthcare.appointment.dto.client.PatientClientDto> patients = appointmentService.getPatientsByDoctor(doctorId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Doctor's patients fetched successfully", patients));
+    }
+
     @GetMapping("/doctors/search")
     public ResponseEntity<ApiResponse<List<DoctorProfileClientDto>>> searchDoctors(
             @RequestParam(value = "specialization", required = false) String specialization,

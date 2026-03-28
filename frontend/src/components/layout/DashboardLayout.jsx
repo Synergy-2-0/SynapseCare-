@@ -30,9 +30,20 @@ const DashboardLayout = ({ children }) => {
         setIsClient(true);
         const role = localStorage.getItem('user_role');
         const allowedRoles = getAllowedRolesForPath(router.pathname);
+        const verificationStatus = localStorage.getItem('user_verificationStatus');
 
         if (!role) {
             router.push('/login');
+            return;
+        }
+
+        if (role === 'DOCTOR' && verificationStatus === 'PENDING' && !router.pathname.startsWith('/doctor/setup')) {
+            router.push('/doctor/setup');
+            return;
+        }
+
+        if (role === 'DOCTOR' && verificationStatus === 'APPROVED' && router.pathname.startsWith('/doctor/setup')) {
+            router.push('/dashboard/doctor');
             return;
         }
 
