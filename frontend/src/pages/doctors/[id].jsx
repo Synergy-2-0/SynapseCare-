@@ -1,38 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Star, MapPin, Award, Calendar, Video, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    ArrowLeft, 
+    Star, 
+    MapPin, 
+    Award, 
+    Calendar, 
+    Video, 
+    CheckCircle2, 
+    ShieldCheck, 
+    Zap, 
+    User, 
+    Clock, 
+    Globe,
+    Stethoscope,
+    ChevronRight,
+    Search,
+    BookOpen,
+    Verified,
+    Check
+} from 'lucide-react';
+import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 const MOCK_DOCTOR = {
     id: 1,
-    name: "Dr. Elena Rodriguez",
-    specialty: "Cardiology",
+    name: "Elena Rodriguez",
+    specialization: "Interventional Cardiology",
     image: "https://api.dicebear.com/7.x/notionists/svg?seed=Elena",
-    location: "New York Medical Center",
+    location: "Global Healthcare Node 04, NY",
     rating: 4.9,
     reviews: 124,
-    experience: "15+ Years",
-    about: "Dr. Rodriguez is an interventional cardiologist specializing in complex coronary interventions. With over 15 years of clinical experience across top-tier global institutions, she leads the cardiovascular research department at SynapseCare.",
+    experience: "15+ Years Clinical Research",
+    about: "Dr. Rodriguez is a distinguished interventional cardiologist focusing on specialized coronary interventions and vascular diagnostics. With over 15 years of surgical experience at world-leading medical institutions, she currently pioneers the digital cardiovascular diagnostic protocols at SynapseCare.",
     education: [
-        "MD, Harvard Medical School",
-        "Residency, Johns Hopkins Hospital",
-        "Fellowship in Cardiology, Mayo Clinic"
+        "Doctor of Medicine (MD), Harvard Medical School",
+        "Clinical Residency, Johns Hopkins Hospital",
+        "Fellowship in Interventional Cardiology, Mayo Clinic",
+        "Strategic Medical Systems Fellowship, MIT"
     ],
     services: [
-        "Echocardiogram",
-        "Heart Risk Assessment",
-        "Arrhythmia Treatment",
-        "Post-Surgery Checkup"
+        "Advanced Echocardiography",
+        "High-Resolution Cardiovascular Screening",
+        "Non-Invasive Arrhythmia Management",
+        "Post-Surgical Neural Integration Audit"
     ],
     slots: [
-        { time: "09:00 AM", available: true },
-        { time: "10:30 AM", available: false },
+        { time: "08:30 AM", available: true },
+        { time: "10:15 AM", available: false },
         { time: "11:00 AM", available: true },
-        { time: "02:00 PM", available: true },
-        { time: "03:30 PM", available: true },
-        { time: "04:00 PM", available: false }
-    ]
+        { time: "01:30 PM", available: true },
+        { time: "03:00 PM", available: true },
+        { time: "04:45 PM", available: false }
+    ],
+    fee: 1500,
+    verificationStatus: 'APPROVED'
 };
 
 export default function DoctorProfile() {
@@ -42,6 +68,7 @@ export default function DoctorProfile() {
     const [doctor, setDoctor] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedSlot, setSelectedSlot] = useState(null);
+    const [bookingMode, setBookingMode] = useState('TELEHEALTH');
 
     useEffect(() => {
         if (!id) return;
@@ -49,144 +76,252 @@ export default function DoctorProfile() {
         setTimeout(() => {
             setDoctor({ ...MOCK_DOCTOR, id: id });
             setLoading(false);
-        }, 600);
+        }, 800);
     }, [id]);
 
-    if (loading) {
+    const handleBooking = () => {
+        if (!selectedSlot) return;
+        router.push({
+            pathname: '/payment',
+            query: { 
+                id: `APT-${Math.floor(Math.random() * 10000)}`,
+                amount: doctor.fee,
+                patientId: localStorage.getItem('user_id'),
+                doctorId: doctor.id
+            }
+        });
+    };
+
+    if (loading) return <LoadingSpinner size="fullscreen" message="Accessing Specialized Practitioner Dossier..." />;
+
+    if (!doctor) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-lg text-slate-400 animate-pulse">
-                Loading Profile...
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
+                 <Card className="max-w-md w-full text-center p-12">
+                     <Search size={48} className="mx-auto text-slate-300 mb-6" />
+                     <h2 className="text-2xl font-black text-slate-900 tracking-tight">Practitioner Not Found</h2>
+                     <p className="text-slate-500 font-medium mt-2 mb-10">We couldn't synchronize the requested clinical profile.</p>
+                     <Button variant="primary" onClick={() => router.push('/doctors')}>Back to Registry</Button>
+                 </Card>
             </div>
         );
     }
 
-    if (!doctor) {
-        return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-500">Doctor not found</div>;
-    }
-
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-teal-100 pb-32">
-            {/* Header */}
-            <nav className="w-full bg-white/80 backdrop-blur-xl border-b border-slate-200/50 px-6 sm:px-12 py-4 flex flex-wrap items-center gap-6 shadow-sm sticky top-0 z-50">
-                <Link href="/doctors" className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors border border-slate-200">
-                    <ArrowLeft className="w-5 h-5 text-slate-600" />
-                </Link>
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-teal-50 rounded-lg overflow-hidden border border-teal-100">
-                         <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover" />
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100 overflow-x-hidden">
+            {/* High-End Navigation Header */}
+            <nav className="h-24 bg-white/70 backdrop-blur-2xl border-b border-slate-200/50 px-8 sm:px-16 flex items-center justify-between sticky top-0 z-[60] shadow-sm">
+                <div className="flex items-center gap-8">
+                    <button 
+                        onClick={() => router.push('/doctors')}
+                        className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-indigo-600 hover:border-indigo-400 transition-all active:scale-90 group"
+                    >
+                        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                    </button>
+                    <div className="hidden sm:flex flex-col">
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm font-black text-slate-900 tracking-tighter uppercase italic tracking-widest leading-none">Practitioner Dossier</span>
+                            <Verified size={14} className="text-indigo-500" />
+                        </div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1.5">ID: {doctor.id} • SYNCED SECURELY</p>
                     </div>
-                    <div className="font-bold text-slate-800 tracking-tight">{doctor.name}</div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                    <Badge variant="success" size="sm" pulse>AVAILABLE</Badge>
+                    <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden relative group cursor-pointer">
+                         <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
+                    </div>
                 </div>
             </nav>
 
-            <main className="max-w-6xl mx-auto px-6 sm:px-12 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-12">
-                {/* Left Col - Info */}
-                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2 space-y-8">
-                    <div className="bg-white rounded-[2.5rem] p-8 sm:p-12 shadow-[0_8px_40px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col md:flex-row gap-10 items-start">
-                        <div className="w-32 h-32 sm:w-40 sm:h-40 shrink-0 bg-teal-50 rounded-3xl border border-teal-100 shadow-sm overflow-hidden p-2">
-                            <div className="w-full h-full rounded-2xl overflow-hidden">
-                                <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover" />
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="inline-flex px-3 py-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold rounded-full">
-                                Accepting Patients
-                            </div>
-                            <h1 className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight leading-tight">{doctor.name}</h1>
-                            <h2 className="text-lg text-teal-600 font-semibold">{doctor.specialty}</h2>
-                            
-                            <div className="flex flex-wrap gap-x-8 gap-y-4 pt-6 border-t border-slate-100">
-                                <div className="flex items-center gap-2 font-medium text-slate-500 text-sm">
-                                    <Star className="w-5 h-5 text-amber-400 fill-amber-400" /> {doctor.rating} ({doctor.reviews})
-                                </div>
-                                <div className="flex items-center gap-2 font-medium text-slate-500 text-sm">
-                                    <Award className="w-5 h-5 text-teal-500" /> {doctor.experience}
-                                </div>
-                                <div className="flex items-center gap-2 font-medium text-slate-500 text-sm">
-                                    <MapPin className="w-5 h-5 text-slate-400" /> {doctor.location}
-                                </div>
-                            </div>
-                        </div>
+            <main className="max-w-[1400px] mx-auto px-8 sm:px-16 py-16 grid grid-cols-1 xl:grid-cols-12 gap-16">
+                {/* Profile Core Intelligence (Col Span 8) */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="xl:col-span-8 space-y-16">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
+                         {/* Large Profile Visual */}
+                         <div className="md:col-span-4 lg:col-span-3">
+                             <div className="aspect-square bg-white rounded-[3rem] p-6 border-2 border-slate-100 shadow-2xl shadow-indigo-100/30 relative group overflow-hidden">
+                                 <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-indigo-50/50 to-transparent pointer-events-none" />
+                                 <div className="w-full h-full bg-slate-50 rounded-[2.5rem] overflow-hidden border border-slate-100 relative z-10">
+                                     <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                 </div>
+                                 <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-200 z-20 group-hover:rotate-12 transition-transform">
+                                      <Zap size={24} fill="white" />
+                                 </div>
+                             </div>
+                         </div>
+
+                         {/* Core Info Details */}
+                         <div className="md:col-span-8 lg:col-span-9 space-y-8">
+                             <div>
+                                 <div className="flex items-center gap-4 mb-4">
+                                     <Badge variant="indigo" size="md">SENIOR SPECIALIST</Badge>
+                                     <div className="flex items-center gap-1.5 text-xs text-slate-400 font-black uppercase tracking-widest">
+                                          <Globe size={12} /> {doctor.location}
+                                     </div>
+                                 </div>
+                                 <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase tracking-widest mb-4">Dr. {doctor.name}</h1>
+                                 <h2 className="text-2xl font-black text-indigo-600 tracking-tight flex items-center gap-3">
+                                     {doctor.specialization} <div className="h-0.5 w-12 bg-indigo-200" />
+                                 </h2>
+                             </div>
+
+                             <div className="grid grid-cols-3 gap-6 pt-10 border-t border-slate-100">
+                                 {[
+                                     { label: 'Rating', val: doctor.rating, icon: Star, color: 'text-amber-500' },
+                                     { label: 'Seniority', val: doctor.experience.split(' ')[0], icon: Award, color: 'text-indigo-500' },
+                                     { label: 'Feed', val: doctor.reviews, icon: User, color: 'text-sky-500' }
+                                 ].map((stat, i) => (
+                                     <div key={i} className="space-y-2">
+                                         <div className="flex items-center gap-2">
+                                             <stat.icon size={16} className={stat.color} />
+                                             <span className="text-xl font-black text-slate-900 tracking-tighter">{stat.val}</span>
+                                         </div>
+                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                                     </div>
+                                 ))}
+                             </div>
+                         </div>
                     </div>
 
-                    <div className="bg-white rounded-[2rem] p-8 sm:p-10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100">
-                        <h3 className="text-xl font-bold text-slate-800 mb-6">About the Doctor</h3>
-                        <p className="text-slate-500 font-medium leading-relaxed text-base">{doctor.about}</p>
-                    </div>
+                    {/* Extended Dossier Information */}
+                    <div className="space-y-16">
+                         <div className="surface-card p-12 bg-white relative overflow-hidden group border border-slate-100">
+                             <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase italic tracking-widest mb-8 flex items-center gap-4">
+                                 <BookOpen size={20} className="text-indigo-600" /> Clinical Statement
+                             </h3>
+                             <p className="text-lg font-medium text-slate-500 leading-relaxed italic max-w-3xl">
+                                 "{doctor.about}"
+                             </p>
+                             <div className="absolute right-0 bottom-0 p-12 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
+                                 <Stethoscope size={180} />
+                             </div>
+                         </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100">
-                            <h4 className="font-bold text-slate-800 mb-6">Education & Training</h4>
-                            <ul className="space-y-4">
-                                {doctor.education.map((edu, idx) => (
-                                    <li key={idx} className="flex gap-3 font-medium text-sm text-slate-500">
-                                        <CheckCircle2 className="w-5 h-5 text-teal-500 shrink-0" /> {edu}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100">
-                            <h4 className="font-bold text-slate-800 mb-6">Clinical Services</h4>
-                            <ul className="space-y-4">
-                                {doctor.services.map((srv, idx) => (
-                                    <li key={idx} className="flex gap-3 font-medium text-sm text-slate-500">
-                                        <CheckCircle2 className="w-5 h-5 text-teal-500 shrink-0" /> {srv}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                             <div className="p-10 bg-indigo-50 border border-indigo-100 rounded-[3rem] text-slate-900 shadow-xl shadow-indigo-100/50">
+                                 <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-8 flex items-center gap-3">
+                                     <Verified size={16} /> Academic Pedigree
+                                 </h4>
+                                 <ul className="space-y-6">
+                                     {doctor.education.map((edu, i) => (
+                                         <li key={i} className="flex gap-4 group cursor-default">
+                                             <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 mt-1.5 shrink-0 group-hover:scale-150 transition-transform" />
+                                             <p className="text-sm font-bold text-slate-600 group-hover:text-indigo-900 transition-colors">{edu}</p>
+                                         </li>
+                                     ))}
+                                 </ul>
+                             </div>
+
+                             <div className="p-10 bg-white border border-slate-100 rounded-[3rem]">
+                                 <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-8 flex items-center gap-3">
+                                     <Stethoscope size={16} className="text-indigo-600" /> Practical Operations
+                                 </h4>
+                                 <ul className="space-y-6">
+                                     {doctor.services.map((srv, i) => (
+                                         <li key={i} className="flex items-center gap-4 group">
+                                             <div className="w-8 h-8 rounded-xl bg-slate-50 text-indigo-500 flex items-center justify-center border border-slate-100 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                                  <Check size={14} strokeWidth={3} />
+                                             </div>
+                                             <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900">{srv}</span>
+                                         </li>
+                                     ))}
+                                 </ul>
+                             </div>
+                         </div>
                     </div>
                 </motion.div>
 
-                {/* Right Col - Booking Widget */}
-                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-1">
-                    <div className="bg-white rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.05)] border border-slate-100 sticky top-32 overflow-hidden flex flex-col h-auto">
-                        <div className="p-8 pb-6 border-b border-slate-100">
-                            <h3 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
-                                <Calendar className="w-6 h-6 text-teal-500" /> Book Visit
-                            </h3>
-                            <p className="font-medium text-slate-500 mt-2 text-sm">Select an available time slot below.</p>
+                {/* Tactical Booking Interface (Col Span 4) */}
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="xl:col-span-4">
+                    <div className="bg-white rounded-[3rem] shadow-2xl shadow-indigo-100 sticky top-32 overflow-hidden border border-slate-100">
+                        {/* Booking Header */}
+                        <div className="p-10 bg-indigo-600 text-white flex justify-between items-end relative overflow-hidden group">
+                             <div className="relative z-10">
+                                <h3 className="text-3xl font-black tracking-tighter uppercase italic tracking-widest mb-1">Schedule Visit</h3>
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-200">Session ID: AUTO-SYNC-X</p>
+                             </div>
+                             <Calendar size={32} className="relative z-10 group-hover:rotate-12 transition-transform" />
+                             <div className="absolute top-0 right-0 p-10 opacity-20 pointer-events-none blur-2xl flex gap-10">
+                                 <div className="w-32 h-32 bg-white rounded-full" />
+                             </div>
                         </div>
-                        
-                        <div className="p-8 space-y-8 bg-slate-50/50">
-                            <div className="grid grid-cols-2 gap-3">
-                                {doctor.slots.map((slot, idx) => (
-                                    <button 
-                                        key={idx}
-                                        disabled={!slot.available}
-                                        onClick={() => setSelectedSlot(slot.time)}
-                                        className={`py-3.5 rounded-xl font-bold text-sm transition-all border ${
-                                            !slot.available 
-                                                ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed opacity-60' 
-                                                : selectedSlot === slot.time 
-                                                    ? 'bg-teal-600 border-teal-600 text-white shadow-lg shadow-teal-600/20 scale-[1.02]' 
-                                                    : 'bg-white border-slate-200 text-slate-700 hover:border-teal-300 hover:text-teal-700 hover:bg-teal-50'
+
+                        {/* Booking Controls */}
+                        <div className="p-10 space-y-10">
+                            {/* Mode Toggle */}
+                            <div className="flex gap-2 p-2 bg-slate-50 rounded-2xl border border-slate-100">
+                                 {['TELEHEALTH', 'IN-PERSON'].map((mode) => (
+                                     <button 
+                                        key={mode}
+                                        onClick={() => setBookingMode(mode)}
+                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                            bookingMode === mode ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-indigo-600'
                                         }`}
-                                    >
-                                        {slot.time}
-                                    </button>
-                                ))}
+                                     >
+                                         <div className="flex items-center justify-center gap-2">
+                                             {mode === 'TELEHEALTH' ? <Video size={12} /> : <MapPin size={12} />}
+                                             {mode}
+                                         </div>
+                                     </button>
+                                 ))}
                             </div>
 
-                            <div className="pt-6 border-t border-slate-200 space-y-4">
-                                <div className="flex items-center justify-between text-sm font-bold text-slate-600">
-                                    <span className="flex items-center gap-2"><Video className="w-4 h-4 text-blue-500"/> Telehealth</span>
-                                    <span>$150 USD</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm font-bold text-slate-600">
-                                    <span className="flex items-center gap-2"><MapPin className="w-4 h-4 text-emerald-500"/> In-Person</span>
-                                    <span>$200 USD</span>
+                            {/* Slot Cluster */}
+                            <div className="space-y-4">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Available Nodes Today</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                     {doctor.slots.map((slot, i) => (
+                                         <button 
+                                            key={i}
+                                            disabled={!slot.available}
+                                            onClick={() => setSelectedSlot(slot.time)}
+                                            className={`p-4 rounded-2xl font-black text-xs uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                                                !slot.available 
+                                                ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed italic' 
+                                                : selectedSlot === slot.time 
+                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xl scale-[1.05]' 
+                                                : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-400 hover:text-indigo-600'
+                                            }`}
+                                         >
+                                             {selectedSlot === slot.time && <Check size={12} className="text-white" />}
+                                             {slot.time}
+                                         </button>
+                                     ))}
                                 </div>
                             </div>
 
-                            <button 
-                                className={`w-full py-4 rounded-xl text-white font-bold transition-all shadow-lg ${
-                                    selectedSlot ? 'bg-slate-900 hover:bg-slate-800 shadow-slate-900/20 hover:-translate-y-0.5' : 'bg-slate-300 cursor-not-allowed shadow-none'
-                                }`}
+                            {/* Fee Calculation */}
+                            <div className="pt-10 border-t border-slate-100 space-y-6">
+                                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                      <span className="text-slate-400">Service Authorized Fee</span>
+                                      <span className="text-slate-900 text-base">LKR {doctor.fee.toLocaleString()}</span>
+                                 </div>
+                                 <div className="p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex items-center gap-4">
+                                      <div className="w-10 h-10 bg-indigo-600/10 rounded-xl flex items-center justify-center text-indigo-600 shrink-0">
+                                           <ShieldCheck size={20} />
+                                      </div>
+                                      <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-widest italic">Encrypted payment & verified clinical identity guaranteed.</p>
+                                 </div>
+                            </div>
+
+                            <Button 
+                                variant="primary" 
+                                size="xl" 
+                                className="w-full"
                                 disabled={!selectedSlot}
+                                onClick={handleBooking}
+                                icon={Zap}
                             >
-                                {selectedSlot ? 'Confirm Appointment' : 'Select a Time'}
-                            </button>
+                                {selectedSlot ? 'Finalize Booking Protocol' : 'Select Command Node'}
+                            </Button>
+                        </div>
+
+                        {/* Infrastructure Footer */}
+                        <div className="bg-slate-50 p-6 flex items-center justify-center gap-3">
+                             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                             <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Secure Node SYNC-X ACTIVE</span>
                         </div>
                     </div>
                 </motion.div>
