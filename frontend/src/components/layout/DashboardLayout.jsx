@@ -5,6 +5,21 @@ import { Menu, Search, Bell, User, Command } from 'lucide-react';
 import Sidebar from './Sidebar';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
+const getAllowedRolesForPath = (pathname) => {
+    if (pathname.startsWith('/dashboard/admin')) return ['ADMIN'];
+    if (pathname.startsWith('/dashboard/doctor') || pathname.startsWith('/doctor')) return ['DOCTOR'];
+    if (pathname.startsWith('/dashboard/patient') || pathname.startsWith('/patient')) return ['PATIENT'];
+    if (pathname.startsWith('/appointments')) return ['PATIENT', 'DOCTOR', 'ADMIN'];
+    return ['PATIENT', 'DOCTOR', 'ADMIN'];
+};
+
+const getFallbackRoute = (role) => {
+    if (role === 'ADMIN') return '/dashboard/admin';
+    if (role === 'DOCTOR') return '/doctor/dashboard';
+    if (role === 'PATIENT') return '/dashboard/patient';
+    return '/login';
+};
+
 const DashboardLayout = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const router = useRouter();
@@ -18,21 +33,6 @@ const DashboardLayout = ({ children }) => {
             role: storedRole || ''
         }
         : { name: 'User', role: '' };
-
-    const getAllowedRolesForPath = (pathname) => {
-        if (pathname.startsWith('/dashboard/admin')) return ['ADMIN'];
-        if (pathname.startsWith('/dashboard/doctor') || pathname.startsWith('/doctor')) return ['DOCTOR'];
-        if (pathname.startsWith('/dashboard/patient') || pathname.startsWith('/patient')) return ['PATIENT'];
-        if (pathname.startsWith('/appointments')) return ['PATIENT', 'DOCTOR', 'ADMIN'];
-        return ['PATIENT', 'DOCTOR', 'ADMIN'];
-    };
-
-    const getFallbackRoute = (role) => {
-        if (role === 'ADMIN') return '/dashboard/admin';
-        if (role === 'DOCTOR') return '/doctor/dashboard';
-        if (role === 'PATIENT') return '/dashboard/patient';
-        return '/login';
-    };
 
     useEffect(() => {
         if (!isClient) {

@@ -3,6 +3,7 @@ package com.healthcare.prescription.service;
 import com.healthcare.prescription.entity.Prescription;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
+import com.lowagie.text.pdf.draw.LineSeparator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
