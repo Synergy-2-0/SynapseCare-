@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AppointmentService {
@@ -61,6 +63,10 @@ public class AppointmentService {
         if (isBooked) {
             throw new SlotConflictException("Doctor is already booked for this slot");
         }
+
+        // Token Generation: Count existing appointments for this doctor on this day
+        long existingCount = appointmentRepository.countByDoctorIdAndDate(dto.getDoctorId(), dto.getDate());
+        int tokenNumber = (int) existingCount + 1;
 
         // Token Generation: Count existing appointments for this doctor on this day
         long existingCount = appointmentRepository.countByDoctorIdAndDate(dto.getDoctorId(), dto.getDate());
@@ -130,6 +136,18 @@ public class AppointmentService {
         return mapToDto(appointment);
     }
     
+    public List<AppointmentDto> getAppointmentsByDoctor(Long doctorId) {
+        return appointmentRepository.findByDoctorId(doctorId).stream()
+                .map(this::mapToDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<AppointmentDto> getAppointmentsByPatient(Long patientId) {
+        return appointmentRepository.findByPatientId(patientId).stream()
+                .map(this::mapToDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     public AppointmentDto rescheduleAppointment(Long id, RescheduleAppointmentDto dto) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));

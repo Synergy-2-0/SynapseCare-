@@ -45,6 +45,31 @@ services:
   auth-service:
     build: ./auth-service
     container_name: synapscare-auth-service
+origin/master
+    ports:
+      - '8083:8083'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_APPLICATION_NAME=appointment-service'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  auth-service:
+    build: ./auth-service
+    container_name: synapscare-auth-service
     ports:
       - '8081:8081'
     environment:
@@ -179,6 +204,55 @@ services:
       - healthcare-network
     restart: unless-stopped
 
+  prescription-service:
+    build: ./prescription-service
+    container_name: synapscare-prescription-service
+    ports:
+      - '8088:8088'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_APPLICATION_NAME=prescription-service'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  notification-service:
+    build: ./notification-service
+    container_name: synapscare-notification-service
+    ports:
+      - '8089:8089'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_APPLICATION_NAME=notification-service'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_PORT=5672'
+      - 'SPRING_RABBITMQ_USERNAME=admin'
+      - 'SPRING_RABBITMQ_PASSWORD=admin123'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+ origin/master
   api-gateway:
     build: ./api-gateway
     container_name: synapscare-api-gateway

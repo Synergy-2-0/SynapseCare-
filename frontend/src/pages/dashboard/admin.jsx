@@ -5,32 +5,32 @@ import {
     AlertCircle,
     CheckCircle2,
     CreditCard,
-    ShieldCheck,
-    Users,
-    UserCog,
+    RefreshCw,
     Search,
-    RefreshCw
+    ShieldCheck,
+    UserCog,
+    Users
 } from 'lucide-react';
 import { adminApi, paymentApi } from '../../lib/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Header from '../../components/layout/Header';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import StatCard from '../../components/ui/StatCard';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import StatCard from '../../components/ui/StatCard';
+
+const ADMIN_TABS = ['overview', 'verifications', 'users', 'doctors', 'financials'];
 
 const getUserLabel = (user) => {
     const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
-    return fullName || user?.username || user?.email || `User #${user?.id}`;
+    return fullName || user?.username || user?.email || `User #${user?.id || 'N/A'}`;
 };
 
 const formatMoney = (value) => {
     const amount = Number(value || 0);
     return `LKR ${amount.toLocaleString()}`;
 };
-
-const ADMIN_TABS = ['overview', 'verifications', 'users', 'doctors', 'financials'];
 
 const AdminDashboard = () => {
     const router = useRouter();
@@ -61,8 +61,8 @@ const AdminDashboard = () => {
 
         const queryString = router.asPath.split('?')[1] || '';
         const params = new URLSearchParams(queryString);
-        const queryTab = params.get('tab');
-        const nextTab = queryTab && ADMIN_TABS.includes(queryTab) ? queryTab : 'overview';
+        const tabFromQuery = params.get('tab');
+        const nextTab = tabFromQuery && ADMIN_TABS.includes(tabFromQuery) ? tabFromQuery : 'overview';
 
         if (nextTab !== activeTab) {
             setActiveTab(nextTab);
@@ -233,7 +233,7 @@ const AdminDashboard = () => {
                     { label: 'Dashboard' },
                     { label: 'Admin' }
                 ]}
-                actions={
+                actions={(
                     <div className="flex flex-wrap gap-3">
                         <Button
                             variant="secondary"
@@ -244,7 +244,7 @@ const AdminDashboard = () => {
                             Refresh
                         </Button>
                     </div>
-                }
+                )}
             />
 
             {error && (
@@ -268,7 +268,10 @@ const AdminDashboard = () => {
                     icon={ShieldCheck}
                     color="text-amber-600"
                     bgColor="bg-amber-50"
-                    trend={{ value: stats.pendingVerifications > 0 ? 'Action Needed' : 'Clear', isPositive: stats.pendingVerifications === 0 }}
+                    trend={{
+                        value: stats.pendingVerifications > 0 ? 'Action Needed' : 'Clear',
+                        isPositive: stats.pendingVerifications === 0
+                    }}
                 />
                 <StatCard
                     label="Active Accounts"
@@ -292,7 +295,7 @@ const AdminDashboard = () => {
                 title="Admin Workspace"
                 subtitle="Switch between verification, user governance, and financial overview"
                 padding="md"
-                actions={
+                actions={(
                     <div className="w-full sm:w-auto flex items-center bg-slate-100/80 rounded-2xl px-4 py-2.5 border border-transparent focus-within:border-indigo-400 focus-within:bg-white transition-all shadow-inner">
                         <Search size={16} className="text-slate-400" />
                         <input
@@ -303,7 +306,7 @@ const AdminDashboard = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                }
+                )}
             >
                 <div className="flex flex-wrap gap-3 mb-6">
                     {[
