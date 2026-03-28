@@ -57,7 +57,7 @@ If running microservices individually, you can use a local PostgreSQL instance. 
 ## 🔐 Database Notes
 
 * **Engine**: PostgreSQL 15 (Dockerized)
-* **Credentials**: User: `postgres`, Password: `Luqa`, DB: `synapscare`.
+* **Credentials**: User: `postgres`, Password: `1234`, DB: `synapscare`.
 * **Persistence**: Data is saved to the **`./docker-data/postgres`** folder.
 * **Auto-DDL**: Spring Boot `hibernate.ddl-auto: update` is used to manage schema.
 relies on the database name correctly executing upon boot-up, initializing all configured Entities directly into relational tables seamlessly!

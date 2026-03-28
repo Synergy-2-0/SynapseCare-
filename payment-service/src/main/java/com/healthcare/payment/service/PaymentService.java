@@ -260,9 +260,12 @@ public class PaymentService {
     private String generatePayHereHash(String orderId, BigDecimal amount, String currency) {
         try {
             String merchantSecretMd5 = md5(merchantSecret).toUpperCase();
-            String formatted = String.format("%.2f", amount);
+            String formatted = String.format(java.util.Locale.US, "%.2f", amount);
             String raw = merchantId + orderId + formatted + currency + merchantSecretMd5;
-            return md5(raw).toUpperCase();
+            String generatedHash = md5(raw).toUpperCase();
+            log.info("PayHere Hash Debug - Merchant: {}, Order: {}, Amount: {}, Currency: {}, SecretMD5: {}, Raw: {}, Hash: {}", 
+                     merchantId, orderId, formatted, currency, merchantSecretMd5, raw, generatedHash);
+            return generatedHash;
         } catch (Exception e) {
             throw new RuntimeException("Hash generation failed", e);
         }

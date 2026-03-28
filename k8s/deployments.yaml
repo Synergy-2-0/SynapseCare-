@@ -31,7 +31,7 @@ spec:
             - name: POSTGRES_USER
               value: "postgres"
             - name: POSTGRES_PASSWORD
-              value: "Luqa"
+              value: "1234"
           ports:
             - containerPort: 5432
 ---
@@ -71,7 +71,7 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               value: postgres
             - name: SPRING_DATASOURCE_PASSWORD
-              value: Luqa
+              value: 1234
           ports:
             - containerPort: 8081
 ---
@@ -111,7 +111,7 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               value: postgres
             - name: SPRING_DATASOURCE_PASSWORD
-              value: Luqa
+              value: 1234
           ports:
             - containerPort: 8082
 ---
@@ -151,7 +151,7 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               value: postgres
             - name: SPRING_DATASOURCE_PASSWORD
-              value: Luqa
+              value: 1234
           ports:
             - containerPort: 8083
 ---
@@ -191,7 +191,7 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               value: postgres
             - name: SPRING_DATASOURCE_PASSWORD
-              value: Luqa
+              value: 1234
           ports:
             - containerPort: 8084
 ---

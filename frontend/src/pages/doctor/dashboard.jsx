@@ -28,6 +28,7 @@ import VerificationStatusBanner from '../../components/doctor/VerificationStatus
 import AppointmentCard from '../../components/doctor/AppointmentCard';
 import useDoctorProfile from '../../hooks/useDoctorProfile';
 import useToast from '../../hooks/useToast';
+import { appointmentApi } from '../../lib/api';
 import { DOCTOR_ROUTES } from '../../constants/routes';
 import { isToday } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,42 +36,32 @@ import { motion, AnimatePresence } from 'framer-motion';
 const DoctorDashboard = () => {
     const router = useRouter();
     const { profile, fetchProfile, loading: profileLoading } = useDoctorProfile();
-    const [appointments] = useState([
-        {
-            id: 1,
-            patientId: 101,
-            patientName: 'Malith Perera',
-            appointmentDate: new Date().toISOString().split('T')[0],
-            status: 'CONFIRMED',
-            time: '09:30 AM',
-            tokenNumber: 'P-042'
-        },
-        {
-            id: 2,
-            patientId: 102,
-            patientName: 'Saman Kumara',
-            appointmentDate: new Date().toISOString().split('T')[0],
-            status: 'PAID',
-            time: '11:15 AM',
-            tokenNumber: 'P-045'
-        },
-        {
-            id: 3,
-            patientId: 103,
-            patientName: 'Devindi Ranasinghe',
-            appointmentDate: new Date().toISOString().split('T')[0],
-            status: 'PENDING',
-            time: '02:00 PM',
-            tokenNumber: 'P-051'
-        }
-    ]);
+    const [appointments, setAppointments] = useState([]);
+    const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const toast = useToast();
 
-    const appointmentsLoading = false;
-    useToast();
+    const fetchAppointments = async (doctorId) => {
+        if (!doctorId) return;
+        setAppointmentsLoading(true);
+        try {
+            const response = await appointmentApi.get(`/doctor/${doctorId}`);
+            console.log('Fetched Appointments:', response.data);
+            setAppointments(Array.isArray(response.data?.data) ? response.data.data : []);
+        } catch (err) {
+            console.error('Failed to fetch appointments:', err);
+            toast.error('Could not refresh patient queue');
+        } finally {
+            setAppointmentsLoading(false);
+        }
+    };
 
     useEffect(() => {
+        setMounted(true);
         if (typeof window !== 'undefined') {
-            fetchProfile().catch((err) => {
+            fetchProfile().then(p => {
+                if (p?.id) fetchAppointments(p.id);
+            }).catch((err) => {
                 if (err.response?.status === 404) {
                     router.push('/doctor/profile/setup');
                 }
@@ -89,23 +80,23 @@ const DoctorDashboard = () => {
             icon: Activity,
             color: 'text-indigo-600',
             bgColor: 'bg-indigo-50',
-            trend: { value: '+2 from avg', isPositive: true }
+            trend: { value: 'Live Queue', isPositive: true }
         },
         {
-            label: 'Patient Portfolio',
-            value: '1,248',
+            label: 'Total Sessions',
+            value: appointments.length,
             icon: Users,
             color: 'text-sky-600',
             bgColor: 'bg-sky-50',
-            trend: { value: '+12% growth', isPositive: true }
+            trend: { value: 'Overall Volume', isPositive: true }
         },
         {
-            label: 'Monthly Earnings',
-            value: 'LKR 42.5k',
+            label: 'Consultation Fee',
+            value: profile?.consultationFee ? `LKR ${profile.consultationFee}` : 'Not Set',
             icon: TrendingUp,
             color: 'text-emerald-600',
             bgColor: 'bg-emerald-50',
-            trend: { value: 'Verified', isPositive: true }
+            trend: { value: profile?.verificationStatus || 'Pending', isPositive: profile?.verificationStatus === 'APPROVED' }
         }
     ];
 
@@ -126,14 +117,14 @@ const DoctorDashboard = () => {
         });
     };
 
-    if (profileLoading || appointmentsLoading) {
+    if (!mounted || profileLoading || appointmentsLoading) {
         return <LoadingSpinner size="fullscreen" message="Accessing Secure Clinical Hub..." />;
     }
 
     return (
         <DashboardLayout>
             <Header
-                title={`Dr. ${profile?.userId || 'Practitioner'}`}
+                title={`Dr. ${profile?.firstName || profile?.userId || 'Practitioner'}`}
                 subtitle={profile?.specialization || 'Strategic Medical Intelligence & Patient Care'}
                 verificationStatus={profile ? {
                     status: profile.verificationStatus,

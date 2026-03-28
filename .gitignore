@@ -34,3 +34,24 @@ build/
 
 # Node modules
 node_modules/
+.next/
+out/
+build/
+dist/
+
+# Docker data and volumes
+docker-data/
+postgres-data/
+pgdata/
+
+# OS/System files
+.DS_Store
+Thumbs.db
+
+# Environment and Logs
+.env
+.env.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

@@ -30,8 +30,10 @@ const PatientListPage = () => {
 
     // Get user ID from localStorage
     const [userId, setUserId] = useState(null);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         if (typeof window !== 'undefined') {
             const id = localStorage.getItem('user_id');
             setUserId(id);
@@ -39,6 +41,11 @@ const PatientListPage = () => {
     }, []);
 
     const { appointments, loading, error } = useAppointments(userId);
+
+    if (!mounted || loading) {
+        if (!mounted) return null;
+        return <LoadingSpinner size="fullscreen" message="Loading Patients..." />;
+    }
 
     // Derive patients from appointments
     const patients = useMemo(() => {

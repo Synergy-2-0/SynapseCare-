@@ -4,7 +4,7 @@ services:
     container_name: synapscare-postgres-doctor
     environment:
       - 'POSTGRES_DB=synapscare_doctors'
-      - 'POSTGRES_PASSWORD=Luqa'
+      - 'POSTGRES_PASSWORD=1234'
       - 'POSTGRES_USER=postgres'
     ports:
       - '5433:5432'
@@ -24,7 +24,7 @@ services:
     environment:
       - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare_doctors'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
+      - 'SPRING_DATASOURCE_PASSWORD=1234'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=doctor-service'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'

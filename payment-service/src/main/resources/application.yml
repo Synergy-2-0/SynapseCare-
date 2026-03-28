@@ -26,7 +26,7 @@ spring:
 # Merchant ID: 1233989 (from your screenshot)
 payhere:
   merchant-id: ${PAYHERE_MERCHANT_ID:1233989}
-  merchant-secret: ${PAYHERE_MERCHANT_SECRET:MzYzNDIwNTQyNTMyNTUwNDU4MTM0}
+  merchant-secret: ${PAYHERE_MERCHANT_SECRET:MTcyODEzMjU3MzIyNzA0OTMxODkyMDU1NjQ2NTExMjAwNjgyODc2Mg==}
   sandbox-url: https://sandbox.payhere.lk/pay/checkout
 
 # Notify URL where PayHere POSTs callback

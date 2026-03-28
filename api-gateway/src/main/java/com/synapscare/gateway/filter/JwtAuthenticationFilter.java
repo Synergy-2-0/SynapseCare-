@@ -46,7 +46,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/auth/**",            // All auth-service routes (login, register, refresh)
             "/actuator/**",        // Health checks
             "/api/doctors/search", // Public doctor search
-            "/api/doctors/*/available-slots" // Public slot availability
+            "/api/doctors/*",      // Public doctor profile detail
+            "/api/doctors/*/available-slots", // Public slot availability
+            "/api/payments/payhere/notify"    // PayHere Webhook (Public)
     );
 
     @Override
