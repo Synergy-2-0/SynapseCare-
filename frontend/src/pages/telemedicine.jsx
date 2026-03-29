@@ -17,6 +17,7 @@ import {
     Wifi
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Head from 'next/head';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -180,7 +181,12 @@ const TelemedicinePage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#050505] flex flex-col font-sans selection:bg-indigo-500/30 overflow-hidden">
+        <>
+            <Head>
+                <title>Secure Neural Link | Telemedicine Session | SynapsCare</title>
+                <meta name="description" content="High-security encrypted video consultation node for specialized clinical care" />
+            </Head>
+            <div className="min-h-screen bg-[#050505] flex flex-col font-sans selection:bg-indigo-500/30 overflow-hidden">
             {/* Enterprise Telemedicine Header */}
             <header className="h-24 px-10 flex justify-between items-center border-b border-white/5 bg-slate-950/50 backdrop-blur-3xl shrink-0 z-[60] relative">
                 <div className="flex items-center gap-10">
@@ -278,6 +284,7 @@ const TelemedicinePage = () => {
             {/* Decorative Scanlines */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
         </div>
+        </>
     );
 };
 

@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Search, Bell, User, LayoutDashboard, Command } from 'lucide-react';
+import Head from 'next/head';
 import Sidebar from './Sidebar';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
-const DashboardLayout = ({ children }) => {
+const DashboardLayout = ({ children, title = "" }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isClient, setIsClient] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const router = useRouter();
+
+    const displayTitle = title ? `${title} | SynapsCare` : "SynapsCare Dashboard";
 
     const getAllowedRolesForPath = (pathname) => {
         if (pathname.startsWith('/dashboard/admin')) return ['ADMIN'];
@@ -64,7 +67,11 @@ const DashboardLayout = ({ children }) => {
     }
 
     return (
-        <div className="min-h-screen bg-[var(--bg-base)] flex text-[var(--text-primary)] selection:bg-teal-100 selection:text-teal-900">
+        <>
+            <Head>
+                <title>{displayTitle}</title>
+            </Head>
+            <div className="min-h-screen bg-[var(--bg-base)] flex text-[var(--text-primary)] selection:bg-teal-100 selection:text-teal-900">
             {/* Desktop Sidebar Overlay */}
             <div className="hidden xl:block shrink-0 sticky top-0 h-screen w-[240px]">
                 <Sidebar />
@@ -151,6 +158,7 @@ const DashboardLayout = ({ children }) => {
                 </div>
             </main>
         </div>
+        </>
     );
 };
 

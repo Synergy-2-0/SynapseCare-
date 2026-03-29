@@ -23,6 +23,7 @@ import {
     Globe
 } from 'lucide-react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Card from '../../components/ui/Card';
@@ -100,7 +101,12 @@ const AdminDashboard = () => {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-hidden">
+        <>
+            <Head>
+                <title>Infrastructure Governance | Platform Admin | SynapsCare</title>
+                <meta name="description" content="Platform administrative control center for healthcare infrastructure" />
+            </Head>
+            <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-hidden">
             {/* Professional Admin Sidebar */}
             <aside className="hidden lg:flex flex-col w-[320px] bg-white border-r border-slate-200 sticky top-0 h-screen p-10 z-50">
                 <div className="flex items-center gap-3 mb-16 group cursor-pointer transition-transform hover:scale-105 active:scale-95" onClick={() => router.push('/')}>
@@ -389,6 +395,7 @@ const AdminDashboard = () => {
                 </div>
             </main>
         </div>
+        </>
     );
 };
 

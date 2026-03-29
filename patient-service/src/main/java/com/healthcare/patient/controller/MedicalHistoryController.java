@@ -25,13 +25,19 @@ public class MedicalHistoryController {
     }
 
     @GetMapping("/patient/{patientId}")
-    public ResponseEntity<ApiResponse<List<MedicalHistoryDto>>> getHistoryByPatient(@PathVariable Long patientId) {
+    public ResponseEntity<ApiResponse<List<MedicalHistoryDto>>> getHistoryByPatient(@PathVariable("patientId") Long patientId) {
         List<MedicalHistoryDto> history = historyService.getHistoryByPatient(patientId);
         return ResponseEntity.ok(new ApiResponse<>(true, "History fetched", history));
     }
 
+    @GetMapping("/patient/user/{userId}")
+    public ResponseEntity<ApiResponse<List<MedicalHistoryDto>>> getHistoryByUserId(@PathVariable("userId") Long userId) {
+        List<MedicalHistoryDto> history = historyService.getHistoryByUserId(userId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "History fetched", history));
+    }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteHistory(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteHistory(@PathVariable("id") Long id) {
         historyService.deleteHistory(id);
         return ResponseEntity.ok(new ApiResponse<>(true, "History deleted", null));
     }

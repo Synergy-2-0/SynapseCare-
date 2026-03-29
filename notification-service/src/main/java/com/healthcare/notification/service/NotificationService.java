@@ -17,6 +17,15 @@ public class NotificationService {
     public void sendNotification(Long userId, Long appointmentId, String type, String message, String channel) {
         log.info("Sending {} notification to User {}: {}", channel, userId, message);
         
+        if ("EMAIL".equalsIgnoreCase(channel)) {
+            log.info("--------------------------------------------------");
+            log.info("[MOCK EMAIL SENT]");
+            log.info("To: Patient (userId: {})", userId);
+            log.info("Subject: MediLink Healthcare - {}", type);
+            log.info("Body: {}", message);
+            log.info("--------------------------------------------------");
+        }
+
         Notification notification = Notification.builder()
                 .userId(userId)
                 .appointmentId(appointmentId)
@@ -28,5 +37,9 @@ public class NotificationService {
                 .build();
         
         notificationRepository.save(notification);
+    }
+
+    public java.util.List<Notification> getNotificationsByUserId(Long userId) {
+        return notificationRepository.findByUserId(userId);
     }
 }

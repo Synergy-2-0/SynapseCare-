@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, ShieldCheck, CheckCircle2, LayoutDashboard } from 'lucide-react';
 import { authApi } from '../lib/api';
@@ -57,7 +58,12 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 selection:bg-indigo-100 selection:text-indigo-900">
+        <>
+            <Head>
+                <title>Secure Login | Clinical Identity | SynapsCare</title>
+                <meta name="description" content="Access your clinical dashboard and patient data securely" />
+            </Head>
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 selection:bg-indigo-100 selection:text-indigo-900">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,70,229,0.05),transparent_500px)] pointer-events-none" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.05),transparent_500px)] pointer-events-none" />
 
@@ -181,6 +187,7 @@ const LoginPage = () => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

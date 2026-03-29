@@ -22,7 +22,7 @@ public class MedicalReportController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<MedicalReportDto>> uploadReport(
-            @PathVariable Long patientId,
+            @PathVariable("patientId") Long patientId,
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "reportType", required = false) String reportType) {
@@ -46,23 +46,29 @@ public class MedicalReportController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<MedicalReportDto>>> getPatientReports(@PathVariable Long patientId) {
+    public ResponseEntity<ApiResponse<List<MedicalReportDto>>> getPatientReports(@PathVariable("patientId") Long patientId) {
         List<MedicalReportDto> reports = reportService.getReportsByPatientId(patientId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Reports fetched successfully", reports));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<List<MedicalReportDto>>> getReportsByUserId(@PathVariable("userId") Long userId) {
+        List<MedicalReportDto> reports = reportService.getReportsByUserId(userId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Reports fetched successfully", reports));
     }
 
     @GetMapping("/{reportId}")
     public ResponseEntity<ApiResponse<MedicalReportDto>> getReportById(
-            @PathVariable Long patientId,
-            @PathVariable Long reportId) {
+            @PathVariable("patientId") Long patientId,
+            @PathVariable("reportId") Long reportId) {
         MedicalReportDto report = reportService.getReportById(reportId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Report fetched successfully", report));
     }
 
     @GetMapping("/{reportId}/download")
     public ResponseEntity<byte[]> downloadReport(
-            @PathVariable Long patientId,
-            @PathVariable Long reportId) {
+            @PathVariable("patientId") Long patientId,
+            @PathVariable("reportId") Long reportId) {
         MedicalReportDto report = reportService.getReportById(reportId);
         byte[] fileContent = reportService.downloadReport(reportId);
 
@@ -76,8 +82,8 @@ public class MedicalReportController {
 
     @DeleteMapping("/{reportId}")
     public ResponseEntity<ApiResponse<Void>> deleteReport(
-            @PathVariable Long patientId,
-            @PathVariable Long reportId) {
+            @PathVariable("patientId") Long patientId,
+            @PathVariable("reportId") Long reportId) {
         reportService.deleteReport(reportId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Report deleted successfully", null));
     }
