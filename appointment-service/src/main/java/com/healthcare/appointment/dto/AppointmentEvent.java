@@ -18,8 +18,6 @@ public class AppointmentEvent {
     private String eventType;
     private Long appointmentId;
     private Long patientId;
-    private Long userId;
-    private String patientEmail;
     private Long doctorId;
     private LocalDate date;
     private LocalTime time;

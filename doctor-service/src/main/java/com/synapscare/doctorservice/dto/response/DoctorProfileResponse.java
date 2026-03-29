@@ -16,8 +16,6 @@ import java.time.LocalDateTime;
 public class DoctorProfileResponse {
     private Long id;
     private Long userId;
-    private String firstName;
-    private String lastName;
     private String specialization;
     private String qualifications;
     private Integer experience;

@@ -10,7 +10,6 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -129,21 +128,7 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
-        // Handle type mismatch errors (e.g., string instead of long ID)
-        if (ex instanceof MethodArgumentTypeMismatchException mismatchEx) {
-            log.warn("Type mismatch handled globally: {}", ex.getMessage());
-            String expectedType = mismatchEx.getRequiredType() != null ? mismatchEx.getRequiredType().getSimpleName() : "unknown";
-            ErrorResponse error = ErrorResponse.builder()
-                    .status(HttpStatus.BAD_REQUEST.value())
-                    .message(String.format("Parameter '%s' should be of type '%s'", mismatchEx.getName(), expectedType))
-                    .error("Bad Request")
-                    .timestamp(LocalDateTime.now())
-                    .path(request.getRequestURI())
-                    .build();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
-
-        log.error("Unexpected error [{}]: ", ex.getClass().getName(), ex);
+        log.error("Unexpected error: ", ex);
         ErrorResponse error = ErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .message("An unexpected error occurred")

@@ -1,5 +1,6 @@
 package com.synapscare.doctorservice.service;
 
+import com.synapscare.doctorservice.dto.messaging.DoctorVerifiedEvent;
 import com.synapscare.doctorservice.dto.request.*;
 import com.synapscare.doctorservice.dto.response.*;
 import com.synapscare.doctorservice.entity.Doctor;
@@ -10,6 +11,7 @@ import com.synapscare.doctorservice.exception.*;
 import com.synapscare.doctorservice.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +20,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
+import static com.synapscare.doctorservice.config.RabbitMQConfig.*;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,7 @@ public class DoctorService {
     private final DoctorRepository doctorRepository;
     private final DoctorAvailabilityRepository availabilityRepository;
     private final DoctorScheduleRepository scheduleRepository;
+    private final RabbitTemplate rabbitTemplate;
 
     /**
      * Creates or updates doctor profile.
@@ -315,7 +318,7 @@ public class DoctorService {
         Doctor doctor = doctorRepository.findByUserId(userId)
                 .orElseGet(() -> {
                     log.warn("Doctor profile not found for userId: {}, creating placeholder", userId);
-                    createEmptyDoctorProfile(userId, null, null);
+                    createEmptyDoctorProfile(userId);
                     return doctorRepository.findByUserId(userId)
                             .orElseThrow(() -> new DoctorNotFoundException("Failed to create doctor profile for user: " + userId));
                 });
@@ -348,7 +351,7 @@ public class DoctorService {
         Doctor doctor = doctorRepository.findByUserId(userId)
                 .orElseGet(() -> {
                     log.warn("Doctor profile not found for userId: {}, creating placeholder", userId);
-                    createEmptyDoctorProfile(userId, null, null);
+                    createEmptyDoctorProfile(userId);
                     return doctorRepository.findByUserId(userId)
                             .orElseThrow(() -> new DoctorNotFoundException("Failed to create doctor profile for user: " + userId));
                 });
@@ -395,8 +398,13 @@ public class DoctorService {
                 .orElse(List.of());
     }
 
+    /**
+     * Creates a placeholder doctor profile when a user registers as DOCTOR.
+     * Called automatically by UserRegisteredListener.
+     * Doctor will fill in details later via createDoctorProfile endpoint.
+     */
     @Transactional
-    public void createEmptyDoctorProfile(Long userId, String firstName, String lastName) {
+    public void createEmptyDoctorProfile(Long userId) {
         if (doctorRepository.existsByUserId(userId)) {
             log.debug("Doctor profile already exists for userId: {}", userId);
             return;
@@ -404,8 +412,6 @@ public class DoctorService {
 
         Doctor doctor = new Doctor();
         doctor.setUserId(userId);
-        doctor.setFirstName(firstName);
-        doctor.setLastName(lastName);
         doctor.setSpecialization(null); // To be filled by doctor
         doctor.setQualifications(null);
         doctor.setExperience(0);
@@ -424,8 +430,6 @@ public class DoctorService {
         return DoctorProfileResponse.builder()
                 .id(doctor.getId())
                 .userId(doctor.getUserId())
-                .firstName(doctor.getFirstName())
-                .lastName(doctor.getLastName())
                 .specialization(doctor.getSpecialization())
                 .qualifications(doctor.getQualifications())
                 .experience(doctor.getExperience())

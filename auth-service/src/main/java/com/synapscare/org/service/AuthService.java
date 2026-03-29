@@ -64,30 +64,6 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
-
-        // Publish event to notify other services (e.g. patient-service)
-        try {
-            UserRegisteredEvent event = UserRegisteredEvent.builder()
-                    .userId(savedUser.getId())
-                    .username(savedUser.getUsername())
-                    .email(savedUser.getEmail())
-                    .firstName(savedUser.getFirstName())
-                    .lastName(savedUser.getLastName())
-                    .phoneNumber(savedUser.getPhoneNumber())
-                    .roles(Set.of("PATIENT"))
-                    .build();
-
-            rabbitTemplate.convertAndSend(
-                    RabbitMQConfig.USER_EXCHANGE,
-                    RabbitMQConfig.USER_REGISTERED_PATIENT_ROUTING_KEY,
-                    event
-            );
-
-            log.info("Published UserRegisteredEvent for patient userId: {}", savedUser.getId());
-        } catch (Exception e) {
-            log.error("Failed to publish UserRegisteredEvent for patient userId: {}", savedUser.getId(), e);
-        }
-
         return buildAuthResponse(UserDetailsImpl.build(savedUser), savedUser);
     }
 

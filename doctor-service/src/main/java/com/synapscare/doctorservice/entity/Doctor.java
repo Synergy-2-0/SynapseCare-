@@ -27,12 +27,6 @@ public class Doctor {
 
     // Nullable during initial registration, filled via profile creation
     @Column(nullable = true)
-    private String firstName;
-
-    @Column(nullable = true)
-    private String lastName;
-
-    @Column(nullable = true)
     private String specialization;
 
     @Column(length = 1000)

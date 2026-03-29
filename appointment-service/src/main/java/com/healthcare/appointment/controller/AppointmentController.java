@@ -46,13 +46,13 @@ public class AppointmentController {
     }
 
     @PutMapping("/{id}/accept")
-    public ResponseEntity<ApiResponse<String>> acceptAppointment(@PathVariable("id") Long id) {
+    public ResponseEntity<ApiResponse<String>> acceptAppointment(@PathVariable Long id) {
         appointmentService.confirmAppointment(id);
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment accepted successfully", "CONFIRMED"));
     }
 
     @PutMapping("/{id}/reject")
-    public ResponseEntity<ApiResponse<String>> rejectAppointment(@PathVariable("id") Long id) {
+    public ResponseEntity<ApiResponse<String>> rejectAppointment(@PathVariable Long id) {
         appointmentService.rejectAppointment(id);
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rejected", "REJECTED"));
     }
@@ -97,5 +97,17 @@ public class AppointmentController {
             @RequestParam("status") AppointmentStatus status) {
         AppointmentDto updated = appointmentService.updateStatus(id, status);
         return ResponseEntity.ok(new ApiResponse<>(true, "Appointment status updated", updated));
+    }
+
+    @PutMapping("/{id}/accept")
+    public ResponseEntity<ApiResponse<String>> acceptAppointment(@PathVariable Long id) {
+        appointmentService.confirmAppointment(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment accepted successfully", "CONFIRMED"));
+    }
+
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<String>> rejectAppointment(@PathVariable Long id) {
+        appointmentService.rejectAppointment(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Appointment rejected", "REJECTED"));
     }
 }

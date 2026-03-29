@@ -20,7 +20,6 @@ public class RabbitMQConfig {
 
     // Routing keys
     public static final String USER_REGISTERED_ROUTING_KEY = "user.registered.doctor";
-    public static final String USER_REGISTERED_PATIENT_ROUTING_KEY = "user.registered.patient";
     public static final String USER_DOCTOR_VERIFIED_ROUTING_KEY = "user.doctor.verified";
 
     // Queues
@@ -36,27 +35,20 @@ public class RabbitMQConfig {
 
     // Exchanges
     @Bean
-    public TopicExchange userExchange() {
-        return new TopicExchange(USER_EXCHANGE);
+    public DirectExchange userExchange() {
+        return new DirectExchange(USER_EXCHANGE);
     }
 
     // Bindings
     @Bean
-    public Binding userRegisteredBinding(Queue userRegisteredQueue, TopicExchange userExchange) {
+    public Binding userRegisteredBinding(Queue userRegisteredQueue, DirectExchange userExchange) {
         return BindingBuilder.bind(userRegisteredQueue)
                 .to(userExchange)
                 .with(USER_REGISTERED_ROUTING_KEY);
     }
 
     @Bean
-    public Binding patientRegisteredBinding(Queue userRegisteredQueue, TopicExchange userExchange) {
-        return BindingBuilder.bind(userRegisteredQueue)
-                .to(userExchange)
-                .with(USER_REGISTERED_PATIENT_ROUTING_KEY);
-    }
-
-    @Bean
-    public Binding userDoctorVerifiedBinding(Queue userDoctorVerifiedQueue, TopicExchange userExchange) {
+    public Binding userDoctorVerifiedBinding(Queue userDoctorVerifiedQueue, DirectExchange userExchange) {
         return BindingBuilder.bind(userDoctorVerifiedQueue)
                 .to(userExchange)
                 .with(USER_DOCTOR_VERIFIED_ROUTING_KEY);

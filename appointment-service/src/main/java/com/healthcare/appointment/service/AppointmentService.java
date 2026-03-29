@@ -13,7 +13,6 @@ import com.healthcare.appointment.exception.ResourceNotFoundException;
 import com.healthcare.appointment.exception.SlotConflictException;
 import com.healthcare.appointment.repository.AppointmentRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -22,9 +21,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
@@ -63,6 +63,10 @@ public class AppointmentService {
         if (isBooked) {
             throw new SlotConflictException("Doctor is already booked for this slot");
         }
+
+        // Token Generation: Count existing appointments for this doctor on this day
+        long existingCount = appointmentRepository.countByDoctorIdAndDate(dto.getDoctorId(), dto.getDate());
+        int tokenNumber = (int) existingCount + 1;
 
         // Token Generation: Count existing appointments for this doctor on this day
         long existingCount = appointmentRepository.countByDoctorIdAndDate(dto.getDoctorId(), dto.getDate());
@@ -132,6 +136,17 @@ public class AppointmentService {
         return mapToDto(appointment);
     }
     
+    public List<AppointmentDto> getAppointmentsByDoctor(Long doctorId) {
+        return appointmentRepository.findByDoctorId(doctorId).stream()
+                .map(this::mapToDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<AppointmentDto> getAppointmentsByPatient(Long patientId) {
+        return appointmentRepository.findByPatientId(patientId).stream()
+                .map(this::mapToDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
 
     public AppointmentDto rescheduleAppointment(Long id, RescheduleAppointmentDto dto) {
         Appointment appointment = appointmentRepository.findById(id)
@@ -258,26 +273,11 @@ public class AppointmentService {
     }
 
     private void publishEvent(String eventType, Appointment appointment) {
-        Long userId = null;
-        String patientEmail = null;
-        try {
-            com.healthcare.appointment.dto.client.PatientClientDto patient = 
-                patientServiceClient.getPatientById(appointment.getPatientId());
-            if (patient != null) {
-                userId = patient.getUserId();
-                patientEmail = patient.getEmail();
-            }
-        } catch (Exception e) {
-            log.error("Could not fetch patient info for event: {}", e.getMessage());
-        }
-
         appointmentEventProducer.sendAppointmentEvent(
                 AppointmentEvent.builder()
                         .eventType(eventType)
                         .appointmentId(appointment.getId())
                         .patientId(appointment.getPatientId())
-                        .userId(userId)
-                        .patientEmail(patientEmail)
                         .doctorId(appointment.getDoctorId())
                         .date(appointment.getDate())
                         .time(appointment.getTime())

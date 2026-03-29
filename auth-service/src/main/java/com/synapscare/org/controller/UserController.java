@@ -54,14 +54,14 @@ public class UserController {
 
     // GET /api/users/doctors/{id}  – Get a specific doctor's public profile
     @GetMapping("/doctors/{id}")
-    public ResponseEntity<UserResponse> getDoctorById(@PathVariable("id") Long id) {
+    public ResponseEntity<UserResponse> getDoctorById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getVerifiedDoctorById(id));
     }
 
     // GET /api/users/{id}  – Get any user by ID (Doctor or Admin only)
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable("id") Long id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 }

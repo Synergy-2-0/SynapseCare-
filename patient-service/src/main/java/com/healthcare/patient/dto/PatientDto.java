@@ -14,7 +14,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class PatientDto {
     private Long id;
-    private Long userId;
 
     @NotBlank(message = "Name is required")
     private String name;

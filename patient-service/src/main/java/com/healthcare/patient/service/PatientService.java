@@ -34,12 +34,6 @@ public class PatientService {
         return mapToDto(patient);
     }
 
-    public PatientDto getPatientByUserId(Long userId) {
-        Patient patient = patientRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with userId: " + userId));
-        return mapToDto(patient);
-    }
-
     public List<PatientDto> getAllPatients() {
         return patientRepository.findAll().stream()
                 .map(this::mapToDto)
@@ -76,7 +70,6 @@ public class PatientService {
     private Patient mapToEntity(PatientDto dto) {
         return Patient.builder()
                 .id(dto.getId())
-                .userId(dto.getUserId())
                 .name(dto.getName())
                 .email(dto.getEmail())
                 .phone(dto.getPhone())
@@ -92,7 +85,6 @@ public class PatientService {
     private PatientDto mapToDto(Patient entity) {
         return PatientDto.builder()
                 .id(entity.getId())
-                .userId(entity.getUserId())
                 .name(entity.getName())
                 .email(entity.getEmail())
                 .phone(entity.getPhone())

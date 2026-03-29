@@ -3,8 +3,6 @@ package com.healthcare.patient.service;
 import com.healthcare.patient.dto.MedicalReportDto;
 import com.healthcare.patient.entity.MedicalReport;
 import com.healthcare.patient.repository.MedicalReportRepository;
-import com.healthcare.patient.repository.PatientRepository;
-import com.healthcare.patient.entity.Patient;
 import com.healthcare.patient.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +19,6 @@ public class MedicalReportService {
 
     private final MedicalReportRepository reportRepository;
     private final FileStorageService fileStorageService;
-    private final PatientRepository patientRepository;
 
     public MedicalReportDto uploadReport(Long patientId, MultipartFile file, String description, String reportType) {
         try {
@@ -50,27 +47,19 @@ public class MedicalReportService {
 
     public List<MedicalReportDto> getReportsByPatientId(Long patientId) {
         return reportRepository.findByPatientId(patientId).stream()
-                .map(this::enrichWithPresignedUrl)
-                .map(this::mapToDto)
+                .map(report -> {
+                    // Refresh presigned URL if object exists
+                    try {
+                        if (report.getObjectName() != null) {
+                            String freshUrl = fileStorageService.getPresignedUrl(report.getObjectName());
+                            report.setFileUrl(freshUrl);
+                        }
+                    } catch (Exception e) {
+                        log.warn("Could not generate presigned URL for report {}: {}", report.getId(), e.getMessage());
+                    }
+                    return mapToDto(report);
+                })
                 .collect(Collectors.toList());
-    }
-
-    public List<MedicalReportDto> getReportsByUserId(Long userId) {
-        Patient patient = patientRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found for userId: " + userId));
-        return getReportsByPatientId(patient.getId());
-    }
-
-    private MedicalReport enrichWithPresignedUrl(MedicalReport report) {
-        try {
-            if (report.getObjectName() != null) {
-                String freshUrl = fileStorageService.getPresignedUrl(report.getObjectName());
-                report.setFileUrl(freshUrl);
-            }
-        } catch (Exception e) {
-            log.warn("Could not generate presigned URL for report {}: {}", report.getId(), e.getMessage());
-        }
-        return report;
     }
 
     public MedicalReportDto getReportById(Long reportId) {

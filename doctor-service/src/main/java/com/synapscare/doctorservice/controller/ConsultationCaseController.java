@@ -45,31 +45,31 @@ public class ConsultationCaseController {
     }
 
     @GetMapping("/{caseId}")
-    public ResponseEntity<CaseResponse> getCaseById(@PathVariable("caseId") Long caseId) {
+    public ResponseEntity<CaseResponse> getCaseById(@PathVariable Long caseId) {
         return ResponseEntity.ok(caseService.getCaseById(caseId));
     }
 
     @GetMapping("/appointment/{appointmentId}")
-    public ResponseEntity<CaseResponse> getCaseByAppointment(@PathVariable("appointmentId") Long appointmentId) {
+    public ResponseEntity<CaseResponse> getCaseByAppointment(@PathVariable Long appointmentId) {
         return ResponseEntity.ok(caseService.getCaseByAppointmentId(appointmentId));
     }
 
     @GetMapping("/patient/{patientId}")
-    public ResponseEntity<List<CaseResponse>> getPatientCases(@PathVariable("patientId") Long patientId) {
+    public ResponseEntity<List<CaseResponse>> getPatientCases(@PathVariable Long patientId) {
         return ResponseEntity.ok(caseService.getCasesByPatient(patientId));
     }
 
     @GetMapping("/patient/{patientId}/history")
     public ResponseEntity<List<CaseResponse>> getPatientCaseHistory(
             @RequestHeader("X-User-Id") Long doctorId,
-            @PathVariable("patientId") Long patientId) {
+            @PathVariable Long patientId) {
         return ResponseEntity.ok(caseService.getPatientCaseHistory(doctorId, patientId));
     }
 
     @PutMapping("/{caseId}")
     public ResponseEntity<?> updateCase(
             @RequestHeader("X-User-Id") Long doctorId,
-            @PathVariable("caseId") Long caseId,
+            @PathVariable Long caseId,
             @RequestBody UpdateCaseRequest request) {
         log.info("Updating case {} by doctor {}", caseId, doctorId);
         CaseResponse response = caseService.updateCase(caseId, doctorId, request);
@@ -79,7 +79,7 @@ public class ConsultationCaseController {
     @PostMapping("/{caseId}/finalize")
     public ResponseEntity<?> finalizeCase(
             @RequestHeader("X-User-Id") Long doctorId,
-            @PathVariable("caseId") Long caseId) {
+            @PathVariable Long caseId) {
         log.info("Finalizing case {} by doctor {}", caseId, doctorId);
         CaseResponse response = caseService.finalizeCase(caseId, doctorId);
         return ResponseEntity.ok(Map.of("message", "Case finalized successfully", "data", response));

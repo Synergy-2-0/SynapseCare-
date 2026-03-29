@@ -32,7 +32,7 @@ public class AdminController {
 
     // GET /api/admin/users/role/{role}  – List users by role
     @GetMapping("/users/role/{role}")
-    public ResponseEntity<List<UserResponse>> getUsersByRole(@PathVariable("role") String role) {
+    public ResponseEntity<List<UserResponse>> getUsersByRole(@PathVariable String role) {
         User.Role userRole;
         try {
             userRole = User.Role.valueOf(role.toUpperCase());
@@ -44,7 +44,7 @@ public class AdminController {
 
     // GET /api/admin/users/{id}  – Get user by ID
     @GetMapping("/users/{id}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable("id") Long id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getNonAdminUserById(id));
     }
 
@@ -68,7 +68,7 @@ public class AdminController {
      */
     @PutMapping("/doctors/{id}/verify")
     public ResponseEntity<UserResponse> verifyDoctor(
-            @PathVariable("id") Long id,
+            @PathVariable Long id,
             @Valid @RequestBody(required = false) DoctorVerificationRequest request,
             @AuthenticationPrincipal UserDetailsImpl principal
     ) {
@@ -84,13 +84,13 @@ public class AdminController {
 
     // PUT /api/admin/users/{id}/toggle-status  – Activate or deactivate a user
     @PutMapping("/users/{id}/toggle-status")
-    public ResponseEntity<UserResponse> toggleUserStatus(@PathVariable("id") Long id) {
+    public ResponseEntity<UserResponse> toggleUserStatus(@PathVariable Long id) {
         return ResponseEntity.ok(userService.toggleUserStatus(id));
     }
 
     // DELETE /api/admin/users/{id}  – Delete a user account
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable("id") Long id) {
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }

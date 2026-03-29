@@ -37,9 +37,9 @@ public class DoctorController {
      */
     @GetMapping("/search")
     public ResponseEntity<List<DoctorProfileResponse>> searchDoctors(
-            @RequestParam(value = "specialization", required = false) String specialization,
-            @RequestParam(value = "minFee", required = false) BigDecimal minFee,
-            @RequestParam(value = "maxFee", required = false) BigDecimal maxFee
+            @RequestParam(required = false) String specialization,
+            @RequestParam(required = false) BigDecimal minFee,
+            @RequestParam(required = false) BigDecimal maxFee
     ) {
         List<DoctorProfileResponse> doctors = doctorService.searchDoctors(specialization, minFee, maxFee);
         return ResponseEntity.ok(doctors);
@@ -56,15 +56,15 @@ public class DoctorController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DoctorProfileResponse> getDoctorById(@PathVariable("id") Long id) {
+    public ResponseEntity<DoctorProfileResponse> getDoctorById(@PathVariable Long id) {
         DoctorProfileResponse doctor = doctorService.getDoctorById(id);
         return ResponseEntity.ok(doctor);
     }
 
     @GetMapping("/{id}/available-slots")
     public ResponseEntity<List<AvailableSlotResponse>> getAvailableSlots(
-            @PathVariable("id") Long id,
-            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+            @PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         List<AvailableSlotResponse> slots = doctorService.getAvailableSlots(id, date);
         return ResponseEntity.ok(slots);

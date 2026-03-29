@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard,
@@ -62,60 +61,35 @@ const PatientDashboard = () => {
 
             const fetchData = async () => {
                 try {
-                    // Step 1: Resolve Clinical Profile by User ID
-                    setLoading(true);
-                    const id = localStorage.getItem('user_id');
-                    const name = localStorage.getItem('user_name');
-                    
-                    const patientRes = await patientApi.get(`/user/${id}`).catch(err => {
-                        if (err.response?.status === 401) logout();
-                        return { data: { data: {} } };
-                    });
-                    const patientInfo = patientRes.data?.data || patientRes.data || {};
-                    const clinicalId = patientInfo.id;
-
-                    if (!clinicalId) {
-                        console.warn("Could not resolve clinical ID for user:", id);
-                        setUserData({ name: name, id, clinicalId: null });
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Step 2: Fetch clinical records using the correct clinicalId
-                    const [apptRes, historyRes, reportRes, paymentRes, prescRes, notifRes] = await Promise.all([
-                        appointmentApi.get(`/patient/${id}`).catch(() => ({ data: { data: [] } })),
-                        medicalHistoryApi.get(`/patient/${clinicalId}`).catch(() => ({ data: { data: [] } })),
-                        patientApi.get(`/${clinicalId}/reports`).catch(() => ({ data: { data: [] } })),
-                        paymentApi.get(`/patient/${clinicalId}/history`).catch(() => ({ data: { data: [] } })),
-                        prescriptionApi.get(`/patient/${clinicalId}`).catch(() => ({ data: { data: [] } })),
-                        notificationApi.get(`/user/${id}`).catch(() => ({ data: { data: [] } }))
+                    const [apptRes, patientRes, historyRes, reportRes, paymentRes, prescRes, notifRes] = await Promise.all([
+                        appointmentApi.get(`/patient/${id}`).catch(() => ({ data: [] })),
+                        patientApi.get(`/${id}`).catch(() => ({ data: { data: {} } })),
+                        medicalHistoryApi.get(`/patient/${id}`).catch(() => ({ data: { data: [] } })),
+                        patientApi.get(`/${id}/reports`).catch(() => ({ data: { data: [] } })),
+                        paymentApi.get(`/patient/${id}`).catch(() => ({ data: { data: [] } })),
+                        prescriptionApi.get(`/patient/${id}`).catch(() => ({ data: [] })),
+                        notificationApi.get(`/user/${id}`).catch(() => ({ data: [] }))
                     ]);
 
-                    const allAppts = apptRes.data?.data || apptRes.data || [];
-                    const historyInfo = historyRes.data?.data || historyRes.data || [];
-                    const reportInfo = reportRes.data?.data || reportRes.data || [];
-                    const paymentInfo = paymentRes.data?.data || paymentRes.data || [];
-                    const prescriptionInfo = prescRes.data?.data || prescRes.data || [];
-                    const notificationInfo = notifRes.data?.data || notifRes.data || [];
+                    const allAppts = apptRes.data || [];
+                    const patientInfo = patientRes.data?.data || {};
+                    const historyInfo = historyRes.data?.data || [];
+                    const reportInfo = reportRes.data?.data || [];
+                    const paymentInfo = paymentRes.data?.data || [];
+                    const prescriptionInfo = prescRes.data || [];
+                    const notificationInfo = notifRes.data || [];
 
-                    const safeAppts = Array.isArray(allAppts) ? allAppts : [];
-                    const safeHistory = Array.isArray(historyInfo) ? historyInfo : [];
-                    const safeReports = Array.isArray(reportInfo) ? reportInfo : [];
-                    const safePayments = Array.isArray(paymentInfo) ? paymentInfo : [];
-                    const safePrescriptions = Array.isArray(prescriptionInfo) ? prescriptionInfo : [];
-                    const safeNotifications = Array.isArray(notificationInfo) ? notificationInfo : [];
-
-                    setUserData({ ...patientInfo, name: patientInfo.name || name, id, clinicalId });
-                    setUpcoming(safeAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)));
-                    setHistory(safeHistory);
-                    setReports(safeReports);
-                    setPayments(safePayments);
-                    setPrescriptions(safePrescriptions);
-                    setNotifications(safeNotifications);
+                    setUserData({ ...patientInfo, name: patientInfo.name || name, id });
+                    setUpcoming(allAppts.filter((a) => a.status === 'CONFIRMED' || a.status === 'PAID'));
+                    setHistory(historyInfo);
+                    setReports(reportInfo);
+                    setPayments(paymentInfo);
+                    setPrescriptions(prescriptionInfo);
+                    setNotifications(notificationInfo);
                     setStats({
-                        appointments: safeAppts.length,
-                        reports: safeReports.length,
-                        prescriptions: safePrescriptions.length
+                        appointments: allAppts.length,
+                        reports: reportInfo.length,
+                        prescriptions: prescriptionInfo.length
                     });
                 } catch (err) {
                     console.error('Failed to fetch dashboard data', err);
@@ -126,23 +100,7 @@ const PatientDashboard = () => {
 
             fetchData();
         }
-    }, [router.pathname]);
-
-    // Handle Payment Success Redirect
-    useEffect(() => {
-        if (router.query.payment === 'success') {
-            console.log("Payment success detected — synchronizing visit states...");
-            const id = localStorage.getItem('user_id');
-            const syncData = async () => {
-                const apptRes = await appointmentApi.get(`/patient/${id}`).catch(() => ({ data: { data: [] } }));
-                const allAppts = apptRes.data?.data || apptRes.data || [];
-                setUpcoming(Array.isArray(allAppts) ? allAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)) : []);
-                // Update URL to remove visual success param without reload
-                router.replace('/dashboard/patient', undefined, { shallow: true });
-            };
-            syncData();
-        }
-    }, [router.query.payment]);
+    }, [router]);
 
     const logout = () => {
         localStorage.clear();
@@ -161,7 +119,7 @@ const PatientDashboard = () => {
         });
 
         // Refresh reports list
-        const reportRes = await patientApi.get(`/${userData.clinicalId}/reports`).catch(() => ({ data: { data: [] } }));
+        const reportRes = await patientApi.get(`/${patientId}/reports`).catch(() => ({ data: { data: [] } }));
         setReports(reportRes.data?.data || []);
         setShowUploadModal(false);
         setUploadDescription('');
@@ -212,12 +170,7 @@ const PatientDashboard = () => {
     if (loading) return <LoadingSpinner size="fullscreen" message="Synchronizing Patient Data..." />;
 
     return (
-        <>
-            <Head>
-                <title>{userData?.name ? `${userData.name} | Patient Health Vault` : 'Patient Dashboard'} | SynapsCare</title>
-                <meta name="description" content="Securely manage your medical records, appointments, and prescriptions" />
-            </Head>
-            <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+        <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
             {/* Professional Responsive Sidebar */}
             <aside className="hidden lg:flex flex-col w-[300px] border-r border-slate-200 bg-white sticky top-0 h-screen p-8 transition-all duration-500 overflow-y-auto z-50">
                 <div className="flex items-center gap-3 mb-12 group cursor-pointer transition-transform hover:scale-105 active:scale-95" onClick={() => router.push('/')}>
@@ -511,111 +464,62 @@ const PatientDashboard = () => {
                             )}
 
                             {activeTab === 'appointments' && (
-                                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-12 text-slate-900 font-sans">
+                                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-12">
                                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                                         <div>
-                                            <h2 className="text-4xl leading-tight tracking-tighter font-black italic tracking-widest leading-none">Visits & <span className="text-indigo-600">Sessions.</span></h2>
-                                            <p className="text-lg text-slate-500 font-medium mt-2">Track confirmed visits, access tokens, and manage telemedicine sessions.</p>
+                                            <h2 className="title-display text-4xl leading-tight tracking-tighter text-slate-900 font-display">Manage Care <span className="text-indigo-600">Events.</span></h2>
+                                            <p className="text-lg text-slate-500 font-medium mt-2">Digital queue management, visit history, and new consultation bookings.</p>
                                         </div>
                                         <button onClick={() => router.push('/doctors')} className="px-8 py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-xl shadow-indigo-100 hover:scale-105 transition-all text-sm flex items-center gap-3">
-                                            Schedule New Appointment <ArrowRight size={18} />
+                                            Find New Specialist <ArrowRight size={18} />
                                         </button>
                                     </div>
 
-                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                                        <div className="lg:col-span-8 space-y-8">
+                                    <div className="surface-card p-10 bg-white min-h-[500px]">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                             {upcoming.length > 0 ? upcoming.map((u, i) => (
-                                                <div key={i} className="p-10 rounded-[3rem] border border-slate-100 bg-white hover:border-indigo-100 hover:shadow-premium transition-all duration-500 group relative overflow-hidden shadow-sm">
-                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rotate-45 translate-x-16 -translate-y-16 pointer-events-none" />
-                                                    
-                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10">
-                                                        <div className="flex items-center gap-6">
-                                                            <div className="w-20 h-20 rounded-[2rem] bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner border border-indigo-100 flex-shrink-0">
-                                                                <Calendar size={32} />
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                                                    <Clock size={12} className="text-indigo-600" /> Confirmed {u.appointmentDate || u.date} at {u.appointmentTime || u.time || '14:00'}
-                                                                </p>
-                                                                <h4 className="text-2xl font-black tracking-tight leading-tight uppercase italic">{u.doctorName || 'Senior Specialist'}</h4>
-                                                                <div className="flex gap-2 mt-3">
-                                                                    <Badge variant={['CONFIRMED', 'PAID'].includes(u.status) ? 'success' : 'primary'}>{u.status}</Badge>
-                                                                    <span className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-400">ID #{u.id}</span>
-                                                                </div>
-                                                            </div>
+                                                <div key={i} className="p-8 rounded-[2.5rem] border border-slate-100 bg-slate-50/30 hover:bg-white hover:border-indigo-100 hover:shadow-premium transition-all duration-500 group relative overflow-hidden">
+                                                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-600/5 rotate-45 translate-x-12 -translate-y-12 pointer-events-none" />
+                                                    <div className="flex justify-between items-start mb-8">
+                                                        <div className="w-16 h-16 rounded-[1.5rem] bg-white border border-slate-100 text-indigo-600 flex items-center justify-center shadow-sm">
+                                                            <Calendar size={28} />
                                                         </div>
-                                                        <div className="text-center md:text-right p-6 bg-slate-50 rounded-3xl border border-slate-100 min-w-[140px]">
-                                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Your Token</p>
-                                                            <p className="text-4xl font-black text-indigo-600 drop-shadow-sm leading-none mt-2">{u.tokenNumber || 'TBD'}</p>
+                                                        <div className="text-right">
+                                                            <div className="px-3 py-1 bg-indigo-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest inline-block">TOKEN #{u.tokenNumber || 'TBD'}</div>
+                                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">{u.status}</p>
                                                         </div>
                                                     </div>
-
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-10 border-b border-slate-50 mb-10">
-                                                        <div className="p-6 bg-indigo-50/30 rounded-3xl border border-indigo-100/50">
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-2">Visit Type</p>
-                                                            <p className="text-sm font-bold flex items-center gap-2">{u.consultationType || 'Virtual Video Call'} <Video size={14} className="text-indigo-600" /></p>
+                                                    <div className="space-y-5">
+                                                        <div>
+                                                            <h4 className="text-xl font-black text-slate-900 tracking-tight">Visit with Dr. {u.doctorName || 'Specialist'}</h4>
+                                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Confirmed for clinical care</p>
                                                         </div>
-                                                        <div className="p-6 bg-emerald-50/30 rounded-3xl border border-emerald-100/50">
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-2">Financial Node</p>
-                                                            <p className="text-sm font-bold">LKR {u.fee?.toLocaleString() || '1,500'} Settlement</p>
+                                                        <div className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-50">
+                                                            <Clock size={16} className="text-indigo-600" />
+                                                            <span className="text-sm font-bold text-slate-700">{u.appointmentDate}</span>
                                                         </div>
-                                                    </div>
-
-                                                    <div className="flex flex-wrap gap-4">
-                                                        {(u.status === 'PAID' || u.status === 'CONFIRMED') ? (
-                                                            <button 
-                                                                onClick={() => {
-                                                                    localStorage.setItem('active_consultation_id', u.id);
-                                                                    router.push('/telemedicine');
-                                                                }} 
-                                                                className="flex-1 py-4 bg-indigo-600 text-white font-black text-sm rounded-2xl shadow-xl shadow-indigo-100 border border-indigo-500 hover:bg-indigo-700 hover:scale-[1.02] transition-all flex items-center justify-center gap-3 uppercase tracking-widest"
-                                                            >
-                                                                <Video size={18} /> Join Clinical Session
-                                                            </button>
-                                                        ) : (
-                                                            <button 
-                                                                onClick={() => router.push(`/payment?id=${u.id}&amount=${u.fee || 1500}&patientId=${userData.id}&doctorId=${u.doctorId}`)} 
-                                                                className="flex-1 py-4 bg-white text-indigo-600 border-2 border-indigo-600 font-black text-sm rounded-2xl hover:bg-indigo-50 transition-all uppercase tracking-widest"
-                                                            >
-                                                                Settle Clinical Fee
-                                                            </button>
-                                                        )}
-                                                        <button className="w-16 h-14 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-600 transition-all"><Settings size={20} /></button>
+                                                        <div className="pt-2 flex gap-3">
+                                                            {u.status === 'PAID' ? (
+                                                                <button onClick={() => router.push('/telemedicine')} className="flex-1 py-3 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-lg border border-indigo-500 hover:bg-indigo-700 transition-all">Open Virtual Call</button>
+                                                            ) : (
+                                                                <button onClick={() => router.push('/payment')} className="flex-1 py-3 bg-indigo-50 text-indigo-600 font-bold text-xs rounded-xl hover:bg-indigo-100 transition-all border border-indigo-100">Clear Balance</button>
+                                                            )}
+                                                            <button className="w-12 h-11 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-600 transition-all"><Settings size={18} /></button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )) : (
-                                                <div className="py-40 text-center surface-card border-dashed bg-slate-50 max-w-2xl mx-auto rounded-[3rem]">
-                                                    <Calendar size={64} className="mx-auto text-slate-200 mb-8" strokeWidth={1} />
-                                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Clinical Agenda Clear.</h3>
-                                                    <p className="text-slate-500 mt-3 font-medium px-10">You have no active or upcoming visits. Schedule a new session to begin your health journey.</p>
+                                                <div className="col-span-full py-32 text-center opacity-40">
+                                                    <Calendar size={48} className="mx-auto mb-6" />
+                                                    <p className="font-bold text-slate-500 tracking-tight uppercase tracking-widest text-[10px]">No Active Care Slots Detected</p>
                                                 </div>
                                             )}
                                         </div>
-
-                                        <div className="lg:col-span-4 space-y-10">
-                                            <div className="p-10 rounded-[3rem] bg-slate-900 text-white shadow-2xl relative overflow-hidden group">
-                                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/20 blur-3xl" />
-                                                <h3 className="text-xl font-black italic tracking-widest uppercase mb-6 leading-none">Billing Sync</h3>
-                                                <div className="space-y-6">
-                                                    {payments.slice(0, 3).map((p, i) => (
-                                                        <div key={i} className="flex justify-between items-center group cursor-pointer border-b border-white/10 pb-4 last:border-0 last:pb-0">
-                                                            <div>
-                                                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400">Node #{p.id}</p>
-                                                                <p className="text-xs font-bold mt-1">Receipt Verified</p>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <p className="text-sm font-black tracking-tight">{p.amount?.toLocaleString()}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <button onClick={() => setActiveTab('payments')} className="w-full mt-10 py-4 bg-white/10 border border-white/20 rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase hover:bg-white/20 transition-all">Audit Full Nest</button>
-                                            </div>
-                                        </div>
                                     </div>
                                  </motion.div>
-                             )}                             {activeTab === 'payments' && (
+                            )}
 
+                             {activeTab === 'payments' && (
                                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-12">
                                      <div>
                                         <h2 className="title-display text-4xl leading-tight tracking-tighter text-slate-900 font-display">Financial <span className="text-indigo-600">Sync.</span></h2>
@@ -886,7 +790,6 @@ const PatientDashboard = () => {
                 ))}
             </div>
         </div>
-        </>
     );
 };
 

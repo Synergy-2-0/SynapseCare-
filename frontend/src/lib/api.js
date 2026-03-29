@@ -93,7 +93,6 @@ export const integrationApi = createApiInstance(CONFIG.API_GATEWAY + '/integrati
 export const adminApi = createApiInstance(CONFIG.API_GATEWAY + '/admin');
 export const symptomApi = createApiInstance(CONFIG.API_GATEWAY + '/symptoms');
 export const paymentApi = createApiInstance(CONFIG.API_GATEWAY + '/payments');
-paymentApi.defaults.timeout = 30000;
 export const telemedicineApi = createApiInstance(CONFIG.API_GATEWAY + '/telemedicine');
 export const prescriptionApi = createApiInstance(CONFIG.API_GATEWAY + '/prescriptions');
 export const notificationApi = createApiInstance(CONFIG.API_GATEWAY + '/notifications');

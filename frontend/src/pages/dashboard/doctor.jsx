@@ -6,7 +6,6 @@ import {
     BarChart2, Settings
 } from 'lucide-react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
 import { appointmentApi, prescriptionApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -54,12 +53,10 @@ const [activePostSession, setActivePostSession] = useState(null);
             const fetchData = async () => {
                 try {
                     const apptRes = await appointmentApi.get(`/doctor/${id}`);
-                    const allAppts = apptRes.data?.data || apptRes.data || [];
-                    const safeAppts = Array.isArray(allAppts) ? allAppts : [];
-                    
-                    setAppointments(safeAppts.filter(a => a.status !== 'CANCELLED'));
+                    const allAppts = apptRes.data?.data || [];
+                    setAppointments(allAppts.filter(a => a.status !== 'CANCELLED'));
                     setStats({
-                        appointmentsToday: safeAppts.filter(a => a.status === 'PAID').length,
+                        appointmentsToday: allAppts.filter(a => a.status === 'PAID').length,
                         activePatients: 24,
                         hours: 8
                     });
@@ -97,12 +94,7 @@ const [activePostSession, setActivePostSession] = useState(null);
     );
 
     return (
-        <>
-            <Head>
-                <title>{userData?.name ? `Dr. ${userData.name} | Practitioner Dashboard` : 'Doctor Dashboard'} | SynapsCare</title>
-                <meta name="description" content="Manage appointments, patients, and clinical sessions with SynapsCare" />
-            </Head>
-            <div className="min-h-screen bg-[var(--bg-base)] flex">
+        <div className="min-h-screen bg-[var(--bg-base)] flex">
             <aside className="w-80 glass-morphism border-r border-[var(--border-color)] flex flex-col p-8 sticky top-0 h-screen z-10">
                 <div className="inline-flex items-center gap-2 mb-16 px-2 group cursor-pointer">
                     <div className="relative">
@@ -537,7 +529,6 @@ const [activePostSession, setActivePostSession] = useState(null);
                 </AnimatePresence>
             </main>
         </div>
-        </>
     );
 };
 

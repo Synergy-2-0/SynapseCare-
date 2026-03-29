@@ -15,7 +15,6 @@ import {
     Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Head from 'next/head';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -23,7 +22,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const PaymentPage = () => {
     const router = useRouter();
-    const { id, amount, patientId, doctorId } = router.query;
+    const { id, amount, patientId } = router.query;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [payData, setPayData] = useState(null);
@@ -39,7 +38,6 @@ const PaymentPage = () => {
                 appointmentId: appointmentId,
                 patientId: patientIdSanitized,
                 amount: amount || 1500,
-                doctorId: doctorId,
                 method: 'PAYHERE',
                 currency: 'LKR'
             });
@@ -86,12 +84,7 @@ const PaymentPage = () => {
     }
 
     return (
-        <>
-            <Head>
-                <title>Secure Settlement Protocol | Payment Gateway | SynapsCare</title>
-                <meta name="description" content="Authorize secure financial transactions for specialized clinical services" />
-            </Head>
-            <div className="min-h-screen bg-white flex flex-col lg:flex-row font-sans selection:bg-indigo-100 overflow-hidden">
+        <div className="min-h-screen bg-white flex flex-col lg:flex-row font-sans selection:bg-indigo-100 overflow-hidden">
             {/* Left: Summary & Branding (Fixed on desktop) */}
             <div className="lg:w-[450px] xl:w-[550px] bg-slate-900 lg:h-screen p-12 flex flex-col justify-between shrink-0 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-20 opacity-10 pointer-events-none group translate-x-10 -translate-y-10">
@@ -272,7 +265,6 @@ const PaymentPage = () => {
                 </form>
             )}
         </div>
-        </>
     );
 };
 
