@@ -22,61 +22,447 @@ import {
     Database,
     Globe
 } from 'lucide-react';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+    adminApi,
+    paymentApi,
+    doctorApi,
+    patientApi,
+    appointmentApi,
+    telemedicineApi,
+    prescriptionApi
+} from '../../lib/api';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import Header from '../../components/layout/Header';
+import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Card from '../../components/ui/Card';
 import StatCard from '../../components/ui/StatCard';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
+
+const getUserLabel = (user) => {
+    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+    return fullName || user?.username || user?.email || `User #${user?.id || 'N/A'}`;
+};
+
+const formatMoney = (value) => {
+    const amount = Number(value || 0);
+    return `LKR ${amount.toLocaleString()}`;
+};
+
+const ADMIN_TABS = ['overview', 'verifications', 'doctors', 'patients', 'users', 'operations', 'financials', 'services'];
+
+const extractListData = (response) => {
+    const payload = response?.data;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+};
+
+const extractObjectData = (response) => {
+    const payload = response?.data;
+    if (payload?.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) {
+        return payload.data;
+    }
+
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+        return payload;
+    }
+
+    return {};
+};
 
 const AdminDashboard = () => {
     const [doctors, setDoctors] = useState([]);
     const [stats, setStats] = useState({ totalPatients: 0, totalDoctors: 0, pendingVerifications: 0, totalPayments: 0 });
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('verifications');
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState('');
+
+    const [users, setUsers] = useState([]);
+    const [pendingDoctors, setPendingDoctors] = useState([]);
+    const [doctorDirectory, setDoctorDirectory] = useState([]);
+    const [patients, setPatients] = useState([]);
+    const [paymentSummary, setPaymentSummary] = useState({
+        total: 0,
+        success: 0,
+        failed: 0,
+        pending: 0,
+        refunded: 0,
+        totalRevenue: 0
+    });
+    const [serviceHealth, setServiceHealth] = useState({
+        admin: false,
+        payments: false,
+        doctors: false,
+        patients: false,
+        appointments: false,
+        telemedicine: false,
+        prescriptions: false,
+        notifications: false
+    });
+
+    const [selectedDoctorId, setSelectedDoctorId] = useState('');
+    const [operationsLoading, setOperationsLoading] = useState(false);
+    const [operationsError, setOperationsError] = useState('');
+    const [doctorOperations, setDoctorOperations] = useState({
+        appointments: [],
+        sessions: [],
+        prescriptions: []
+    });
+
+    const [processingId, setProcessingId] = useState(null);
+    const [activeTab, setActiveTab] = useState('overview');
     const [searchTerm, setSearchTerm] = useState('');
     const router = useRouter();
 
     useEffect(() => {
-        const role = localStorage.getItem('user_role');
-        if (role !== 'ADMIN') { router.push('/login'); return; }
+        if (!router.isReady) {
+            return;
+        }
 
-        const fetchData = async () => {
-            try {
-                const [docRes, pendingRes] = await Promise.all([
-                    publicDoctorApi.get('/search').catch(() => ({ data: [] })),
-                    doctorApi.get('/pending').catch(() => ({ data: [] }))
-                ]);
+        const queryString = router.asPath.split('?')[1] || '';
+        const params = new URLSearchParams(queryString);
+        const tabFromQuery = params.get('tab');
+        const nextTab = tabFromQuery && ADMIN_TABS.includes(tabFromQuery) ? tabFromQuery : 'overview';
 
-                const allDocs = docRes.data || [];
-                const pendingDocs = pendingRes.data || [];
+        if (nextTab !== activeTab) {
+            setActiveTab(nextTab);
+        }
+    }, [router.isReady, router.asPath, activeTab]);
 
-                setDoctors([...pendingDocs, ...allDocs]);
+    const fetchDashboardData = async ({ initialLoad = false } = {}) => {
+        if (initialLoad) {
+            setLoading(true);
+        } else {
+            setRefreshing(true);
+        }
 
-                setStats({
-                    totalPatients: 2450,
-                    totalDoctors: allDocs.length,
-                    pendingVerifications: pendingDocs.length,
-                    totalPayments: 184500.00
-                });
-            } catch (err) {
-                console.error("Failed to fetch platform stats", err);
-            } finally {
+        try {
+            setError('');
+
+            const [
+                usersRes,
+                pendingRes,
+                paymentRes,
+                doctorDirectoryRes,
+                patientRes
+            ] = await Promise.allSettled([
+                adminApi.get('/users'),
+                adminApi.get('/doctors/pending'),
+                paymentApi.get('/admin/summary'),
+                doctorApi.get('/all'),
+                patientApi.get('')
+            ]);
+
+            const nextUsers = usersRes.status === 'fulfilled' ? extractListData(usersRes.value) : [];
+            const nextPending = pendingRes.status === 'fulfilled' ? extractListData(pendingRes.value) : [];
+            const nextDoctorDirectory = doctorDirectoryRes.status === 'fulfilled' ? extractListData(doctorDirectoryRes.value) : [];
+            const nextPatients = patientRes.status === 'fulfilled' ? extractListData(patientRes.value) : [];
+            const nextPaymentSummary = paymentRes.status === 'fulfilled' ? extractObjectData(paymentRes.value) : {};
+
+            setUsers(nextUsers);
+            setPendingDoctors(nextPending);
+            setDoctorDirectory(nextDoctorDirectory);
+            setPatients(nextPatients);
+            setPaymentSummary({
+                total: nextPaymentSummary.total || 0,
+                success: nextPaymentSummary.success || 0,
+                failed: nextPaymentSummary.failed || 0,
+                pending: nextPaymentSummary.pending || 0,
+                refunded: nextPaymentSummary.refunded || 0,
+                totalRevenue: nextPaymentSummary.totalRevenue || 0
+            });
+
+            setServiceHealth((prev) => ({
+                ...prev,
+                admin: usersRes.status === 'fulfilled' && pendingRes.status === 'fulfilled',
+                payments: paymentRes.status === 'fulfilled',
+                doctors: doctorDirectoryRes.status === 'fulfilled',
+                patients: patientRes.status === 'fulfilled'
+            }));
+
+            if (
+                usersRes.status !== 'fulfilled'
+                && pendingRes.status !== 'fulfilled'
+                && paymentRes.status !== 'fulfilled'
+                && doctorDirectoryRes.status !== 'fulfilled'
+                && patientRes.status !== 'fulfilled'
+            ) {
+                setError('Unable to reach backend services. Verify api-gateway and microservices are running.');
+            }
+        } catch (err) {
+            console.error('Failed to load admin dashboard data', err);
+            setError('Unable to load admin data right now. Please try again.');
+        } finally {
+            if (initialLoad) {
                 setLoading(false);
+            } else {
+                setRefreshing(false);
+
             }
         };
         fetchData();
     }, [router]);
 
-    const verifyDoctor = async (id) => {
+    useEffect(() => {
+        if (selectedDoctorId || doctorDirectory.length === 0) {
+            return;
+        }
+
+        const firstDoctor = doctorDirectory[0];
+        if (firstDoctor?.id) {
+            setSelectedDoctorId(String(firstDoctor.id));
+        }
+    }, [doctorDirectory, selectedDoctorId]);
+
+    const fetchDoctorOperations = async (doctorId) => {
+        if (!doctorId) {
+            return;
+        }
+
         try {
-            const doc = doctors.find(d => d.id === id);
-            const targetUserId = doc?.userId || id;
-            await adminApi.put(`/doctors/${targetUserId}/verify`);
-            setDoctors(doctors.map(d => d.id === id ? { ...d, verificationStatus: 'APPROVED' } : d));
-            setStats(s => ({ ...s, totalDoctors: s.totalDoctors + 1, pendingVerifications: Math.max(0, s.pendingVerifications - 1) }));
+            setOperationsLoading(true);
+            setOperationsError('');
+
+            const [appointmentRes, sessionRes, prescriptionRes] = await Promise.allSettled([
+                appointmentApi.get(`/doctor/${doctorId}`),
+                telemedicineApi.get(`/sessions/doctor/${doctorId}`),
+                prescriptionApi.get(`/doctor/${doctorId}`)
+            ]);
+
+            setDoctorOperations({
+                appointments: appointmentRes.status === 'fulfilled' ? extractListData(appointmentRes.value) : [],
+                sessions: sessionRes.status === 'fulfilled' ? extractListData(sessionRes.value) : [],
+                prescriptions: prescriptionRes.status === 'fulfilled' ? extractListData(prescriptionRes.value) : []
+            });
+
+            setServiceHealth((prev) => ({
+                ...prev,
+                appointments: appointmentRes.status === 'fulfilled',
+                telemedicine: sessionRes.status === 'fulfilled',
+                prescriptions: prescriptionRes.status === 'fulfilled'
+            }));
+
+            if (
+                appointmentRes.status !== 'fulfilled'
+                && sessionRes.status !== 'fulfilled'
+                && prescriptionRes.status !== 'fulfilled'
+            ) {
+                setOperationsError('Unable to load doctor operations from appointments, telemedicine, and prescriptions services.');
+            }
+        } catch (err) {
+            console.error('Failed to load doctor operations', err);
+            setOperationsError('Failed to load doctor operations. Please try again.');
+        } finally {
+            setOperationsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab !== 'operations' || !selectedDoctorId) {
+            return;
+        }
+
+        fetchDashboardData({ initialLoad: true });
+    }, [router]);
+
+    useEffect(() => {
+        if (selectedDoctorId || doctorDirectory.length === 0) {
+            return;
+        }
+
+        const firstDoctor = doctorDirectory[0];
+        if (firstDoctor?.id) {
+            setSelectedDoctorId(String(firstDoctor.id));
+        }
+    }, [doctorDirectory, selectedDoctorId]);
+
+    const fetchDoctorOperations = async (doctorId) => {
+        if (!doctorId) {
+            return;
+        }
+
+        try {
+            setOperationsLoading(true);
+            setOperationsError('');
+
+            const [appointmentRes, sessionRes, prescriptionRes] = await Promise.allSettled([
+                appointmentApi.get(`/doctor/${doctorId}`),
+                telemedicineApi.get(`/sessions/doctor/${doctorId}`),
+                prescriptionApi.get(`/doctor/${doctorId}`)
+            ]);
+
+            setDoctorOperations({
+                appointments: appointmentRes.status === 'fulfilled' ? extractListData(appointmentRes.value) : [],
+                sessions: sessionRes.status === 'fulfilled' ? extractListData(sessionRes.value) : [],
+                prescriptions: prescriptionRes.status === 'fulfilled' ? extractListData(prescriptionRes.value) : []
+            });
+
+            setServiceHealth((prev) => ({
+                ...prev,
+                appointments: appointmentRes.status === 'fulfilled',
+                telemedicine: sessionRes.status === 'fulfilled',
+                prescriptions: prescriptionRes.status === 'fulfilled'
+            }));
+
+            if (
+                appointmentRes.status !== 'fulfilled'
+                && sessionRes.status !== 'fulfilled'
+                && prescriptionRes.status !== 'fulfilled'
+            ) {
+                setOperationsError('Unable to load doctor operations from appointments, telemedicine, and prescriptions services.');
+            }
+        } catch (err) {
+            console.error('Failed to load doctor operations', err);
+            setOperationsError('Failed to load doctor operations. Please try again.');
+        } finally {
+            setOperationsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab !== 'operations' || !selectedDoctorId) {
+            return;
+        }
+
+        fetchDoctorOperations(selectedDoctorId);
+    }, [activeTab, selectedDoctorId]);
+
+    const stats = useMemo(() => {
+        const doctors = users.filter((u) => u.role === 'DOCTOR');
+        const patients = users.filter((u) => u.role === 'PATIENT');
+        const activeUsers = users.filter((u) => u.isActive).length;
+
+        return {
+            totalUsers: users.length,
+            totalDoctors: doctors.length,
+            totalPatients: patients.length,
+            activeUsers,
+            doctorProfiles: doctorDirectory.length,
+            patientRegistry: patients.length,
+            pendingVerifications: pendingDoctors.length,
+            totalRevenue: Number(paymentSummary.totalRevenue || 0)
+        };
+    }, [users, pendingDoctors, paymentSummary, doctorDirectory, patients]);
+
+    const filteredPendingDoctors = useMemo(() => {
+        const query = searchTerm.trim().toLowerCase();
+        if (!query) {
+            return pendingDoctors;
+        }
+
+        return pendingDoctors.filter((doctor) => {
+            const text = [
+                doctor.firstName,
+                doctor.lastName,
+                doctor.username,
+                doctor.email,
+                String(doctor.id || '')
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return text.includes(query);
+        });
+    }, [pendingDoctors, searchTerm]);
+
+    const filteredUsers = useMemo(() => {
+        const query = searchTerm.trim().toLowerCase();
+        if (!query) {
+            return users;
+        }
+
+        return users.filter((user) => {
+            const text = [
+                user.firstName,
+                user.lastName,
+                user.username,
+                user.email,
+                user.role,
+                String(user.id || '')
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return text.includes(query);
+        });
+    }, [users, searchTerm]);
+
+    const filteredDoctorDirectory = useMemo(() => {
+        const query = searchTerm.trim().toLowerCase();
+        if (!query) {
+            return doctorDirectory;
+        }
+
+        return doctorDirectory.filter((doctor) => {
+            const linkedUser = users.find((u) => u.id === doctor.userId);
+            const text = [
+                doctor.specialization,
+                doctor.qualifications,
+                doctor.licenseNumber,
+                doctor.verificationStatus,
+                linkedUser?.firstName,
+                linkedUser?.lastName,
+                linkedUser?.email,
+                linkedUser?.username,
+                String(doctor.id || ''),
+                String(doctor.userId || '')
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return text.includes(query);
+        });
+    }, [doctorDirectory, users, searchTerm]);
+
+    const filteredPatients = useMemo(() => {
+        const query = searchTerm.trim().toLowerCase();
+        if (!query) {
+            return patients;
+        }
+
+        return patients.filter((patient) => {
+            const text = [
+                patient.name,
+                patient.email,
+                patient.phone,
+                patient.gender,
+                patient.bloodGroup,
+                String(patient.id || '')
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return text.includes(query);
+        });
+    }, [patients, searchTerm]);
+
+    const verifyDoctor = async (doctorId, status) => {
+        try {
+            setProcessingId(doctorId);
+
+            if (status === 'REJECTED') {
+                const reason = window.prompt('Enter rejection reason:') || '';
+                if (!reason.trim()) {
+                    return;
+                }
+
+                await adminApi.put(`/doctors/${doctorId}/verify`, {
+                    status: 'REJECTED',
+                    rejectionReason: reason.trim()
+                });
+            } else {
+                await adminApi.put(`/doctors/${doctorId}/verify`, {
+                    status: 'APPROVED'
+                });
+            }
+
+            await fetchDashboardData({ initialLoad: false });
         } catch (err) {
             console.error("Failed to verify doctor", err);
         }
