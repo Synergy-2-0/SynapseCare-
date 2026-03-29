@@ -108,7 +108,7 @@ const AppointmentsPage = () => {
     }
 
     return (
-        <DashboardLayout>
+        <DashboardLayout title="Appointments Registry | Clinical Sessions">
             <Header
                 title="Appointments"
                 subtitle={userRole === 'DOCTOR' ? 'View and manage your patient appointments' : 'View and manage your appointments'}

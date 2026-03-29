@@ -43,12 +43,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
      * Supports Ant-style patterns.
      */
     private static final List<String> PUBLIC_PATHS = List.of(
-            "/api/auth/**",            // All auth-service routes (login, register, refresh)
-            "/actuator/**",        // Health checks
-            "/api/doctors/search", // Public doctor search
-            "/api/doctors/*",      // Public doctor profile detail
-            "/api/doctors/*/available-slots", // Public slot availability
-            "/api/payments/payhere/notify"    // PayHere Webhook (Public)
+            "/api/auth/**",
+            "/actuator/**",
+            "/api/doctors/search",
+            "/api/doctors/all",
+            "/api/doctors/*",
+            "/api/payments/payhere/notify"
     );
 
     @Override
@@ -115,6 +115,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private boolean isPublicPath(String path) {
+        if (path.startsWith("/api/doctors/profile")) return false; // Explicitly NOT public
+        if (path.startsWith("/api/doctors/availability")) return false; 
+        if (path.startsWith("/api/doctors/schedule")) return false;
+        
         return PUBLIC_PATHS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 
@@ -130,6 +134,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
         response.getHeaders().add("Content-Type", "application/json");
+        response.getHeaders().add("Access-Control-Allow-Origin", "http://localhost:3000");
+        response.getHeaders().add("Access-Control-Allow-Credentials", "true");
         byte[] body = ("{\"error\": \"Unauthorized\", \"message\": \"" + message + "\"}").getBytes();
         return response.writeWith(
                 Mono.just(response.bufferFactory().wrap(body))

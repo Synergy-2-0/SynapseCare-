@@ -24,7 +24,7 @@ public class DoctorScheduleController {
     private final DoctorLeaveRepository leaveRepository;
 
     @GetMapping("/doctor/{doctorId}/availability")
-    public ResponseEntity<List<DoctorAvailabilityDto>> getAvailability(@PathVariable Long doctorId) {
+    public ResponseEntity<List<DoctorAvailabilityDto>> getAvailability(@PathVariable("doctorId") Long doctorId) {
         List<DoctorAvailability> availabilities = availabilityRepository.findByDoctorId(doctorId);
         List<DoctorAvailabilityDto> dtos = availabilities.stream().map(a -> DoctorAvailabilityDto.builder()
                 .id(a.getId())
@@ -41,7 +41,7 @@ public class DoctorScheduleController {
 
     @PostMapping("/doctor/{doctorId}/availability")
     @Transactional
-    public ResponseEntity<?> saveAvailability(@PathVariable Long doctorId, @RequestBody List<DoctorAvailabilityDto> dtos) {
+    public ResponseEntity<?> saveAvailability(@PathVariable("doctorId") Long doctorId, @RequestBody List<DoctorAvailabilityDto> dtos) {
         // Clear existing and save new
         availabilityRepository.deleteByDoctorId(doctorId);
         
@@ -60,7 +60,7 @@ public class DoctorScheduleController {
     }
 
     @GetMapping("/doctor/{doctorId}/leaves")
-    public ResponseEntity<List<DoctorLeaveDto>> getLeaves(@PathVariable Long doctorId) {
+    public ResponseEntity<List<DoctorLeaveDto>> getLeaves(@PathVariable("doctorId") Long doctorId) {
         List<DoctorLeave> leaves = leaveRepository.findByDoctorId(doctorId);
         List<DoctorLeaveDto> dtos = leaves.stream().map(l -> DoctorLeaveDto.builder()
                 .id(l.getId())
@@ -73,7 +73,7 @@ public class DoctorScheduleController {
     }
 
     @PostMapping("/doctor/{doctorId}/leaves")
-    public ResponseEntity<DoctorLeaveDto> addLeave(@PathVariable Long doctorId, @RequestBody DoctorLeaveDto dto) {
+    public ResponseEntity<DoctorLeaveDto> addLeave(@PathVariable("doctorId") Long doctorId, @RequestBody DoctorLeaveDto dto) {
         DoctorLeave l = DoctorLeave.builder()
                 .doctorId(doctorId)
                 .startDate(dto.getStartDate())
@@ -86,7 +86,7 @@ public class DoctorScheduleController {
     }
 
     @DeleteMapping("/leaves/{id}")
-    public ResponseEntity<?> removeLeave(@PathVariable Long id) {
+    public ResponseEntity<?> removeLeave(@PathVariable("id") Long id) {
         leaveRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }

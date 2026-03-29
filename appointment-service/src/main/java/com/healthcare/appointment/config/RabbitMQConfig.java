@@ -16,6 +16,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
+    public static final String APPOINTMENT_CONFIRM_QUEUE = "appointment.confirm.queue";
+    public static final String NOTIFICATION_QUEUE = "appointment.notification.queue";
+
     @Value("${app.rabbitmq.queue}")
     private String queue;
 

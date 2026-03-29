@@ -16,7 +16,6 @@ import java.util.Map;
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class PaymentController {
 
     private final PaymentService paymentService;
@@ -39,9 +38,9 @@ public class PaymentController {
      */
     @GetMapping("/{paymentId}/initiate-payhere")
     public ResponseEntity<ApiResponse<PayHereInitiateDto>> initiatePayHere(
-            @PathVariable String paymentId,
-            @RequestParam(required = false) String returnUrl,
-            @RequestParam(required = false) String cancelUrl) {
+            @PathVariable("paymentId") String paymentId,
+            @RequestParam(value = "returnUrl", required = false) String returnUrl,
+            @RequestParam(value = "cancelUrl", required = false) String cancelUrl) {
         PayHereInitiateDto dto = paymentService.initiatePayHerePayment(paymentId, returnUrl, cancelUrl);
         return ResponseEntity.ok(new ApiResponse<>(true, "PayHere checkout data", dto));
     }
@@ -71,7 +70,7 @@ public class PaymentController {
      * Get a specific payment by our internal paymentId (UUID).
      */
     @GetMapping("/{paymentId}")
-    public ResponseEntity<ApiResponse<PaymentDto>> getPayment(@PathVariable String paymentId) {
+    public ResponseEntity<ApiResponse<PaymentDto>> getPayment(@PathVariable("paymentId") String paymentId) {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Payment found", paymentService.getPaymentById(paymentId)));
     }
@@ -81,7 +80,7 @@ public class PaymentController {
      * Get payment linked to an appointment.
      */
     @GetMapping("/appointment/{appointmentId}")
-    public ResponseEntity<ApiResponse<PaymentDto>> getByAppointment(@PathVariable Long appointmentId) {
+    public ResponseEntity<ApiResponse<PaymentDto>> getByAppointment(@PathVariable("appointmentId") Long appointmentId) {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Payment found", paymentService.getPaymentByAppointment(appointmentId)));
     }
@@ -91,7 +90,7 @@ public class PaymentController {
      * Get all payment history for a patient.
      */
     @GetMapping("/patient/{patientId}/history")
-    public ResponseEntity<ApiResponse<List<PaymentDto>>> getPatientHistory(@PathVariable Long patientId) {
+    public ResponseEntity<ApiResponse<List<PaymentDto>>> getPatientHistory(@PathVariable("patientId") Long patientId) {
         List<PaymentDto> history = paymentService.getPatientPaymentHistory(patientId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Payment history", history));
     }
@@ -102,8 +101,8 @@ public class PaymentController {
      */
     @PostMapping("/{paymentId}/refund")
     public ResponseEntity<ApiResponse<PaymentDto>> refundPayment(
-            @PathVariable String paymentId,
-            @RequestParam(defaultValue = "Requested by patient") String reason) {
+            @PathVariable("paymentId") String paymentId,
+            @RequestParam(value = "reason", defaultValue = "Requested by patient") String reason) {
         PaymentDto refunded = paymentService.initiateRefund(paymentId, reason);
         return ResponseEntity.ok(new ApiResponse<>(true, "Refund initiated", refunded));
     }
@@ -113,7 +112,7 @@ public class PaymentController {
      * Retry a failed or cancelled payment.
      */
     @PostMapping("/{paymentId}/retry")
-    public ResponseEntity<ApiResponse<PaymentDto>> retryPayment(@PathVariable String paymentId) {
+    public ResponseEntity<ApiResponse<PaymentDto>> retryPayment(@PathVariable("paymentId") String paymentId) {
         PaymentDto retried = paymentService.retryPayment(paymentId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Retry payment created", retried));
     }
@@ -123,7 +122,7 @@ public class PaymentController {
      * Payment receipt endpoint.
      */
     @GetMapping("/{paymentId}/receipt")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getReceipt(@PathVariable String paymentId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getReceipt(@PathVariable("paymentId") String paymentId) {
         PaymentDto payment = paymentService.getPaymentById(paymentId);
         Map<String, Object> receipt = Map.of(
                 "receiptNumber", "RCT-" + payment.getPaymentId().substring(0, 8).toUpperCase(),

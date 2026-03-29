@@ -31,6 +31,12 @@ public class PatientController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Patient fetched successfully", patient));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<PatientDto>> getPatientByUserId(@PathVariable("userId") Long userId) {
+        PatientDto patient = patientService.getPatientByUserId(userId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Patient fetched successfully", patient));
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<PatientDto>>> getAllPatients() {
         List<PatientDto> patients = patientService.getAllPatients();
@@ -39,14 +45,14 @@ public class PatientController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<PatientDto>> updatePatient(
-            @PathVariable Long id, 
+            @PathVariable("id") Long id, 
             @Valid @RequestBody PatientDto patientDto) {
         PatientDto updated = patientService.updatePatient(id, patientDto);
         return ResponseEntity.ok(new ApiResponse<>(true, "Patient updated successfully", updated));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deletePatient(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deletePatient(@PathVariable("id") Long id) {
         patientService.deletePatient(id);
         return ResponseEntity.ok(new ApiResponse<>(true, "Patient deleted successfully", null));
     }

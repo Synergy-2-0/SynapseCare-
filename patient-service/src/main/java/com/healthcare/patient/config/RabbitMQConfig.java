@@ -21,6 +21,28 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.routing-key}")
     private String routingKey;
 
+    public static final String USER_REGISTERED_QUEUE = "patient.user.registered.queue";
+    public static final String USER_EXCHANGE = "user.exchange";
+    public static final String USER_REGISTERED_ROUTING_KEY = "user.registered.patient";
+
+    @Bean
+    public Queue userRegisteredQueue() {
+        return new Queue(USER_REGISTERED_QUEUE);
+    }
+
+    @Bean
+    public TopicExchange userExchange() {
+        return new TopicExchange(USER_EXCHANGE);
+    }
+
+    @Bean
+    public Binding userRegisteredBinding() {
+        return BindingBuilder
+                .bind(userRegisteredQueue())
+                .to(userExchange())
+                .with(USER_REGISTERED_ROUTING_KEY);
+    }
+
     @Bean
     public Queue queue() {
         return new Queue(queue);

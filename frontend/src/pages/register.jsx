@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     ShieldCheck, 
@@ -45,7 +46,12 @@ const RegisterPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 selection:bg-indigo-100 selection:text-indigo-900">
+        <>
+            <Head>
+                <title>Create Identity | Clinical Registration | SynapsCare</title>
+                <meta name="description" content="Register as a patient or practitioner on the world's most advanced healthcare network" />
+            </Head>
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 selection:bg-indigo-100 selection:text-indigo-900">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,70,229,0.05),transparent_500px)] pointer-events-none" />
             
             <div className="w-full max-w-6xl grid lg:grid-cols-[0.8fr_1.2fr] bg-white rounded-[2.5rem] shadow-premium overflow-hidden border border-slate-200/50 relative z-10 min-h-[85vh]">
@@ -255,6 +261,7 @@ const RegisterPage = () => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

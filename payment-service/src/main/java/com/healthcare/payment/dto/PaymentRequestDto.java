@@ -17,6 +17,7 @@ public class PaymentRequestDto {
     private String currency;        // default LKR
     @NotNull
     private PaymentMethod method;   // PAYHERE is primary
+    private Long doctorId;          // For denormalization in receipts
     private String returnUrl;       // Frontend redirect after payment
     private String cancelUrl;       // Frontend redirect on cancel
 }

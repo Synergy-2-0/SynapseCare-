@@ -39,7 +39,7 @@ public class TelemedicineController {
      * Get session details (no tokens exposed).
      */
     @GetMapping("/sessions/{sessionId}")
-    public ResponseEntity<ApiResponse<SessionDto>> getSession(@PathVariable String sessionId) {
+    public ResponseEntity<ApiResponse<SessionDto>> getSession(@PathVariable("sessionId") String sessionId) {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Session found", telemedicineService.getSession(sessionId)));
     }
@@ -49,7 +49,7 @@ public class TelemedicineController {
      * Get session by appointment ID.
      */
     @GetMapping("/sessions/appointment/{appointmentId}")
-    public ResponseEntity<ApiResponse<SessionDto>> getByAppointment(@PathVariable Long appointmentId) {
+    public ResponseEntity<ApiResponse<SessionDto>> getByAppointment(@PathVariable("appointmentId") Long appointmentId) {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Session found", telemedicineService.getSessionByAppointment(appointmentId)));
     }
@@ -61,8 +61,8 @@ public class TelemedicineController {
      */
     @PostMapping("/sessions/{sessionId}/join/doctor")
     public ResponseEntity<ApiResponse<SessionDto>> doctorJoin(
-            @PathVariable String sessionId,
-            @RequestParam Long doctorId) {
+            @PathVariable("sessionId") String sessionId,
+            @RequestParam("doctorId") Long doctorId) {
         SessionDto session = telemedicineService.doctorJoin(sessionId, doctorId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Doctor joined session", session));
     }
@@ -74,8 +74,8 @@ public class TelemedicineController {
      */
     @PostMapping("/sessions/{sessionId}/join/patient")
     public ResponseEntity<ApiResponse<SessionDto>> patientJoin(
-            @PathVariable String sessionId,
-            @RequestParam Long patientId) {
+            @PathVariable("sessionId") String sessionId,
+            @RequestParam("patientId") Long patientId) {
         SessionDto session = telemedicineService.patientJoin(sessionId, patientId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Patient joined session", session));
     }
@@ -86,9 +86,9 @@ public class TelemedicineController {
      */
     @PostMapping("/sessions/{sessionId}/end")
     public ResponseEntity<ApiResponse<SessionDto>> endSession(
-            @PathVariable String sessionId,
-            @RequestParam Long doctorId,
-            @RequestParam(required = false, defaultValue = "") String notes) {
+            @PathVariable("sessionId") String sessionId,
+            @RequestParam("doctorId") Long doctorId,
+            @RequestParam(value = "notes", required = false, defaultValue = "") String notes) {
         SessionDto session = telemedicineService.endSession(sessionId, doctorId, notes);
         return ResponseEntity.ok(new ApiResponse<>(true, "Session ended", session));
     }
@@ -99,8 +99,8 @@ public class TelemedicineController {
      */
     @PutMapping("/sessions/{sessionId}/notes")
     public ResponseEntity<ApiResponse<SessionDto>> updateNotes(
-            @PathVariable String sessionId,
-            @RequestParam Long doctorId,
+            @PathVariable("sessionId") String sessionId,
+            @RequestParam("doctorId") Long doctorId,
             @RequestBody Map<String, String> body) {
         String notes = body.getOrDefault("notes", "");
         SessionDto session = telemedicineService.updateNotes(sessionId, doctorId, notes);
@@ -112,7 +112,7 @@ public class TelemedicineController {
      * Cancel a scheduled session.
      */
     @PutMapping("/sessions/{sessionId}/cancel")
-    public ResponseEntity<ApiResponse<SessionDto>> cancelSession(@PathVariable String sessionId) {
+    public ResponseEntity<ApiResponse<SessionDto>> cancelSession(@PathVariable("sessionId") String sessionId) {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Session cancelled", telemedicineService.cancelSession(sessionId)));
     }
@@ -122,7 +122,7 @@ public class TelemedicineController {
      * Get all sessions for a doctor.
      */
     @GetMapping("/sessions/doctor/{doctorId}")
-    public ResponseEntity<ApiResponse<List<SessionDto>>> getDoctorSessions(@PathVariable Long doctorId) {
+    public ResponseEntity<ApiResponse<List<SessionDto>>> getDoctorSessions(@PathVariable("doctorId") Long doctorId) {
         List<SessionDto> sessions = telemedicineService.getDoctorSessions(doctorId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Doctor sessions", sessions));
     }
@@ -132,7 +132,7 @@ public class TelemedicineController {
      * Get all sessions for a patient.
      */
     @GetMapping("/sessions/patient/{patientId}")
-    public ResponseEntity<ApiResponse<List<SessionDto>>> getPatientSessions(@PathVariable Long patientId) {
+    public ResponseEntity<ApiResponse<List<SessionDto>>> getPatientSessions(@PathVariable("patientId") Long patientId) {
         List<SessionDto> sessions = telemedicineService.getPatientSessions(patientId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Patient sessions", sessions));
     }
