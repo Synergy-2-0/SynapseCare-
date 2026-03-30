@@ -4,6 +4,8 @@ import com.healthcare.patient.dto.MedicalHistoryDto;
 import com.healthcare.patient.entity.MedicalHistory;
 import com.healthcare.patient.exception.ResourceNotFoundException;
 import com.healthcare.patient.repository.MedicalHistoryRepository;
+import com.healthcare.patient.repository.PatientRepository;
+import com.healthcare.patient.entity.Patient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 public class MedicalHistoryService {
 
     private final MedicalHistoryRepository repository;
+    private final PatientRepository patientRepository;
 
     public MedicalHistoryDto addHistory(MedicalHistoryDto dto) {
         MedicalHistory history = mapToEntity(dto);
@@ -26,6 +29,12 @@ public class MedicalHistoryService {
         return repository.findByPatientId(patientId).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<MedicalHistoryDto> getHistoryByUserId(Long userId) {
+        Patient patient = patientRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found for userId: " + userId));
+        return getHistoryByPatient(patient.getId());
     }
 
     public void deleteHistory(Long id) {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Activity, Shield, Stethoscope, Video, MessageSquare, 
@@ -18,7 +19,12 @@ const LandingPage = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+        <>
+            <Head>
+                <title>SynapsCare | Smart Healthcare Infrastructure</title>
+                <meta name="description" content="Secure, fast, and intelligent healthcare for everyone" />
+            </Head>
+            <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
             {/* Navigation */}
             <nav className={`fixed top-0 w-full z-[100] transition-all duration-700 px-6 lg:px-16 py-5 flex justify-between items-center ${
                 scrolled ? 'bg-white/70 backdrop-blur-2xl border-b border-slate-200/40 shadow-premium' : 'bg-transparent'
@@ -261,6 +267,7 @@ const LandingPage = () => {
                 </div>
             </footer>
         </div>
+        </>
     );
 };
 

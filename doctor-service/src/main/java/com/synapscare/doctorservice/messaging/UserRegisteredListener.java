@@ -23,8 +23,9 @@ public class UserRegisteredListener {
         try {
             // Check if user has DOCTOR role
             if (event.getRoles() != null && event.getRoles().contains("DOCTOR")) {
-                log.info("Creating placeholder doctor profile for userId: {}", event.getUserId());
-                doctorService.createEmptyDoctorProfile(event.getUserId());
+                log.info("Creating placeholder doctor profile for userId: {} ({} {})", 
+                         event.getUserId(), event.getFirstName(), event.getLastName());
+                doctorService.createEmptyDoctorProfile(event.getUserId(), event.getFirstName(), event.getLastName());
                 log.info("Successfully created placeholder doctor profile for userId: {}", event.getUserId());
             } else {
                 log.debug("Skipping doctor profile creation - not a DOCTOR role: {}", event.getRoles());

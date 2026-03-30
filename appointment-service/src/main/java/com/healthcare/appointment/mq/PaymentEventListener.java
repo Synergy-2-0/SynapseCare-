@@ -1,5 +1,6 @@
 package com.healthcare.appointment.mq;
 
+import com.healthcare.appointment.config.RabbitMQConfig;
 import com.healthcare.appointment.service.AppointmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

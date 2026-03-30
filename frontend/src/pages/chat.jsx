@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { integrationApi } from '../lib/api';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import Head from 'next/head';
 import { 
     Activity, 
     MessageSquare, 
@@ -59,7 +60,12 @@ const AISymptomChecker = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] flex font-bold italic text-slate-900 border-t-8 border-indigo-600">
+        <>
+            <Head>
+                <title>AI Symptom Checker | Diagnostic Triage | SynapsCare</title>
+                <meta name="description" content="AI-powered symptom analysis and medical triage for immediate healthcare guidance" />
+            </Head>
+            <div className="min-h-screen bg-[#F8FAFC] flex font-bold italic text-slate-900 border-t-8 border-indigo-600">
             {/* Sidebar / Info */}
             <div className="md:w-[450px] bg-slate-950 p-16 text-white flex flex-col justify-between italic overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2"></div>
@@ -157,6 +163,7 @@ const AISymptomChecker = () => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

@@ -59,6 +59,7 @@ public class PaymentService {
                 .method(request.getMethod() != null ? request.getMethod() : PaymentMethod.PAYHERE)
                 .status(PaymentStatus.PENDING)
                 .merchantOrderId(merchantOrderId)
+                .doctorId(request.getDoctorId())
                 .build();
 
         payment = paymentRepository.save(payment);

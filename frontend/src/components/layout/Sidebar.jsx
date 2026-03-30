@@ -9,15 +9,14 @@ import {
     Video,
     LogOut,
     User,
-    BarChart,
-    Settings,
-    Clock,
     Activity,
-    MessageSquare,
-    ShieldCheck
+    ShieldCheck,
+    Search,
+    UserCog,
+    Settings,
+    Clock
 } from 'lucide-react';
-import { DOCTOR_ROUTES, PATIENT_ROUTES } from '../../constants/routes';
-import { motion } from 'framer-motion';
+import { DOCTOR_ROUTES, PATIENT_ROUTES, ADMIN_ROUTES } from '../../constants/routes';
 
 const Sidebar = ({ onClose }) => {
     const router = useRouter();
@@ -29,61 +28,66 @@ const Sidebar = ({ onClose }) => {
         return localStorage.getItem('user_role') || '';
     });
 
-    const currentRole = (storedRole || ((router.pathname.startsWith('/patient') || router.pathname.startsWith('/dashboard/patient'))
-        ? 'PATIENT'
-        : 'DOCTOR'));
+    const currentRole = storedRole || 'PATIENT';
     
-    // PRD Exact Nav Structure
-    const doctorMainNav = [
+    // Navigation configurations for different roles
+    const adminNav = [
+        { id: 'admin-dashboard', icon: LayoutDashboard, label: 'Admin Dashboard', path: ADMIN_ROUTES.DASHBOARD },
+        { id: 'appointments', icon: Calendar, label: 'Appointments', path: '/dashboard/admin?tab=appointments' },
+        { id: 'doctor-directory', icon: ShieldCheck, label: 'Doctor Directory', path: '/dashboard/admin?tab=doctors' },
+        { id: 'user-management', icon: Users, label: 'User Management', path: '/dashboard/admin?tab=users' },
+    ];
+
+    const doctorNav = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: DOCTOR_ROUTES.DASHBOARD },
         { id: 'appointments', icon: Calendar, label: 'Appointments', path: DOCTOR_ROUTES.APPOINTMENTS },
         { id: 'patients', icon: Users, label: 'My Patients', path: DOCTOR_ROUTES.PATIENTS },
         { id: 'consultations', icon: Video, label: 'Consultations', path: DOCTOR_ROUTES.TELEMEDICINE },
         { id: 'prescriptions', icon: FileText, label: 'Prescriptions', path: DOCTOR_ROUTES.PRESCRIPTIONS },
         { id: 'schedule', icon: Clock, label: 'Schedule', path: DOCTOR_ROUTES.SCHEDULE },
-        { id: 'earnings', icon: BarChart, label: 'Earnings', path: DOCTOR_ROUTES.ANALYTICS },
     ];
 
-    const doctorBottomNav = [
-        { id: 'settings', icon: Settings, label: 'Profile & Settings', path: DOCTOR_ROUTES.SETTINGS },
-    ];
-
-    const patientMainNav = [
-        { id: 'dashboard', icon: LayoutDashboard, label: 'Patient Hub', path: PATIENT_ROUTES.DASHBOARD },
+    const patientNav = [
+        { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: PATIENT_ROUTES.DASHBOARD },
         { id: 'appointments', icon: Calendar, label: 'My Appointments', path: PATIENT_ROUTES.APPOINTMENTS },
-        { id: 'find-doctors', icon: Users, label: 'Find Doctors', path: PATIENT_ROUTES.FIND_DOCTORS },
-        { id: 'symptom-checker', icon: Activity, label: 'AI Symptom Checker', path: PATIENT_ROUTES.SYMPTOM_CHECKER },
-        { id: 'telemedicine', icon: Video, label: 'Telemedicine', path: PATIENT_ROUTES.TELEMEDICINE },
+        { id: 'find-doctors', icon: Search, label: 'Find Doctors', path: PATIENT_ROUTES.FIND_DOCTORS },
+        { id: 'telemedicine', icon: Video, label: 'Consultations', path: PATIENT_ROUTES.TELEMEDICINE },
         { id: 'records', icon: FileText, label: 'Medical Records', path: PATIENT_ROUTES.MEDICAL_RECORDS },
+        { id: 'symptom-checker', icon: Activity, label: 'AI Health Checker', path: PATIENT_ROUTES.SYMPTOM_CHECKER },
     ];
 
-    const patientBottomNav = [
-        { id: 'profile', icon: User, label: 'My Profile', path: PATIENT_ROUTES.PROFILE },
-    ];
+    const roleToNav = {
+        'ADMIN': adminNav,
+        'DOCTOR': doctorNav,
+        'PATIENT': patientNav
+    };
 
-    const mainNav = currentRole === 'PATIENT' ? patientMainNav : doctorMainNav;
-    const bottomNav = currentRole === 'PATIENT' ? patientBottomNav : doctorBottomNav;
+    const mainNav = roleToNav[currentRole] || patientNav;
 
     const handleLogout = () => {
         localStorage.clear();
         router.push('/login');
     };
 
-    const isActive = (path) => router.pathname === path || router.pathname.startsWith(path + '/');
+    const isActive = (path) => {
+        if (path.includes('?')) {
+            return router.asPath === path;
+        }
+        return router.pathname === path || (path !== '/' && router.pathname.startsWith(path + '/'));
+    };
 
     return (
-        <aside className="w-[240px] glass-morphism border-r border-[var(--border-color)]/30 flex flex-col pt-6 pb-6 sticky top-0 h-screen z-50 overflow-y-auto selection:bg-teal-100 selection:text-teal-900 border-0">
-            {/* Branding */}
-            <div className="flex items-center gap-3 px-6 mb-8 group cursor-pointer transition-transform hover:scale-105 active:scale-95" onClick={() => router.push('/')}>
-                <div className="relative">
-                    <div className="absolute inset-0 bg-[var(--accent-teal)] blur-lg opacity-20 group-hover:opacity-40 transition-opacity" />
-                    <Image src="/logo.png" alt="Logo" width={32} height={32} className="w-8 h-8 object-contain relative drop-shadow-sm transition-transform group-hover:rotate-12" />
-                </div>
-                <span className="text-xl font-bold tracking-tight font-serif text-[var(--text-primary)]">Synapse<span className="text-[var(--accent-teal)]">Care</span></span>
+        <aside className="w-[280px] bg-white border-r border-slate-100 flex flex-col h-screen sticky top-0 z-50 overflow-hidden shadow-sm">
+            {/* Logo Section - Clean Sans-Serif as in reference image */}
+            <div className="flex items-center gap-3 px-8 py-10 cursor-pointer" onClick={() => router.push('/')}>
+                <Image src="/logo.png" alt="SynapseCare" width={32} height={32} className="w-8 h-8 object-contain" />
+                <span className="text-2xl font-bold tracking-tight text-slate-900 font-sans">
+                    Synapse<span className="text-teal-600">Care</span>
+                </span>
             </div>
 
-            {/* Navigation */}
-            <div className="flex-1 flex flex-col space-y-1">
+            {/* Navigation Menu */}
+            <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
                 {mainNav.map((item) => {
                     const active = isActive(item.path);
                     return (
@@ -93,61 +97,37 @@ const Sidebar = ({ onClose }) => {
                                 router.push(item.path);
                                 if (onClose) onClose();
                             }}
-                            className={`w-full flex items-center justify-between px-6 py-3 text-[14px] font-medium transition-all duration-200 relative group
-                                ${active ? 'bg-[var(--bg-hover)] text-[var(--accent-teal)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}
+                            className={`w-full flex items-center px-6 py-4 text-[15px] font-medium transition-all relative rounded-lg group
+                                ${active 
+                                    ? 'bg-teal-50/50 text-teal-600' 
+                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
                             `}
                         >
-                            <div className="flex items-center gap-3">
-                                <item.icon className={`w-[18px] h-[18px] transition-transform group-hover:scale-110 ${active ? 'text-[var(--accent-teal)]' : 'text-[var(--text-muted)] group-hover:text-[var(--accent-teal)]'}`} strokeWidth={active ? 2.5 : 2} />
-                                {item.label}
-                            </div>
+                            {/* Left Border for Active Item */}
+                            {active && (
+                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-teal-600 rounded-r-md" />
+                            )}
                             
-                            {/* Live Badge for consultations */}
-                            {item.id === 'consultations' && active && (
-                                <span className="flex h-2 w-2 relative">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                                </span>
-                            )}
-
-                            {active && (
-                                <motion.div layoutId="active-indicator" className="absolute left-0 top-0 bottom-0 w-[4px] bg-[var(--accent-teal)] rounded-r" />
-                            )}
+                            <div className="flex items-center gap-4">
+                                <item.icon 
+                                    className={`w-5 h-5 ${active ? 'text-teal-600' : 'text-slate-400 group-hover:text-teal-600'} transition-colors`} 
+                                    strokeWidth={active ? 2.5 : 2} 
+                                />
+                                <span className={active ? 'font-semibold' : ''}>{item.label}</span>
+                            </div>
                         </button>
                     );
                 })}
-            </div>
+            </nav>
 
-            {/* Footer Items */}
-            <div className="space-y-1 mt-auto pt-6 border-t border-[var(--border-color)]">
-                {bottomNav.map((item) => {
-                    const active = isActive(item.path);
-                    return (
-                        <button
-                            key={item.id}
-                            onClick={() => {
-                                router.push(item.path);
-                                if (onClose) onClose();
-                            }}
-                            className={`w-full flex items-center gap-3 px-6 py-3 text-[14px] font-medium transition-all duration-200 relative group
-                                ${active ? 'bg-[var(--bg-hover)] text-[var(--accent-teal)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}
-                            `}
-                        >
-                            <item.icon className={`w-[18px] h-[18px] ${active ? 'text-[var(--accent-teal)]' : 'text-[var(--text-muted)] group-hover:text-[var(--accent-teal)]'}`} strokeWidth={active ? 2.5 : 2} />
-                            {item.label}
-                            {active && (
-                                <motion.div layoutId="active-indicator-bottom" className="absolute left-0 top-0 bottom-0 w-[4px] bg-[var(--accent-teal)] rounded-r" />
-                            )}
-                        </button>
-                    );
-                })}
-                
+            {/* Logout Section */}
+            <div className="p-4 border-t border-slate-50 mt-auto">
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-6 py-3 text-[14px] font-medium text-[var(--accent-red)] hover:bg-red-50/50 transition-all group mt-2"
+                    className="w-full flex items-center gap-4 px-6 py-4 text-[15px] font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all rounded-lg group"
                 >
-                    <LogOut className="w-[18px] h-[18px] group-hover:-translate-x-1 transition-transform" />
-                    Secure Logout
+                    <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                    Logout
                 </button>
             </div>
         </aside>
