@@ -21,6 +21,8 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import EmptyState from '../../components/ui/EmptyState';
 import useAppointments from '../../hooks/useAppointments';
 import { formatDate } from '../../lib/utils';
+import { doctorApi } from '../../lib/api';
+import { isDoctorApproved } from '../../lib/doctorVerification';
 
 const PatientListPage = () => {
     const router = useRouter();
@@ -37,6 +39,28 @@ const PatientListPage = () => {
             setUserId(id);
         }
     }, []);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const validateAccess = async () => {
+            try {
+                const res = await doctorApi.get('/profile/me');
+                if (mounted && !isDoctorApproved(res?.data?.verificationStatus)) {
+                    router.replace('/doctor/setup');
+                }
+            } catch {
+                if (mounted) {
+                    router.replace('/doctor/setup');
+                }
+            }
+        };
+
+        validateAccess();
+        return () => {
+            mounted = false;
+        };
+    }, [router]);
 
     const { appointments, loading, error } = useAppointments(userId);
 

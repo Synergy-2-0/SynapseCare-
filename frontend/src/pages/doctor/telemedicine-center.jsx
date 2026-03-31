@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Header from '../../components/layout/Header';
 import { Video, Clock, ChevronRight, Mic, Camera, MonitorUp, X, Activity } from 'lucide-react';
@@ -6,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { doctorApi } from '../../lib/api';
+import { isDoctorApproved } from '../../lib/doctorVerification';
 
 const postSessionSchema = z.object({
   notes: z.string().min(10, "Detailed notes to proceed"),
@@ -18,6 +21,7 @@ export async function getServerSideProps() {
 }
 
 export default function TelemedicineCenter() {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState('Upcoming');
     const [inSession, setInSession] = useState(false);
     const [showPostSession, setShowPostSession] = useState(false);
@@ -35,6 +39,28 @@ export default function TelemedicineCenter() {
         }
         return () => clearInterval(interval);
     }, [inSession]);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const validateAccess = async () => {
+            try {
+                const res = await doctorApi.get('/profile/me');
+                if (mounted && !isDoctorApproved(res?.data?.verificationStatus)) {
+                    router.replace('/doctor/setup');
+                }
+            } catch {
+                if (mounted) {
+                    router.replace('/doctor/setup');
+                }
+            }
+        };
+
+        validateAccess();
+        return () => {
+            mounted = false;
+        };
+    }, [router]);
 
     const formatTime = (seconds) => {
         const h = Math.floor(seconds / 3600);
