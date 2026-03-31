@@ -12,8 +12,8 @@ export const PUBLIC_ROUTES = {
 // Doctor routes
 export const DOCTOR_ROUTES = {
     DASHBOARD: '/doctor/dashboard',
-    PROFILE_SETUP: '/doctor/profile/setup',
-    PROFILE: '/doctor/profile',
+    PROFILE_SETUP: '/doctor/setup',
+    PROFILE: '/doctor/setup',
     APPOINTMENTS: '/doctor/appointments',
     APPOINTMENT_DETAIL: (id) => `/doctor/appointments/${id}`,
     CASE_NEW: '/doctor/cases/new',
