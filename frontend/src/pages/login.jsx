@@ -42,7 +42,7 @@ const LoginPage = () => {
             if (role === 'ADMIN') router.push('/dashboard/admin');
             else if (role === 'DOCTOR') {
                 if (user.verificationStatus === 'APPROVED' || user.isVerified) {
-                    router.push('/dashboard/doctor');
+                    router.push('/doctor/dashboard');
                 } else if (user.verificationStatus === 'PENDING') {
                     router.push('/doctor/setup');
                 } else {
