@@ -102,6 +102,7 @@ const AdminDashboard = () => {
     const [processingId, setProcessingId] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedVerificationDoctorId, setSelectedVerificationDoctorId] = useState('');
 
     useEffect(() => {
         if (!router.isReady) {
@@ -379,6 +380,71 @@ const AdminDashboard = () => {
         });
     }, [patients, searchTerm]);
 
+    const pendingDoctorProfileByUserId = useMemo(() => {
+        const map = new Map();
+        doctorDirectory.forEach((doctor) => {
+            if (doctor?.userId) {
+                map.set(String(doctor.userId), doctor);
+            }
+        });
+        return map;
+    }, [doctorDirectory]);
+
+    const mergedPendingDoctors = useMemo(() => {
+        return filteredPendingDoctors.map((doctorUser) => ({
+            ...doctorUser,
+            doctorProfile: pendingDoctorProfileByUserId.get(String(doctorUser.id)) || null
+        }));
+    }, [filteredPendingDoctors, pendingDoctorProfileByUserId]);
+
+    const selectedPendingDoctor = useMemo(() => {
+        if (!selectedVerificationDoctorId) {
+            return mergedPendingDoctors[0] || null;
+        }
+
+        return mergedPendingDoctors.find((doctor) => String(doctor.id) === String(selectedVerificationDoctorId)) || mergedPendingDoctors[0] || null;
+    }, [mergedPendingDoctors, selectedVerificationDoctorId]);
+
+    const selectedDoctorDocuments = useMemo(() => {
+        const profile = selectedPendingDoctor?.doctorProfile;
+        if (!profile) {
+            return [];
+        }
+
+        const docs = [];
+        const pushIfPresent = (label, value) => {
+            if (value) {
+                docs.push({ label, value: String(value) });
+            }
+        };
+
+        pushIfPresent('Profile Photo', profile.profileImageUrl);
+        pushIfPresent('License Document', profile.licenseDocumentUrl || profile.medicalLicenseUrl || profile.licenseFileUrl || profile.licenseUrl);
+
+        if (Array.isArray(profile.documents)) {
+            profile.documents.forEach((doc, idx) => {
+                if (doc?.url) {
+                    docs.push({
+                        label: doc.type || `Document ${idx + 1}`,
+                        value: String(doc.url)
+                    });
+                }
+            });
+        }
+
+        return docs;
+    }, [selectedPendingDoctor]);
+
+    useEffect(() => {
+        if (activeTab !== 'verifications') {
+            return;
+        }
+
+        if (!selectedVerificationDoctorId && mergedPendingDoctors.length > 0) {
+            setSelectedVerificationDoctorId(String(mergedPendingDoctors[0].id));
+        }
+    }, [activeTab, mergedPendingDoctors, selectedVerificationDoctorId]);
+
     const verifyDoctor = async (doctorId, status) => {
         try {
             setProcessingId(doctorId);
@@ -564,34 +630,46 @@ const AdminDashboard = () => {
                 )}
 
                 {activeTab === 'verifications' && (
+                    <div className="space-y-6">
                     <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                        <table className="w-full text-left">
+                        <table className="w-full text-left min-w-[980px]">
                             <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                                 <tr>
                                     <th className="px-6 py-4">Doctor</th>
                                     <th className="px-6 py-4">Email</th>
+                                    <th className="px-6 py-4">Specialization</th>
+                                    <th className="px-6 py-4">License</th>
                                     <th className="px-6 py-4">Current Status</th>
                                     <th className="px-6 py-4 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredPendingDoctors.length === 0 && (
+                                {mergedPendingDoctors.length === 0 && (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-14 text-center text-slate-500 font-semibold">
+                                        <td colSpan={6} className="px-6 py-14 text-center text-slate-500 font-semibold">
                                             No pending doctors found.
                                         </td>
                                     </tr>
                                 )}
 
-                                {filteredPendingDoctors.map((doctor) => (
+                                {mergedPendingDoctors.map((doctor) => (
                                     <tr key={doctor.id} className="hover:bg-slate-50/70 transition-colors">
                                         <td className="px-6 py-4 font-bold text-slate-800">{getUserLabel(doctor)}</td>
                                         <td className="px-6 py-4 text-sm font-medium text-slate-600">{doctor.email || '-'}</td>
+                                        <td className="px-6 py-4 text-sm font-medium text-slate-600">{doctor.doctorProfile?.specialization || '-'}</td>
+                                        <td className="px-6 py-4 text-sm font-medium text-slate-600">{doctor.doctorProfile?.licenseNumber || '-'}</td>
                                         <td className="px-6 py-4">
                                             <Badge variant="warning" size="sm">Pending</Badge>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex gap-2 justify-end">
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    onClick={() => setSelectedVerificationDoctorId(String(doctor.id))}
+                                                >
+                                                    Review
+                                                </Button>
                                                 <Button
                                                     size="sm"
                                                     variant="primary"
@@ -616,6 +694,55 @@ const AdminDashboard = () => {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    {selectedPendingDoctor && (
+                        <Card
+                            title="Verification Review"
+                            subtitle="Full profile and submitted documents in one place"
+                            padding="md"
+                        >
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-sm">
+                                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Doctor</p>
+                                    <p className="font-bold text-slate-800">{getUserLabel(selectedPendingDoctor)}</p>
+                                    <p className="text-slate-600 mt-1">{selectedPendingDoctor.email || '-'}</p>
+                                </div>
+                                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Professional</p>
+                                    <p className="text-slate-700"><span className="font-semibold">Specialization:</span> {selectedPendingDoctor.doctorProfile?.specialization || '-'}</p>
+                                    <p className="text-slate-700"><span className="font-semibold">License:</span> {selectedPendingDoctor.doctorProfile?.licenseNumber || '-'}</p>
+                                    <p className="text-slate-700"><span className="font-semibold">Fee:</span> {selectedPendingDoctor.doctorProfile?.consultationFee || '-'}</p>
+                                </div>
+                                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Current Verification</p>
+                                    <p className="text-slate-700"><span className="font-semibold">Status:</span> {selectedPendingDoctor.doctorProfile?.verificationStatus || 'PENDING'}</p>
+                                    <p className="text-slate-700 mt-2"><span className="font-semibold">Profile ID:</span> {selectedPendingDoctor.doctorProfile?.id || '-'}</p>
+                                </div>
+                                <div className="md:col-span-2 xl:col-span-3 p-4 rounded-xl border border-slate-200 bg-slate-50">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Bio</p>
+                                    <p className="text-slate-700">{selectedPendingDoctor.doctorProfile?.bio || 'No bio submitted.'}</p>
+                                </div>
+                                <div className="md:col-span-2 xl:col-span-3 p-4 rounded-xl border border-slate-200 bg-slate-50">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Documents</p>
+                                    {selectedDoctorDocuments.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {selectedDoctorDocuments.map((doc, idx) => (
+                                                <div key={`${doc.label}-${idx}`} className="flex flex-wrap gap-2 items-center">
+                                                    <span className="text-slate-700 font-semibold">{doc.label}:</span>
+                                                    <a href={doc.value} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-700 break-all underline underline-offset-2">
+                                                        {doc.value}
+                                                    </a>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-slate-500">Document URLs are not currently exposed by the API response.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    )}
                     </div>
                 )}
 
