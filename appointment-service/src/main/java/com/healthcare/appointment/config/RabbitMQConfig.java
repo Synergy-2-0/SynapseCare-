@@ -17,20 +17,37 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     public static final String APPOINTMENT_CONFIRM_QUEUE = "appointment.confirm.queue";
+    public static final String APPOINTMENT_FAILED_QUEUE = "appointment.failed.queue";
+    public static final String APPOINTMENT_COMPLETE_QUEUE = "appointment.complete.queue";
     public static final String NOTIFICATION_QUEUE = "appointment.notification.queue";
 
     @Value("${app.rabbitmq.queue}")
     private String queue;
 
-    @Value("${app.rabbitmq.exchange}")
+    @Value("${app.rabbitmq.exchange:healthcare.exchange}")
     private String exchange;
 
     @Value("${app.rabbitmq.routing-key}")
     private String routingKey;
 
     @Bean
-    public Queue queue() {
+    public Queue mainQueue() {
         return new Queue(queue);
+    }
+
+    @Bean
+    public Queue confirmQueue() {
+        return new Queue(APPOINTMENT_CONFIRM_QUEUE);
+    }
+
+    @Bean
+    public Queue failedQueue() {
+        return new Queue(APPOINTMENT_FAILED_QUEUE);
+    }
+
+    @Bean
+    public Queue completeQueue() {
+        return new Queue(APPOINTMENT_COMPLETE_QUEUE);
     }
 
     @Bean
@@ -39,8 +56,29 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding binding() {
-        return BindingBuilder.bind(queue()).to(exchange()).with(routingKey);
+    public Binding mainBinding() {
+        return BindingBuilder.bind(mainQueue()).to(exchange()).with(routingKey);
+    }
+
+    @Bean
+    public Binding confirmBinding() {
+        return BindingBuilder.bind(confirmQueue())
+                .to(exchange())
+                .with("payment.success");
+    }
+
+    @Bean
+    public Binding failedBinding() {
+        return BindingBuilder.bind(failedQueue())
+                .to(exchange())
+                .with("payment.failed");
+    }
+
+    @Bean
+    public Binding completeBinding() {
+        return BindingBuilder.bind(completeQueue())
+                .to(exchange())
+                .with("prescription.created");
     }
 
     @Bean

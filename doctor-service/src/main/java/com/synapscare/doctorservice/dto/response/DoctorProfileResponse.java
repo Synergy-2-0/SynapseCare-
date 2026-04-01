@@ -25,8 +25,10 @@ public class DoctorProfileResponse {
     private BigDecimal consultationFee;
     private String bio;
     private String profileImageUrl;
+    private String licenseDocumentUrl;
     private Boolean isAvailable;
     private VerificationStatus verificationStatus;
+    private String verificationRejectionReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

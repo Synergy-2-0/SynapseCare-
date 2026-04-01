@@ -145,10 +145,12 @@ public class PaymentService {
             case "-1" -> { // Cancelled
                 payment.setStatus(PaymentStatus.CANCELLED);
                 payment.setFailureReason("Payment cancelled by user");
+                eventPublisher.publishPaymentFailed(payment.getAppointmentId(), payment.getPaymentId(), "Payment cancelled by user");
             }
             case "-2" -> { // Failed
                 payment.setStatus(PaymentStatus.FAILED);
                 payment.setFailureReason("Payment failed at gateway");
+                eventPublisher.publishPaymentFailed(payment.getAppointmentId(), payment.getPaymentId(), "Payment failed at gateway");
             }
             case "-3" -> { // Chargedback
                 payment.setStatus(PaymentStatus.REFUNDED);
