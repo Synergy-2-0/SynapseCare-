@@ -17,8 +17,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -195,6 +198,45 @@ public class AppointmentService {
         return appointmentRepository.findByDoctorIdOrderByDateAscTimeAsc(doctorId)
                 .stream()
                 .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<java.time.LocalTime> getBookedSlots(Long doctorId, java.time.LocalDate date) {
+        return appointmentRepository.findByDoctorIdAndDateAndStatusIn(
+                doctorId, 
+                date, 
+                List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED)
+        ).stream()
+         .map(Appointment::getTime)
+         .collect(Collectors.toList());
+    }
+
+    public List<AvailableSlotClientDto> getFilteredAvailableSlots(Long doctorId, java.time.LocalDate date) {
+        // 1. Get base slots from doctor-service
+        List<AvailableSlotClientDto> slots = doctorServiceClient.getAvailableSlots(doctorId, date);
+        
+        // 2. Get booked times from our local DB
+        java.util.Set<java.time.LocalTime> bookedTimes = appointmentRepository.findByDoctorIdAndDateAndStatusIn(
+                doctorId, 
+                date, 
+                List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED)
+        ).stream()
+         .map(com.healthcare.appointment.entity.Appointment::getTime)
+         .collect(Collectors.toSet());
+
+        // 3. Mark slots as unavailable if booked
+        return slots.stream()
+                .map(slot -> {
+                    if (bookedTimes.contains(slot.getStartTime())) {
+                        return AvailableSlotClientDto.builder()
+                                .date(slot.getDate())
+                                .startTime(slot.getStartTime())
+                                .endTime(slot.getEndTime())
+                                .isAvailable(false)
+                                .build();
+                    }
+                    return slot;
+                })
                 .collect(Collectors.toList());
     }
 
