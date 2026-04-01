@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
     ShieldCheck, 
-    ArrowRight, 
     CheckCircle2, 
     UserRound, 
     Stethoscope,
@@ -13,6 +12,7 @@ import {
     Sparkles
 } from 'lucide-react';
 import { authApi } from '../lib/api';
+import toast, { Toaster } from 'react-hot-toast';
 
 const RegisterPage = () => {
     const [role, setRole] = useState('PATIENT');
@@ -27,19 +27,55 @@ const RegisterPage = () => {
         email: '',
         password: '',
         phoneNumber: '',
-        specialization: ''
     });
+    const [fieldErrors, setFieldErrors] = useState({});
+
+    const validateForm = () => {
+        const errors = {};
+        if (!formData.firstName.trim()) errors.firstName = 'First name is required.';
+        if (!formData.lastName.trim()) errors.lastName = 'Last name is required.';
+        if (!formData.username.trim()) errors.username = 'Username is required.';
+        if (!formData.email.trim()) errors.email = 'Email is required.';
+        
+        if (!formData.phoneNumber.trim()) {
+            errors.phoneNumber = 'Contact number is required.';
+        } else if (!formData.phoneNumber.startsWith('+')) {
+            errors.phoneNumber = 'Number must start with +';
+        } else if (formData.phoneNumber.length < 10 || formData.phoneNumber.length > 15) {
+            errors.phoneNumber = 'Number must be between 10 and 15 characters';
+        }
+
+        if (!formData.password) {
+            errors.password = 'Password is required.';
+        } else if (formData.password.length < 8) {
+            errors.password = 'Password must be at least 8 characters.';
+        }
+
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     const handleRegister = async (e) => {
         e.preventDefault();
-        setLoading(true);
         setError('');
+        if (!validateForm()) return;
+        
+        setLoading(true);
         try {
             const endpoint = role === 'PATIENT' ? '/register/patient' : '/register/doctor';
             await authApi.post(endpoint, formData);
-            router.push('/login?registered=true');
+            
+            toast.success("Successfully registered! You may now login and fill in your profile.");
+            setTimeout(() => {
+                router.push('/login?registered=true');
+            }, 1500);
         } catch (err) {
-            setError(err.response?.data?.message || "Registration failed. Please check your details.");
+            const backendErrors = err.response?.data?.errors;
+            if (backendErrors && typeof backendErrors === 'object') {
+                setFieldErrors(prev => ({...prev, ...backendErrors}));
+            } else {
+                setError(err.response?.data?.message || "Registration failed. Please check your details.");
+            }
         } finally {
             setLoading(false);
         }
@@ -51,6 +87,7 @@ const RegisterPage = () => {
                 <title>Create Identity | Clinical Registration | SynapsCare</title>
                 <meta name="description" content="Register as a patient or practitioner on the world's most advanced healthcare network" />
             </Head>
+            <Toaster position="top-right" />
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 selection:bg-indigo-100 selection:text-indigo-900">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,70,229,0.05),transparent_500px)] pointer-events-none" />
             
@@ -157,9 +194,9 @@ const RegisterPage = () => {
                                     placeholder="John"
                                     value={formData.firstName}
                                     onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                                    className="input-field"
-                                    required
+                                    className={`input-field ${fieldErrors.firstName ? 'border-rose-500' : ''}`}
                                 />
+                                {fieldErrors.firstName && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.firstName}</p>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Last Name</label>
@@ -167,9 +204,9 @@ const RegisterPage = () => {
                                     placeholder="Doe"
                                     value={formData.lastName}
                                     onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                                    className="input-field"
-                                    required
+                                    className={`input-field ${fieldErrors.lastName ? 'border-rose-500' : ''}`}
                                 />
+                                {fieldErrors.lastName && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.lastName}</p>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Username</label>
@@ -177,19 +214,31 @@ const RegisterPage = () => {
                                     placeholder="johndoe_123"
                                     value={formData.username}
                                     onChange={(e) => setFormData({...formData, username: e.target.value})}
-                                    className="input-field"
-                                    required
+                                    className={`input-field ${fieldErrors.username ? 'border-rose-500' : ''}`}
                                 />
+                                {fieldErrors.username && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.username}</p>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Contact Terminal</label>
                                 <input
-                                    placeholder="+1 (555) 000-0000"
+                                    type="tel"
+                                    placeholder="+15550000000"
+                                    maxLength="15"
+                                    pattern="^\+[1-9]\d{1,14}$"
+                                    title="Phone number must start with + and contain only numbers (up to 15 digits)"
+                                    onKeyPress={(e) => {
+                                        if (e.target.value.length === 0 && e.key !== '+') {
+                                            e.preventDefault();
+                                        }
+                                        if (e.target.value.length > 0 && !/[0-9]/.test(e.key)) {
+                                            e.preventDefault();
+                                        }
+                                    }}
                                     value={formData.phoneNumber}
                                     onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                                    className="input-field"
-                                    required
+                                    className={`input-field ${fieldErrors.phoneNumber ? 'border-rose-500' : ''}`}
                                 />
+                                {fieldErrors.phoneNumber && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.phoneNumber}</p>}
                             </div>
                             <div className="md:col-span-2 space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Email Node</label>
@@ -198,41 +247,21 @@ const RegisterPage = () => {
                                     placeholder="user@synapsecare.com"
                                     value={formData.email}
                                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                    className="input-field"
-                                    required
+                                    className={`input-field ${fieldErrors.email ? 'border-rose-500' : ''}`}
                                 />
+                                {fieldErrors.email && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.email}</p>}
                             </div>
-                            <div className={`md:col-span-2 space-y-2 ${role === 'DOCTOR' ? '' : 'md:col-span-2'}`}>
+                            <div className="md:col-span-2 space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Access Pass (8+ Chars)</label>
                                 <input
                                     type="password"
                                     placeholder="••••••••••••"
                                     value={formData.password}
                                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                                    className="input-field"
-                                    required
+                                    className={`input-field ${fieldErrors.password ? 'border-rose-500' : ''}`}
                                 />
+                                {fieldErrors.password && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.password}</p>}
                             </div>
-
-                            <AnimatePresence>
-                                {role === 'DOCTOR' && (
-                                    <motion.div 
-                                        initial={{ opacity: 0, height: 0 }} 
-                                        animate={{ opacity: 1, height: 'auto' }} 
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="md:col-span-2 space-y-2 overflow-hidden"
-                                    >
-                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Clinical Specialization</label>
-                                        <input
-                                            placeholder="e.g., Cardiologist, Neurosurgeon"
-                                            value={formData.specialization}
-                                            onChange={(e) => setFormData({...formData, specialization: e.target.value})}
-                                            className="input-field"
-                                            required={role === 'DOCTOR'}
-                                        />
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
 
                             <div className="md:col-span-2 pt-4">
                                 <button
