@@ -56,12 +56,17 @@ public class DoctorService {
             doctor.setLicenseNumber(request.getLicenseNumber());
             doctor.setConsultationFee(request.getConsultationFee());
             doctor.setBio(request.getBio());
-            doctor.setProfileImageUrl(request.getProfileImageUrl());
-            doctor.setIsAvailable(true); // Now available for appointments (after verification)
+            if (request.getProfileImageUrl() != null) {
+                doctor.setProfileImageUrl(request.getProfileImageUrl());
+            }
+            if (request.getLicenseDocumentUrl() != null) {
+                doctor.setLicenseDocumentUrl(request.getLicenseDocumentUrl());
+            }
+            // Keep isAvailable false until APPROVED via RabbitMQ event
             // Keep existing verification status
 
         } else {
-            // Create new profile (legacy path, shouldn't happen with new flow)
+            // Create new profile
             log.info("Creating new doctor profile for userId: {}", userId);
 
             if (doctorRepository.existsByLicenseNumber(request.getLicenseNumber())) {
@@ -77,7 +82,8 @@ public class DoctorService {
             doctor.setConsultationFee(request.getConsultationFee());
             doctor.setBio(request.getBio());
             doctor.setProfileImageUrl(request.getProfileImageUrl());
-            doctor.setIsAvailable(true);
+            doctor.setLicenseDocumentUrl(request.getLicenseDocumentUrl());
+            doctor.setIsAvailable(false); // Not available until APPROVED
             doctor.setVerificationStatus(VerificationStatus.PENDING);
         }
 
@@ -116,6 +122,9 @@ public class DoctorService {
         }
         if (request.getProfileImageUrl() != null) {
             doctor.setProfileImageUrl(request.getProfileImageUrl());
+        }
+        if (request.getLicenseDocumentUrl() != null) {
+            doctor.setLicenseDocumentUrl(request.getLicenseDocumentUrl());
         }
 
         Doctor updatedDoctor = doctorRepository.save(doctor);
@@ -373,7 +382,8 @@ public class DoctorService {
 
     /**
      * Get available slots for a doctor - PUBLIC endpoint
-     * Only returns slots if doctor is APPROVED and available
+     * Only returns slots if doctor is APPROVED and available.
+     * Generates 30-minute slots from general or specific availability.
      */
     public List<AvailableSlotResponse> getAvailableSlots(Long doctorId, LocalDate date) {
         Doctor doctor = doctorRepository.findById(doctorId)
@@ -381,18 +391,57 @@ public class DoctorService {
 
         // Security: Only return slots for APPROVED and available doctors
         if (!doctor.getIsAvailable() || doctor.getVerificationStatus() != VerificationStatus.APPROVED) {
+            log.warn("Doctor {} is not available or not yet approved for public scheduling", doctorId);
             return List.of();
         }
 
-        // Check if there's a schedule override for this date
-        return scheduleRepository.findByDoctorIdAndDate(doctorId, date)
-                .map(schedule -> List.of(AvailableSlotResponse.builder()
-                        .date(schedule.getDate())
-                        .startTime(schedule.getStartTime())
-                        .endTime(schedule.getEndTime())
-                        .isAvailable(schedule.getIsAvailable())
-                        .build()))
-                .orElse(List.of());
+        // 1. Check if there's a schedule override for this specific date
+        List<DoctorSchedule> overrides = scheduleRepository.findByDoctorIdAndDateBetween(doctorId, date, date);
+        if (!overrides.isEmpty()) {
+            boolean dayOff = overrides.stream().anyMatch(s -> Boolean.FALSE.equals(s.getIsAvailable()));
+            if (dayOff) {
+                log.info("Doctor {} marked as unavailable for {}", doctorId, date);
+                return List.of();
+            }
+            
+            // If they have a specific working range for this day, generate slots from it
+            return overrides.stream()
+                    .filter(s -> Boolean.TRUE.equals(s.getIsAvailable()))
+                    .flatMap(s -> generate30MinSlots(date, s.getStartTime(), s.getEndTime()).stream())
+                    .collect(Collectors.toList());
+        }
+
+        // 2. If no override, use weekly general availability
+        com.synapscare.doctorservice.enums.DayOfWeek dow = 
+            com.synapscare.doctorservice.enums.DayOfWeek.valueOf(date.getDayOfWeek().name());
+            
+        List<DoctorAvailability> weeklySlots = availabilityRepository.findByDoctorIdAndDayOfWeek(doctorId, dow);
+        if (weeklySlots.isEmpty()) {
+            log.info("No weekly availability found for doctor {} on {}", doctorId, dow);
+            return List.of();
+        }
+
+        return weeklySlots.stream()
+                .filter(DoctorAvailability::getIsActive)
+                .flatMap(slot -> generate30MinSlots(date, slot.getStartTime(), slot.getEndTime()).stream())
+                .collect(Collectors.toList());
+    }
+
+    private List<AvailableSlotResponse> generate30MinSlots(LocalDate date, java.time.LocalTime start, java.time.LocalTime end) {
+        List<AvailableSlotResponse> slots = new java.util.ArrayList<>();
+        if (start == null || end == null) return slots;
+
+        java.time.LocalTime current = start;
+        while (current.plusMinutes(30).isBefore(end) || current.plusMinutes(30).equals(end)) {
+            slots.add(AvailableSlotResponse.builder()
+                    .date(date)
+                    .startTime(current)
+                    .endTime(current.plusMinutes(30))
+                    .isAvailable(true)
+                    .build());
+            current = current.plusMinutes(30);
+        }
+        return slots;
     }
 
     @Transactional
@@ -433,8 +482,10 @@ public class DoctorService {
                 .consultationFee(doctor.getConsultationFee())
                 .bio(doctor.getBio())
                 .profileImageUrl(doctor.getProfileImageUrl())
+                .licenseDocumentUrl(doctor.getLicenseDocumentUrl())
                 .isAvailable(doctor.getIsAvailable())
                 .verificationStatus(doctor.getVerificationStatus())
+                .verificationRejectionReason(doctor.getVerificationRejectionReason())
                 .createdAt(doctor.getCreatedAt())
                 .updatedAt(doctor.getUpdatedAt())
                 .build();

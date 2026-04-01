@@ -1,4 +1,4 @@
-package com.healthcare.appointment.mq;
+package com.healthcare.appointment.messaging;
 
 import com.healthcare.appointment.config.RabbitMQConfig;
 import com.healthcare.appointment.service.AppointmentService;
@@ -30,7 +30,22 @@ public class PaymentEventListener {
         }
     }
 
-    @RabbitListener(queues = "appointment.complete.queue")
+    @RabbitListener(queues = RabbitMQConfig.APPOINTMENT_FAILED_QUEUE)
+    public void handlePaymentFailed(Map<String, Object> event) {
+        log.info("Received PAYMENT_FAILED event: {}", event);
+        try {
+            Long appointmentId = Long.valueOf(event.get("appointmentId").toString());
+            String reason = event.get("reason") != null ? event.get("reason").toString() : "Payment Failed";
+            
+            // Cancel or reject the appointment
+            appointmentService.cancelAppointment(appointmentId);
+            log.info("Successfully cancelled appointment {} due to payment failure: {}", appointmentId, reason);
+        } catch (Exception e) {
+            log.error("Error cancelling appointment from payment failure event: {}", e.getMessage());
+        }
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.APPOINTMENT_COMPLETE_QUEUE)
     public void handlePrescriptionCreated(String appointmentId) {
         log.info("Received PRESCRIPTION_CREATED event for appointment: {}", appointmentId);
         try {

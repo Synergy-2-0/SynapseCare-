@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Image as ImageIcon, Upload, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { FileText, Image as ImageIcon, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
 import { useRouter } from 'next/router';
-import { doctorApi, doctorFileApi } from '../../lib/api';
+import { doctorApi } from '../../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
+import { SPECIALIZATIONS, SPECIALIZATION_LABELS } from '../../constants/specializations';
 import { normalizeVerificationStatus, VERIFICATION_STATUS } from '../../lib/doctorVerification';
 
 export default function DoctorSetupPage() {
@@ -21,6 +22,8 @@ export default function DoctorSetupPage() {
     const [licenseFile, setLicenseFile] = useState(null);
     const [photoFile, setPhotoFile] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);
+    const [existingProfileImageUrl, setExistingProfileImageUrl] = useState(null);
+    const [existingLicenseDocumentUrl, setExistingLicenseDocumentUrl] = useState(null);
 
     // Form fields mapped to Doctor.java & CreateDoctorProfileRequest
     const [formData, setFormData] = useState({
@@ -31,6 +34,7 @@ export default function DoctorSetupPage() {
         consultationFee: '',
         bio: ''
     });
+    const [fieldErrors, setFieldErrors] = useState({});
 
     useEffect(() => {
         const fetchInitialProfile = async () => {
@@ -74,9 +78,16 @@ export default function DoctorSetupPage() {
                         localStorage.setItem('user_verificationStatus', VERIFICATION_STATUS.APPROVED);
                     }
 
-                    if (res.data.profileImageUrl) setPhotoPreview(res.data.profileImageUrl);
+                    if (res.data.profileImageUrl) {
+                        setPhotoPreview(res.data.profileImageUrl);
+                        setExistingProfileImageUrl(res.data.profileImageUrl);
+                    }
+
+                    if (res.data.licenseDocumentUrl) {
+                        setExistingLicenseDocumentUrl(res.data.licenseDocumentUrl);
+                    }
                 }
-            } catch (err) {
+            } catch {
                 console.log("No profile found yet, using empty form");
             } finally {
                 setIsProfileLoaded(true);
@@ -148,32 +159,65 @@ export default function DoctorSetupPage() {
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
+        setFieldErrors({});
+        
+        let errors = {};
+        if (!formData.licenseNumber?.trim()) errors.licenseNumber = "Medical License Number is required.";
+        if (!formData.specialization) errors.specialization = "Specialization is required.";
+        if (!formData.consultationFee || parseFloat(formData.consultationFee) <= 0) {
+            errors.consultationFee = "Consultation Fee must be greater than 0.";
+        }
+        if (formData.experience && parseInt(formData.experience) < 0) {
+            errors.experience = "Experience cannot be negative.";
+        }
+        
+        if (Object.keys(errors).length > 0) {
+            setFieldErrors(errors);
+            return;
+        }
+
         setIsLoading(true);
 
         try {
             let profileImageUrl = photoPreview;
+            let licenseImageUrl = null;
+
+            // Helper for Cloudinary Unsigned Upload
+            const uploadToCloudinary = async (file) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'synapcare_preset');
+                // Using cloud name provided
+                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dao7fkewx';
+                
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.secure_url) {
+                    return data.secure_url;
+                }
+                throw new Error(data.error?.message || 'Failed to upload image');
+            };
 
             // 1. Upload files if selected
             if (photoFile) {
-                const photoFD = new FormData();
-                photoFD.append('file', photoFile);
-                photoFD.append('type', 'profile-photo');
-                const photoRes = await doctorFileApi.post('/profile/upload', photoFD);
-                profileImageUrl = photoRes.data.url;
+                profileImageUrl = await uploadToCloudinary(photoFile);
             }
 
             if (licenseFile) {
-                const licenseFD = new FormData();
-                licenseFD.append('file', licenseFile);
-                licenseFD.append('type', 'medical-license');
-                await doctorFileApi.post('/profile/upload', licenseFD);
-                // We just upload license, usually we don't display it as a public URL for doctor
+                licenseImageUrl = await uploadToCloudinary(licenseFile);
             }
 
-            // 2. Submit Profile Data
+            // 2. Build payload — use Cloudinary URL if uploaded, else existing DB URL
+            const finalProfileImageUrl = photoFile ? profileImageUrl : existingProfileImageUrl;
+            const finalLicenseImageUrl = licenseFile ? licenseImageUrl : existingLicenseDocumentUrl;
+
             const payload = {
                 ...formData,
-                profileImageUrl,
+                profileImageUrl: finalProfileImageUrl,
+                licenseDocumentUrl: finalLicenseImageUrl,
                 experience: parseInt(formData.experience) || 0,
                 consultationFee: parseFloat(formData.consultationFee) || 0
             };
@@ -192,7 +236,12 @@ export default function DoctorSetupPage() {
             toast.success("Profile submitted successfully!");
         } catch (err) {
             console.error("Submission error:", err);
-            toast.error(err.response?.data?.message || "Failed to submit profile. Please try again.");
+            const backendErrors = err.response?.data?.errors;
+            if (backendErrors && typeof backendErrors === 'object') {
+                setFieldErrors(backendErrors);
+            } else {
+                toast.error(err.response?.data?.message || "Failed to submit profile. Please try again.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -322,7 +371,7 @@ export default function DoctorSetupPage() {
                                 )}
                                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                                     <div className={`inline-block bg-white px-6 py-3 rounded-lg text-sm shadow-sm font-medium font-mono ${verificationStatus === VERIFICATION_STATUS.REJECTED ? 'border border-rose-100 text-rose-800' : verificationStatus === VERIFICATION_STATUS.APPROVED ? 'border border-emerald-100 text-emerald-800' : 'border border-amber-100 text-amber-800'}`}>
-                                        Status: {verificationStatus === VERIFICATION_STATUS.PENDING ? 'UNDER_REVIEW' : verificationStatus}
+                                        Status: {verificationStatus === VERIFICATION_STATUS.PENDING ? 'UNDER REVIEW' : verificationStatus.replace(/_/g, ' ')}
                                     </div>
                                     {verificationStatus === VERIFICATION_STATUS.APPROVED ? (
                                         <button
@@ -359,33 +408,52 @@ export default function DoctorSetupPage() {
 
                                         <div>
                                             <label className="block text-sm font-semibold text-slate-700 mb-1">Medical License Number *</label>
-                                            <input required name="licenseNumber" value={formData.licenseNumber} onChange={handleInputChange} type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all" placeholder="e.g. MED-123456" />
+                                            <input required name="licenseNumber" value={formData.licenseNumber} onChange={handleInputChange} type="text" className={`w-full bg-slate-50 border ${fieldErrors.licenseNumber ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all`} placeholder="e.g. MED-123456" />
+                                            {fieldErrors.licenseNumber && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.licenseNumber}</p>}
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-semibold text-slate-700 mb-1">Specialization *</label>
-                                            <input required name="specialization" value={formData.specialization} onChange={handleInputChange} type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all" placeholder="e.g. Cardiologist" />
+                                             <select 
+                                                 required 
+                                                 name="specialization" 
+                                                 value={formData.specialization} 
+                                                 onChange={handleInputChange} 
+                                                 className={`w-full bg-slate-50 border ${fieldErrors.specialization ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all appearance-none cursor-pointer`}
+                                             >
+                                                 <option value="" disabled>Select Specialization</option>
+                                                 {SPECIALIZATIONS.map(spec => (
+                                                     <option key={spec} value={spec}>
+                                                         {SPECIALIZATION_LABELS[spec]}
+                                                     </option>
+                                                 ))}
+                                             </select>
+                                             {fieldErrors.specialization && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.specialization}</p>}
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-semibold text-slate-700 mb-1">Qualifications</label>
-                                            <input name="qualifications" value={formData.qualifications} onChange={handleInputChange} type="text" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all" placeholder="e.g. MD, MBBS, FACC" />
+                                            <input name="qualifications" value={formData.qualifications} onChange={handleInputChange} type="text" className={`w-full bg-slate-50 border ${fieldErrors.qualifications ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all`} placeholder="e.g. MD, MBBS, FACC" />
+                                            {fieldErrors.qualifications && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.qualifications}</p>}
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-sm font-semibold text-slate-700 mb-1">Years of Experience</label>
-                                                <input name="experience" value={formData.experience} onChange={handleInputChange} type="number" min="0" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all" placeholder="0" />
+                                                <input name="experience" value={formData.experience} onChange={handleInputChange} type="number" min="0" className={`w-full bg-slate-50 border ${fieldErrors.experience ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all`} placeholder="0" />
+                                                {fieldErrors.experience && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.experience}</p>}
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-semibold text-slate-700 mb-1">Consultation Fee ($) *</label>
-                                                <input required name="consultationFee" value={formData.consultationFee} onChange={handleInputChange} type="number" step="0.01" min="0.01" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all" placeholder="150.00" />
+                                                <input required name="consultationFee" value={formData.consultationFee} onChange={handleInputChange} type="number" step="0.01" min="0.01" className={`w-full bg-slate-50 border ${fieldErrors.consultationFee ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all`} placeholder="150.00" />
+                                                {fieldErrors.consultationFee && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.consultationFee}</p>}
                                             </div>
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-semibold text-slate-700 mb-1">Professional Bio</label>
-                                            <textarea name="bio" value={formData.bio} onChange={handleInputChange} rows="4" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all resize-none" placeholder="Briefly describe your background, approach to patient care, etc."></textarea>
+                                            <textarea name="bio" value={formData.bio} onChange={handleInputChange} rows="4" className={`w-full bg-slate-50 border ${fieldErrors.bio ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-3 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all resize-none`} placeholder="Briefly describe your background, approach to patient care, etc."></textarea>
+                                            {fieldErrors.bio && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.bio}</p>}
                                         </div>
                                     </div>
 

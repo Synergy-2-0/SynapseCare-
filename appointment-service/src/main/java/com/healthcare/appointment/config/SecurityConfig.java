@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/appointments/doctors/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/appointments/doctor/*/available-slots").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/appointments/book").hasAnyRole("PATIENT", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/appointments/*/reschedule").hasAnyRole("PATIENT", "ADMIN")

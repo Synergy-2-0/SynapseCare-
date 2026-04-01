@@ -124,6 +124,41 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Object> handleDataIntegrityViolationException(
+            org.springframework.dao.DataIntegrityViolationException ex,
+            HttpServletRequest request
+    ) {
+        log.error("Data integrity violation: {}", ex.getMessage());
+        
+        if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
+            String constraintMessage = ex.getCause().getMessage();
+            if (constraintMessage != null && constraintMessage.contains("license_number")) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", HttpStatus.CONFLICT.value());
+                response.put("error", "Conflict");
+                response.put("message", "Validation Failed");
+                
+                Map<String, String> errors = new HashMap<>();
+                errors.put("licenseNumber", "The provided medical license number is already registered.");
+                response.put("errors", errors);
+                
+                response.put("timestamp", LocalDateTime.now());
+                response.put("path", request.getRequestURI());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+            }
+        }
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .status(HttpStatus.CONFLICT.value())
+                .message("A record with the given unique identifier already exists.")
+                .error("Conflict")
+                .timestamp(LocalDateTime.now())
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(
             Exception ex,

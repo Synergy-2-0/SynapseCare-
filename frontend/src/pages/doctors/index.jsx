@@ -27,6 +27,7 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { publicDoctorApi } from '../../lib/api';
+import { SPECIALIZATIONS, SPECIALIZATION_LABELS } from '../../constants/specializations';
 
 // Synchronizing with real API doctor registry
 const DoctorsList = () => {
@@ -75,7 +76,7 @@ const DoctorsList = () => {
         (activeFilter === 'ALL' || doc.specialization.toUpperCase() === activeFilter)
     );
 
-    const specializations = ['ALL', 'CARDIOLOGY', 'NEUROLOGY', 'PEDIATRICS', 'DERMATOLOGY'];
+    const specializationFilters = ['ALL', ...SPECIALIZATIONS];
 
     return (
         <>
@@ -148,17 +149,17 @@ const DoctorsList = () => {
                          <span className="text-[10px] font-black uppercase tracking-widest text-white leading-none">Domain Select</span>
                      </div>
                      <div className="flex gap-3">
-                         {specializations.map((spec) => (
+                         {specializationFilters.map((spec) => (
                              <button 
                                 key={spec} 
                                 onClick={() => setActiveFilter(spec)}
                                 className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
                                     activeFilter === spec 
                                     ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100' 
-                                    : 'bg-white border border-slate-100 text-slate-400 hover:border-indigo-400 hover:text-indigo-600'
+                                     : 'bg-white border border-slate-100 text-slate-400 hover:border-indigo-400 hover:text-indigo-600'
                                 }`}
                              >
-                                 {spec}
+                                 {spec === 'ALL' ? 'ALL' : (SPECIALIZATION_LABELS[spec] || spec)}
                              </button>
                          ))}
                      </div>
@@ -245,7 +246,7 @@ const DoctorsList = () => {
                      </div>
                      <div className="relative z-10 max-w-xl">
                           <Badge variant="success" className="mb-6">ADVANCED RECRUITMENT NODE</Badge>
-                          <h4 className="text-4xl font-black tracking-tighter uppercase italic tracking-widest mb-6">Can't Find Your <br /> <span className="text-indigo-400">Specialist Node?</span></h4>
+                          <h4 className="text-4xl font-black tracking-tighter uppercase italic tracking-widest mb-6">Can&apos;t Find Your <br /> <span className="text-indigo-400">Specialist Node?</span></h4>
                           <p className="text-slate-400 font-medium text-base mb-10 leading-relaxed italic">Our platform uses autonomous intelligence to identify medical professionals globally. If you require a custom search cluster, deploy a request to our infrastructure team.</p>
                           <Button variant="secondary" size="lg" icon={Zap} className="px-12">Deploy Custom Search Cluster</Button>
                      </div>
