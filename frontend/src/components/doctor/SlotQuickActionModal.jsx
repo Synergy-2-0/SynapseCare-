@@ -17,21 +17,22 @@ const SlotQuickActionModal = ({ slot, doctorId, onClose, onSlotBlocked }) => {
 
         try {
             setLoading(true);
-            // Format time for backend (e.g., "09:00:00")
-            const timeStr = slot.timeStr.replace(' ', '').toLowerCase();
-            const startTime = timeStr.includes('pm') 
-                ? (parseInt(timeStr) + 12).toString().padStart(2, '0') + ':00:00'
-                : parseInt(timeStr).toString().padStart(2, '0') + ':00:00';
-            
             const payload = {
-                appointmentDate: format(slot.day, 'yyyy-MM-dd'),
-                appointmentTime: startTime,
-                status: 'BLOCKED',
+                date: format(slot.day, 'yyyy-MM-dd'),
+                time: (() => {
+                    const timeText = slot.timeStr.replace(/\s+/g, ' ').trim();
+                    const [timePart, periodPart] = timeText.split(' ');
+                    const [hourPart] = timePart.split(':');
+                    let hour = parseInt(hourPart, 10);
+                    const period = (periodPart || '').toUpperCase();
+                    if (period === 'PM' && hour < 12) hour += 12;
+                    if (period === 'AM' && hour === 12) hour = 0;
+                    return `${String(hour).padStart(2, '0')}:00:00`;
+                })(),
                 reason: 'Doctor blocked this slot'
             };
 
-            // Create a blocked appointment in the backend
-            await appointmentApi.post(`/`, payload);
+            await appointmentApi.post(`/schedule/doctor/${doctorId}/blocked-slots`, payload);
             
             toast.success(`Slot blocked on ${format(slot.day, 'MMM d')} at ${slot.timeStr}`);
             if (onSlotBlocked) {

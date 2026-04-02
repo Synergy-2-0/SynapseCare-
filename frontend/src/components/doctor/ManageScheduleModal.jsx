@@ -19,7 +19,7 @@ const Badge = ({ children, variant }) => {
     );
 };
 
-const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
+const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
     const [activeTab, setActiveTab] = useState('weekly'); // 'weekly' | 'leaves'
     const [loading, setLoading] = useState(false);
 
@@ -107,6 +107,11 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
     };
 
     const handleAddLeave = async () => {
+        if (!doctorId) {
+            toast.error('Doctor profile is still loading. Please try again.');
+            return;
+        }
+
         if (!newLeave.start || !newLeave.end || !newLeave.reason) {
             toast.error('Please fill in all leave details.');
             return;
@@ -123,7 +128,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
                 try {
                     // Better approach: fetch peers from doctor-service
                     const peersRes = await fetch(`${process.env.NEXT_PUBLIC_DOCTOR_SERVICE_URL || '/api/doctors'}/${doctorId}/peers?specialization=General`, { 
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
                     }).then(r => r.json());
                     if (Array.isArray(peersRes)) setPeers(peersRes);
                 } catch (pe) { console.error("Peer fetch failed", pe); }
@@ -204,6 +209,11 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
     };
 
     const handleSave = async () => {
+        if (!doctorId) {
+            toast.error('Doctor profile is still loading. Please try again.');
+            return;
+        }
+
         try {
             setLoading(true);
             const payload = schedule.map(s => ({
@@ -216,6 +226,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
                 isWorking: s.active
             }));
             await appointmentApi.post(`/schedule/doctor/${doctorId}/availability`, payload);
+            if (onSaved) onSaved();
             toast.success('Availability settings saved successfully!');
             onClose();
         } catch (error) {
