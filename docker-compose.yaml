@@ -94,7 +94,9 @@ services:
       - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
       - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
+      - 'SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect'
       - 'SPRING_APPLICATION_NAME=doctor-service'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
       - 'SPRING_RABBITMQ_PORT=5672'
@@ -102,6 +104,8 @@ services:
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
       - 'APP_AUTH_SERVICE_URL=http://auth-service:8081'
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       auth-service:
