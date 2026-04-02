@@ -22,6 +22,33 @@ public class DoctorScheduleController {
 
     private final DoctorAvailabilityRepository availabilityRepository;
     private final DoctorLeaveRepository leaveRepository;
+    private final com.healthcare.appointment.service.AppointmentService appointmentService;
+
+    @GetMapping("/doctor/{doctorId}/conflicts")
+    public ResponseEntity<List<com.healthcare.appointment.dto.AppointmentDto>> getConflicts(
+            @PathVariable("doctorId") Long doctorId,
+            @RequestParam("start") String start,
+            @RequestParam("end") String end) {
+        return ResponseEntity.ok(appointmentService.findConflicts(doctorId, java.time.LocalDate.parse(start), java.time.LocalDate.parse(end)));
+    }
+
+    @PostMapping("/bulk-reassign")
+    public ResponseEntity<?> bulkReassign(@RequestBody java.util.Map<String, Object> req) {
+        List<Integer> idsInt = (List<Integer>) req.get("appointmentIds");
+        List<Long> ids = idsInt.stream().map(Integer::longValue).collect(Collectors.toList());
+        Long targetDoctorId = Long.valueOf(req.get("targetDoctorId").toString());
+        appointmentService.bulkReassign(ids, targetDoctorId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/bulk-cancel")
+    public ResponseEntity<?> bulkCancel(@RequestBody java.util.Map<String, Object> req) {
+        List<Integer> idsInt = (List<Integer>) req.get("appointmentIds");
+        List<Long> ids = idsInt.stream().map(Integer::longValue).collect(Collectors.toList());
+        String reason = req.get("reason").toString();
+        appointmentService.bulkCancel(ids, reason);
+        return ResponseEntity.ok().build();
+    }
 
     @GetMapping("/doctor/{doctorId}/availability")
     public ResponseEntity<List<DoctorAvailabilityDto>> getAvailability(@PathVariable("doctorId") Long doctorId) {

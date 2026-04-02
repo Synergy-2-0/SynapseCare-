@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { doctorApi } from '@/lib/api';
+import { appointmentApi, doctorApi } from '@/lib/api';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { isDoctorApproved } from '@/lib/doctorVerification';
-import PatientRosterTab from '@/components/doctor/PatientRosterTab';
+import ScheduleTab from '@/components/doctor/ScheduleTab';
 import PatientContextDrawer from '@/components/doctor/PatientContextDrawer';
 
-const PatientsPage = () => {
+const SchedulePage = () => {
+    const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -30,8 +31,11 @@ const PatientsPage = () => {
                         router.replace('/doctor/setup');
                         return;
                     }
+
+                    const apptRes = await appointmentApi.get(`/doctor/${id}`);
+                    setAppointments((apptRes.data?.data || apptRes.data || []).filter(a => a.status !== 'CANCELLED'));
                 } catch (err) {
-                    console.error("Failed to check profile", err);
+                    console.error("Failed to fetch schedule data", err);
                 } finally {
                     setLoading(false);
                 }
@@ -45,15 +49,16 @@ const PatientsPage = () => {
     return (
         <DashboardLayout>
             <Head>
-                <title>My Patients | SynapsCare Doctor</title>
+                <title>Schedule | SynapsCare Doctor</title>
             </Head>
             <div className="relative">
-                <PatientRosterTab 
-                    userData={userData}
-                    onViewPatient={(appt) => {
+                <ScheduleTab 
+                    appointments={appointments} 
+                    doctorId={userData?.id}
+                    onAppointmentClick={(appt) => {
                         setSelectedAppointment(appt);
                         setIsDrawerOpen(true);
-                    }} 
+                    }}
                 />
                 <PatientContextDrawer 
                     isOpen={isDrawerOpen} 
@@ -65,4 +70,4 @@ const PatientsPage = () => {
     );
 };
 
-export default PatientsPage;
+export default SchedulePage;
