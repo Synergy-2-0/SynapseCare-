@@ -4,10 +4,12 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.math.BigDecimal;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UpdateDoctorProfileRequest {
 
     @Size(max = 255)
@@ -29,4 +31,6 @@ public class UpdateDoctorProfileRequest {
     private String bio;
 
     private String profileImageUrl;
+
+    private String licenseDocumentUrl;
 }

@@ -1,14 +1,18 @@
-﻿import React, { useState, useContext, useMemo } from 'react';
+﻿import React, { useState, useContext, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import DashboardLayout from '../../../components/layout/DashboardLayout';       
 import Header from '../../../components/layout/Header';
 import AppointmentCard from '../../../components/doctor/AppointmentCard';       
 import { Search, Calendar as CalendarIcon, Filter, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MockDataContext } from '../../../context/MockDataContext';
+import { doctorApi } from '../../../lib/api';
+import { isDoctorApproved } from '../../../lib/doctorVerification';
 
 const TABS = ['All', 'Pending', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled'];
 
 export default function DoctorAppointments() {
+    const router = useRouter();
     const { appointments, isLoading, updateAppointmentStatus } = useContext(MockDataContext);
     const [activeTab, setActiveTab] = useState('Pending');
     const [searchQuery, setSearchQuery] = useState('');
@@ -20,6 +24,28 @@ export default function DoctorAppointments() {
             return true;
         });
     }, [appointments, activeTab, searchQuery]);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const validateAccess = async () => {
+            try {
+                const res = await doctorApi.get('/profile/me');
+                if (mounted && !isDoctorApproved(res?.data?.verificationStatus)) {
+                    router.replace('/doctor/setup');
+                }
+            } catch {
+                if (mounted) {
+                    router.replace('/doctor/setup');
+                }
+            }
+        };
+
+        validateAccess();
+        return () => {
+            mounted = false;
+        };
+    }, [router]);
 
     if (isLoading && appointments.length === 0) {
         return (

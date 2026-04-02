@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -75,10 +77,24 @@ public class AppointmentController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Doctor appointments fetched", appointments));
     }
 
+    @GetMapping("/doctor/{doctorId}/available-slots")
+    public ResponseEntity<List<com.healthcare.appointment.dto.client.AvailableSlotClientDto>> getAvailableSlots(
+            @PathVariable("doctorId") Long doctorId,
+            @RequestParam("date") java.time.LocalDate date) {
+        return ResponseEntity.ok(appointmentService.getFilteredAvailableSlots(doctorId, date));
+    }
+
     @GetMapping("/doctor/{doctorId}/patients")
     public ResponseEntity<ApiResponse<List<com.healthcare.appointment.dto.client.PatientClientDto>>> getPatientsByDoctor(@PathVariable("doctorId") Long doctorId) {
         List<com.healthcare.appointment.dto.client.PatientClientDto> patients = appointmentService.getPatientsByDoctor(doctorId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Doctor's patients fetched successfully", patients));
+    }
+
+    @GetMapping("/doctor/{doctorId}/booked-slots")
+    public ResponseEntity<List<java.time.LocalTime>> getBookedSlots(
+            @PathVariable("doctorId") Long doctorId,
+            @RequestParam("date") java.time.LocalDate date) {
+        return ResponseEntity.ok(appointmentService.getBookedSlots(doctorId, date));
     }
 
     @GetMapping("/doctors/search")

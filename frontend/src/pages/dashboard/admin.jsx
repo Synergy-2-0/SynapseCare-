@@ -102,6 +102,7 @@ const AdminDashboard = () => {
     const [processingId, setProcessingId] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedVerificationDoctorId, setSelectedVerificationDoctorId] = useState('');
 
     useEffect(() => {
         if (!router.isReady) {
@@ -379,6 +380,76 @@ const AdminDashboard = () => {
         });
     }, [patients, searchTerm]);
 
+    const pendingDoctorProfileByUserId = useMemo(() => {
+        const map = new Map();
+        doctorDirectory.forEach((doctor) => {
+            if (doctor?.userId) {
+                map.set(String(doctor.userId), doctor);
+            }
+        });
+        return map;
+    }, [doctorDirectory]);
+
+    const mergedPendingDoctors = useMemo(() => {
+        return filteredPendingDoctors
+            .map((doctorUser) => {
+                const profile = pendingDoctorProfileByUserId.get(String(doctorUser.id)) || null;
+                console.log('Merging doctor:', doctorUser.id, 'with profile:', profile);
+                return {
+                    ...doctorUser,
+                    doctorProfile: profile
+                };
+            });
+    }, [filteredPendingDoctors, pendingDoctorProfileByUserId]);
+
+    const selectedPendingDoctor = useMemo(() => {
+        if (!selectedVerificationDoctorId) {
+            return mergedPendingDoctors[0] || null;
+        }
+
+        return mergedPendingDoctors.find((doctor) => String(doctor.id) === String(selectedVerificationDoctorId)) || mergedPendingDoctors[0] || null;
+    }, [mergedPendingDoctors, selectedVerificationDoctorId]);
+
+    const selectedDoctorDocuments = useMemo(() => {
+        const profile = selectedPendingDoctor?.doctorProfile;
+        if (!profile) {
+            return [];
+        }
+
+        const docs = [];
+        const pushIfPresent = (label, value) => {
+            if (value) {
+                docs.push({ label, value: String(value) });
+            }
+        };
+
+        pushIfPresent('Profile Photo', profile.profileImageUrl);
+        pushIfPresent('License Document', profile.licenseDocumentUrl || profile.licenseDocumentUrl || profile.medicalLicenseUrl || profile.licenseFileUrl || profile.licenseUrl);
+
+        if (Array.isArray(profile.documents)) {
+            profile.documents.forEach((doc, idx) => {
+                if (doc?.url) {
+                    docs.push({
+                        label: doc.type || `Document ${idx + 1}`,
+                        value: String(doc.url)
+                    });
+                }
+            });
+        }
+
+        return docs;
+    }, [selectedPendingDoctor]);
+
+    useEffect(() => {
+        if (activeTab !== 'verifications') {
+            return;
+        }
+
+        if (!selectedVerificationDoctorId && mergedPendingDoctors.length > 0) {
+            setSelectedVerificationDoctorId(String(mergedPendingDoctors[0].id));
+        }
+    }, [activeTab, mergedPendingDoctors, selectedVerificationDoctorId]);
+
     const verifyDoctor = async (doctorId, status) => {
         try {
             setProcessingId(doctorId);
@@ -564,37 +635,53 @@ const AdminDashboard = () => {
                 )}
 
                 {activeTab === 'verifications' && (
+                    <div className="space-y-6">
                     <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                        <table className="w-full text-left">
+                        <table className="w-full text-left min-w-[980px]">
                             <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                                 <tr>
                                     <th className="px-6 py-4">Doctor</th>
                                     <th className="px-6 py-4">Email</th>
+                                    <th className="px-6 py-4">Specialization</th>
+                                    <th className="px-6 py-4">License</th>
                                     <th className="px-6 py-4">Current Status</th>
                                     <th className="px-6 py-4 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredPendingDoctors.length === 0 && (
+                                {mergedPendingDoctors.length === 0 && (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-14 text-center text-slate-500 font-semibold">
+                                        <td colSpan={6} className="px-6 py-14 text-center text-slate-500 font-semibold">
                                             No pending doctors found.
                                         </td>
                                     </tr>
                                 )}
 
-                                {filteredPendingDoctors.map((doctor) => (
-                                    <tr key={doctor.id} className="hover:bg-slate-50/70 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-slate-800">{getUserLabel(doctor)}</td>
-                                        <td className="px-6 py-4 text-sm font-medium text-slate-600">{doctor.email || '-'}</td>
+                                {mergedPendingDoctors.map((doctor) => (
+                                    <tr 
+                                        key={doctor.id} 
+                                        className={`hover:bg-indigo-50/50 cursor-pointer transition-all border-l-4 ${selectedVerificationDoctorId === String(doctor.id) ? 'bg-indigo-50/70 border-l-indigo-500' : 'border-l-transparent'}`}
+                                        onClick={() => setSelectedVerificationDoctorId(String(doctor.id))}
+                                    >
+                                        <td className="px-6 py-4 font-bold text-slate-900">
+                                            {getUserLabel(doctor)}
+                                            {!doctor.doctorProfile && <span className="ml-2 text-[10px] text-rose-500 font-black uppercase tracking-tighter bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">No Profile In DB</span>}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm font-semibold text-slate-500">{doctor.email || '-'}</td>
+                                        <td className="px-6 py-4 text-sm font-bold text-slate-800">{doctor.doctorProfile?.specialization || '-'}</td>
+                                        <td className="px-6 py-4 text-sm font-black text-indigo-500">{doctor.doctorProfile?.licenseNumber || '-'}</td>
                                         <td className="px-6 py-4">
-                                            <Badge variant="warning" size="sm">Pending</Badge>
+                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 rounded-full w-fit border border-amber-100">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">Under Review</span>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex gap-2 justify-end">
+                                            <div className="flex gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
                                                 <Button
-                                                    size="sm"
+                                                    size="xs"
                                                     variant="primary"
+                                                    className="font-black px-4 shadow-sm"
                                                     icon={CheckCircle2}
                                                     loading={processingId === doctor.id}
                                                     onClick={() => verifyDoctor(doctor.id, 'APPROVED')}
@@ -602,8 +689,9 @@ const AdminDashboard = () => {
                                                     Approve
                                                 </Button>
                                                 <Button
-                                                    size="sm"
+                                                    size="xs"
                                                     variant="danger"
+                                                    className="font-black px-4 shadow-sm"
                                                     icon={AlertCircle}
                                                     loading={processingId === doctor.id}
                                                     onClick={() => verifyDoctor(doctor.id, 'REJECTED')}
@@ -616,6 +704,118 @@ const AdminDashboard = () => {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    {selectedPendingDoctor && (
+                        <Card
+                            title="Verification Review"
+                            subtitle="Full profile and submitted documents in one place"
+                            padding="md"
+                        >
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-sm">
+                                <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-3 font-extrabold">Doctor Identification</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-black text-xl overflow-hidden shadow-inner">
+                                            {selectedPendingDoctor.doctorProfile?.profileImageUrl ? (
+                                                <img src={selectedPendingDoctor.doctorProfile.profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
+                                            ) : (
+                                                getUserLabel(selectedPendingDoctor).charAt(0)
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-slate-900 text-lg leading-tight">{getUserLabel(selectedPendingDoctor)}</p>
+                                            <p className="text-slate-500 font-bold text-sm mt-0.5">{selectedPendingDoctor.email || '-'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-3 font-extrabold">Professional Credentials</p>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-0.5">Specialization</p>
+                                                <p className="text-slate-900 font-bold text-sm">{selectedPendingDoctor.doctorProfile?.specialization || '-'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-0.5">License ID</p>
+                                                <p className="text-indigo-600 font-black text-sm">{selectedPendingDoctor.doctorProfile?.licenseNumber || '-'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400 mb-3 font-extrabold">Account Status</p>
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                            <p className="text-slate-900 font-black text-sm uppercase tracking-tight">
+                                                {selectedPendingDoctor.doctorProfile?.verificationStatus?.replace(/_/g, ' ') || 'PENDING'}
+                                            </p>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-0.5 underline">Consultation Fee</p>
+                                        <p className="text-slate-900 font-bold text-sm">{formatMoney(selectedPendingDoctor.doctorProfile?.consultationFee)}</p>
+                                    </div>
+                                </div>
+                                <div className="md:col-span-2 xl:col-span-3 p-5 rounded-2xl border border-slate-200 bg-slate-50 border-l-4 border-l-indigo-500">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2 font-extrabold">Professional Bio</p>
+                                    <p className="text-slate-700 italic font-medium leading-relaxed">
+                                        "{selectedPendingDoctor.doctorProfile?.bio || 'No bio submitted.'}"
+                                    </p>
+                                </div>
+                                <div className="md:col-span-2 xl:col-span-3 p-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Document Previews</p>
+                                    {selectedDoctorDocuments.length > 0 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {selectedDoctorDocuments.map((doc, idx) => (
+                                                <div key={`${doc.label}-${idx}`} className="space-y-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-slate-700 font-bold text-sm">{doc.label}</span>
+                                                        <a 
+                                                            href={doc.value} 
+                                                            target="_blank" 
+                                                            rel="noreferrer" 
+                                                            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 underline underline-offset-4 decoration-2"
+                                                        >
+                                                            View Original
+                                                        </a>
+                                                    </div>
+                                                    <div className="relative aspect-[4/3] rounded-xl overflow-hidden border-2 border-slate-100 bg-slate-50 group shadow-inner flex items-center justify-center">
+                                                        {doc.value.toLowerCase().endsWith('.pdf') ? (
+                                                            <div className="flex flex-col items-center gap-2 p-6 text-center">
+                                                                <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center mb-2">
+                                                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                                    </svg>
+                                                                </div>
+                                                                <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">PDF Document</span>
+                                                                <p className="text-[10px] text-slate-400 font-medium px-4">Browser preview for PDFs is restricted. Click "View Original" to open.</p>
+                                                            </div>
+                                                        ) : (
+                                                            <img 
+                                                                src={doc.value} 
+                                                                alt={doc.label}
+                                                                className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                                                                onError={(e) => {
+                                                                    e.target.onerror = null;
+                                                                    e.target.src = 'https://placehold.co/600x400/f8fafc/64748b?text=Preview+Not+Available';
+                                                                }}
+                                                            />
+                                                        )}
+                                                        <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/5 transition-colors pointer-events-none" />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="py-12 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                                            <p className="text-slate-500 font-medium">No documents have been uploaded for this doctor yet.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    )}
                     </div>
                 )}
 

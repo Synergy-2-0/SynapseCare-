@@ -17,7 +17,8 @@ import {
 import DashboardLayout from '../../../components/layout/DashboardLayout';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
-import { caseApi, prescriptionApi } from '../../../lib/api';
+import { caseApi, prescriptionApi, doctorApi } from '../../../lib/api';
+import { isDoctorApproved } from '../../../lib/doctorVerification';
 
 // Medical Components
 import SOAPNotes from '../../../components/doctor/SOAPNotes';
@@ -58,6 +59,28 @@ const NewConsultationPage = () => {
             createInitialCase();
         }
     }, [appointmentId]);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const validateAccess = async () => {
+            try {
+                const res = await doctorApi.get('/profile/me');
+                if (mounted && !isDoctorApproved(res?.data?.verificationStatus)) {
+                    router.replace('/doctor/setup');
+                }
+            } catch {
+                if (mounted) {
+                    router.replace('/doctor/setup');
+                }
+            }
+        };
+
+        validateAccess();
+        return () => {
+            mounted = false;
+        };
+    }, [router]);
 
     const createInitialCase = async () => {
         try {

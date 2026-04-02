@@ -2,10 +2,12 @@ package com.synapscare.doctorservice.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.math.BigDecimal;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CreateDoctorProfileRequest {
 
     @NotBlank(message = "Specialization is required")
@@ -30,4 +32,6 @@ public class CreateDoctorProfileRequest {
     private String bio;
 
     private String profileImageUrl;
+
+    private String licenseDocumentUrl;
 }

@@ -30,6 +30,7 @@ import useDoctorProfile from '../../hooks/useDoctorProfile';
 import useToast from '../../hooks/useToast';
 import { DOCTOR_ROUTES } from '../../constants/routes';
 import { isToday } from '../../lib/utils';
+import { isDoctorApproved } from '../../lib/doctorVerification';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DoctorDashboard = () => {
@@ -72,11 +73,21 @@ const DoctorDashboard = () => {
         if (typeof window !== 'undefined') {
             fetchProfile().catch((err) => {
                 if (err.response?.status === 404) {
-                    router.push('/doctor/profile/setup');
+                    router.push('/doctor/setup');
                 }
             });
         }
     }, [fetchProfile, router]);
+
+    useEffect(() => {
+        if (!profile) {
+            return;
+        }
+
+        if (!isDoctorApproved(profile.verificationStatus)) {
+            router.replace('/doctor/setup');
+        }
+    }, [profile, router]);
 
     const todaysAppointments = appointments.filter(appt =>
         isToday(appt.appointmentDate) && appt.status !== 'CANCELLED'

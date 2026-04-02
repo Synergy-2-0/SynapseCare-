@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { appointmentApi, prescriptionApi } from '@/lib/api';
+import { appointmentApi, prescriptionApi, doctorApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isToday, isTomorrow, compareAsc, startOfWeek, addDays, format, isSameDay } from 'date-fns';
@@ -16,6 +16,7 @@ import TelemedicineTab from '@/components/doctor/TelemedicineTab';
 import SessionPrescriptionModal from '@/components/doctor/SessionPrescriptionModal';
 import PatientContextDrawer from '@/components/doctor/PatientContextDrawer';
 import PatientRosterTab from '@/components/doctor/PatientRosterTab';
+import { isDoctorApproved } from '@/lib/doctorVerification';
 
 
 const Badge = ({ children, variant }) => {
@@ -53,6 +54,12 @@ const [activePostSession, setActivePostSession] = useState(null);
 
             const fetchData = async () => {
                 try {
+                    const profileRes = await doctorApi.get('/profile/me');
+                    if (!isDoctorApproved(profileRes?.data?.verificationStatus)) {
+                        router.replace('/doctor/setup');
+                        return;
+                    }
+
                     const apptRes = await appointmentApi.get(`/doctor/${id}`);
                     const allAppts = apptRes.data?.data || apptRes.data || [];
                     const safeAppts = Array.isArray(allAppts) ? allAppts : [];
