@@ -238,9 +238,20 @@ public class DoctorService {
             throw new InvalidAvailabilityException("Start time must be before end time");
         }
 
-        DoctorAvailability availability = new DoctorAvailability();
-        availability.setDoctorId(doctorId);
-        availability.setDayOfWeek(request.getDayOfWeek());
+        List<DoctorAvailability> existingForDay = availabilityRepository.findByDoctorIdAndDayOfWeek(doctorId, request.getDayOfWeek());
+
+        DoctorAvailability availability;
+        if (existingForDay.isEmpty()) {
+            availability = new DoctorAvailability();
+            availability.setDoctorId(doctorId);
+            availability.setDayOfWeek(request.getDayOfWeek());
+        } else {
+            availability = existingForDay.get(0);
+            if (existingForDay.size() > 1) {
+                availabilityRepository.deleteAll(existingForDay.subList(1, existingForDay.size()));
+            }
+        }
+
         availability.setStartTime(request.getStartTime());
         availability.setEndTime(request.getEndTime());
         availability.setIsActive(request.getIsActive());

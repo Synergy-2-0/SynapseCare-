@@ -2,10 +2,15 @@ package com.healthcare.appointment.client;
 
 import com.healthcare.appointment.dto.client.AvailableSlotClientDto;
 import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
+import com.healthcare.appointment.dto.DoctorAvailabilityDto;
 import com.healthcare.appointment.exception.DoctorServiceUnavailableException;
 import com.healthcare.appointment.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -17,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -75,5 +81,52 @@ public class DoctorServiceClient {
         } catch (RestClientException ex) {
             throw new DoctorServiceUnavailableException("Doctor service is currently unavailable");
         }
+    }
+
+    public void syncAvailabilityToDoctorService(List<DoctorAvailabilityDto> dtos, Long userId) {
+        String url = doctorServiceBaseUrl + "/api/doctors/availability";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-User-Id", String.valueOf(userId));
+        headers.set("X-User-Role", "DOCTOR");
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        try {
+            for (DoctorAvailabilityDto dto : dtos) {
+                Map<String, Object> request = Map.of(
+                        "dayOfWeek", normalizeDoctorServiceDay(dto.getDayOfWeek()),
+                "startTime", dto.getStartTime() != null ? dto.getStartTime().toString() : null,
+                "endTime", dto.getEndTime() != null ? dto.getEndTime().toString() : null,
+                        "isActive", Boolean.TRUE.equals(dto.getIsWorking())
+                );
+
+                restTemplate.exchange(
+                        url,
+                        HttpMethod.POST,
+                        new HttpEntity<>(request, headers),
+                        Void.class
+                );
+            }
+        } catch (HttpClientErrorException ex) {
+            throw new DoctorServiceUnavailableException("Doctor service availability sync failed: " + ex.getResponseBodyAsString());
+        } catch (RestClientException ex) {
+            throw new DoctorServiceUnavailableException("Doctor service availability sync failed: " + ex.getMessage());
+        }
+    }
+
+    private String normalizeDoctorServiceDay(String day) {
+        if (day == null) return "MONDAY";
+
+        String normalized = day.trim().toUpperCase();
+        return switch (normalized) {
+            case "MON", "MONDAY" -> "MONDAY";
+            case "TUE", "TUES", "TUESDAY" -> "TUESDAY";
+            case "WED", "WEDNESDAY" -> "WEDNESDAY";
+            case "THU", "THUR", "THURS", "THURSDAY" -> "THURSDAY";
+            case "FRI", "FRIDAY" -> "FRIDAY";
+            case "SAT", "SATURDAY" -> "SATURDAY";
+            case "SUN", "SUNDAY" -> "SUNDAY";
+            default -> "MONDAY";
+        };
     }
 }

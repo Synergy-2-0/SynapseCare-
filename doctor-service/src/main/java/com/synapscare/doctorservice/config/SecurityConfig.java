@@ -34,8 +34,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/doctors/search",
                                 "/api/doctors/all",
-                                "/api/doctors/{id}",
-                                "/api/doctors/{id}/available-slots",
+                                "/api/doctors/*",
+                                "/api/doctors/*/available-slots",
                                 "/actuator/**"
                         ).permitAll()
                         // Doctor endpoints
@@ -47,7 +47,7 @@ public class SecurityConfig {
                         // Admin endpoints
                         .requestMatchers("/api/doctors/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/doctors/pending").hasRole("ADMIN")
-                        .requestMatchers("/api/doctors/{id}/verify").hasRole("ADMIN")
+                        .requestMatchers("/api/doctors/*/verify").hasRole("ADMIN")
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )

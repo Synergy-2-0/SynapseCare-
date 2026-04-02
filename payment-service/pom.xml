@@ -9,6 +9,10 @@
     </parent>
     <artifactId>payment-service</artifactId>
 
+    <properties>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

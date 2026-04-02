@@ -24,6 +24,29 @@ const Badge = ({ children, variant }) => {
     );
 };
 
+const getStatusPillClass = (status) => {
+    switch (status) {
+        case 'PENDING_PAYMENT':
+        case 'PENDING':
+            return 'bg-amber-100 text-amber-800 border-amber-200';
+        case 'CONFIRMED':
+        case 'PAID':
+            return 'bg-blue-100 text-blue-800 border-blue-200';
+        case 'IN_PROGRESS':
+            return 'bg-green-100 text-green-800 border-green-200';
+        case 'COMPLETED':
+            return 'bg-gray-100 text-gray-700 border-gray-200';
+        case 'MISSED':
+        case 'CANCELLED':
+        case 'REJECTED':
+            return 'bg-rose-100 text-rose-800 border-rose-200';
+        case 'BLOCKED':
+            return 'bg-slate-800 text-white border-slate-900';
+        default:
+            return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+};
+
 const AppointmentsPage = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -31,7 +54,7 @@ const AppointmentsPage = () => {
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [activePostSession, setActivePostSession] = useState(null);
-    const [filter, setFilter] = useState('ALL'); // ALL, PENDING, CONFIRMED, COMPLETED, PAID
+    const [filter, setFilter] = useState('ALL'); // ALL and individual statuses
     const router = useRouter();
 
     useEffect(() => {
@@ -109,7 +132,7 @@ const AppointmentsPage = () => {
                     
                     <div className="flex items-center gap-3 self-end lg:self-center">
                         <div className="flex bg-white p-1 rounded-xl border border-slate-100 shadow-sm">
-                            {['ALL', 'PENDING', 'CONFIRMED', 'PAID'].map((f) => (
+                            {['ALL', 'PENDING', 'PENDING_PAYMENT', 'CONFIRMED', 'IN_PROGRESS', 'PAID', 'COMPLETED', 'MISSED', 'CANCELLED', 'REJECTED', 'BLOCKED'].map((f) => (
                                 <button
                                     key={f}
                                     onClick={() => setFilter(f)}
@@ -171,11 +194,15 @@ const AppointmentsPage = () => {
                                             <td className="p-8">
                                                 <div className="flex items-center gap-2.5">
                                                     <div className={`w-2 h-2 rounded-full ${
-                                                        appt.status === 'PAID' ? 'bg-teal-500' : 
+                                                        appt.status === 'PAID' ? 'bg-blue-500' : 
                                                         appt.status === 'CONFIRMED' ? 'bg-emerald-500' : 
-                                                        appt.status === 'PENDING' ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'
+                                                        appt.status === 'IN_PROGRESS' ? 'bg-green-500 animate-pulse' :
+                                                        appt.status === 'COMPLETED' ? 'bg-gray-400' :
+                                                        appt.status === 'BLOCKED' ? 'bg-slate-700' :
+                                                        appt.status === 'MISSED' || appt.status === 'CANCELLED' || appt.status === 'REJECTED' ? 'bg-rose-500' :
+                                                        'bg-amber-500 animate-pulse'
                                                     }`} />
-                                                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-600">{appt.status}</span>
+                                                    <span className={`text-[11px] font-black uppercase tracking-widest border px-2 py-0.5 rounded-full ${getStatusPillClass(appt.status)}`}>{appt.status}</span>
                                                 </div>
                                             </td>
                                             <td className="p-8 pr-10 text-right">
@@ -198,7 +225,7 @@ const AppointmentsPage = () => {
                                                             </button>
                                                         </>
                                                     )}
-                                                    {(appt.status === 'CONFIRMED' || appt.status === 'PAID') && (
+                                                    {(appt.status === 'CONFIRMED' || appt.status === 'PAID' || appt.status === 'IN_PROGRESS') && (
                                                         <button 
                                                             onClick={() => setActivePostSession(appt)}
                                                             className="px-4 h-10 rounded-xl bg-slate-50 text-slate-600 text-xs font-bold flex items-center justify-center gap-2 hover:bg-teal-600 hover:text-white transition-all hover:shadow-lg hover:shadow-teal-500/20"

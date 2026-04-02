@@ -1,6 +1,7 @@
 package com.healthcare.appointment.controller;
 
 import com.healthcare.appointment.client.DoctorServiceClient;
+import com.healthcare.appointment.dto.BlockSlotRequest;
 import com.healthcare.appointment.dto.ApiResponse;
 import com.healthcare.appointment.dto.AppointmentDto;
 import com.healthcare.appointment.dto.RescheduleAppointmentDto;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -32,6 +34,20 @@ public class AppointmentController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, "Appointment booked successfully", booked));
     }
+
+        @PostMapping("/doctor/{doctorId}/blocked-slots")
+        public ResponseEntity<ApiResponse<AppointmentDto>> blockSlot(
+            @PathVariable("doctorId") Long doctorId,
+            @Valid @RequestBody BlockSlotRequest request,
+            @AuthenticationPrincipal com.healthcare.appointment.security.UserPrincipal userPrincipal) {
+        AppointmentDto blocked = appointmentService.blockSlot(
+            doctorId,
+            userPrincipal != null ? userPrincipal.getUserId() : null,
+            request
+        );
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(new ApiResponse<>(true, "Slot blocked successfully", blocked));
+        }
 
     @PutMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<AppointmentDto>> cancelAppointment(@PathVariable("id") Long id) {

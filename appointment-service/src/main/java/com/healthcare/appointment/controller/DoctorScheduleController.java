@@ -6,7 +6,9 @@ import com.healthcare.appointment.entity.DoctorAvailability;
 import com.healthcare.appointment.entity.DoctorLeave;
 import com.healthcare.appointment.repository.DoctorAvailabilityRepository;
 import com.healthcare.appointment.repository.DoctorLeaveRepository;
+import com.healthcare.appointment.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,7 @@ public class DoctorScheduleController {
     private final DoctorAvailabilityRepository availabilityRepository;
     private final DoctorLeaveRepository leaveRepository;
     private final com.healthcare.appointment.service.AppointmentService appointmentService;
+    private final com.healthcare.appointment.client.DoctorServiceClient doctorServiceClient;
 
     @GetMapping("/doctor/{doctorId}/conflicts")
     public ResponseEntity<List<com.healthcare.appointment.dto.AppointmentDto>> getConflicts(
@@ -68,7 +71,11 @@ public class DoctorScheduleController {
 
     @PostMapping("/doctor/{doctorId}/availability")
     @Transactional
-    public ResponseEntity<?> saveAvailability(@PathVariable("doctorId") Long doctorId, @RequestBody List<DoctorAvailabilityDto> dtos) {
+    public ResponseEntity<?> saveAvailability(
+            @PathVariable("doctorId") Long doctorId,
+            @RequestBody List<DoctorAvailabilityDto> dtos,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
         // Clear existing and save new
         availabilityRepository.deleteByDoctorId(doctorId);
         
@@ -83,6 +90,12 @@ public class DoctorScheduleController {
                 .build()).collect(Collectors.toList());
                 
         availabilityRepository.saveAll(entities);
+
+        // Keep doctor-service availability in sync because slot generation depends on doctor-service.
+        if (userPrincipal != null && userPrincipal.getUserId() != null) {
+            doctorServiceClient.syncAvailabilityToDoctorService(dtos, userPrincipal.getUserId());
+        }
+
         return ResponseEntity.ok().build();
     }
 
