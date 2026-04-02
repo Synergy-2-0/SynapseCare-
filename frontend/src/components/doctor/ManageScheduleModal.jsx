@@ -5,6 +5,20 @@ import { appointmentApi } from '@/lib/api';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+const Badge = ({ children, variant }) => {
+    const variants = {
+        success: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        primary: 'bg-teal-100 text-teal-700 border-teal-200',
+        warning: 'bg-amber-100 text-amber-700 border-amber-200',
+        danger: 'bg-rose-100 text-rose-700 border-rose-200',
+    };
+    return (
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${variants[variant] || variants.primary}`}>
+            {children}
+        </span>
+    );
+};
+
 const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
     const [activeTab, setActiveTab] = useState('weekly'); // 'weekly' | 'leaves'
     const [loading, setLoading] = useState(false);
@@ -24,20 +38,15 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
     // States for Time Off
     const [leaves, setLeaves] = useState([]);
     const [newLeave, setNewLeave] = useState({ start: '', end: '', reason: '' });
+    const [conflicts, setConflicts] = useState([]);
+    const [peers, setPeers] = useState([]);
+    const [selectedPeer, setSelectedPeer] = useState('');
+    const [isConflictView, setIsConflictView] = useState(false);
 
-    useEffect(() => {
-        if (isOpen && doctorId) {
-            fetchAvailability();
-            fetchLeaves();
-        }
-    }, [isOpen, doctorId]);
-
-    const fetchAvailability = async () => {
+    const fetchAvailability = React.useCallback(async () => {
         try {
             const res = await appointmentApi.get(`/schedule/doctor/${doctorId}/availability`);
             if (res.data && res.data.length > 0) {
-                // Map the array to our schedule state
-                // Assuming all records have the same slotDuration and bufferTime
                 if (res.data[0].slotDuration) setSlotDuration(res.data[0].slotDuration.toString());
                 if (res.data[0].bufferTime) setBuffer(res.data[0].bufferTime.toString());
                 
@@ -55,13 +64,12 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
                 });
                 setSchedule(newSched);
             }
-        } catch (error) {
-            console.error('Error fetching availability:', error);
-            // Ignore error on first load if nothing exists yet
+        } catch {
+            console.error('Error fetching availability');
         }
-    };
+    }, [doctorId]);
 
-    const fetchLeaves = async () => {
+    const fetchLeaves = React.useCallback(async () => {
         try {
             const res = await appointmentApi.get(`/schedule/doctor/${doctorId}/leaves`);
             if (res.data) {
@@ -72,10 +80,17 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
                     reason: l.reason
                 })));
             }
-        } catch (error) {
-            console.error('Error fetching leaves:', error);
+        } catch {
+            console.error('Error fetching leaves');
         }
-    };
+    }, [doctorId]);
+
+    useEffect(() => {
+        if (isOpen && doctorId) {
+            fetchAvailability();
+            fetchLeaves();
+        }
+    }, [isOpen, doctorId, fetchAvailability, fetchLeaves]);
 
     if (!isOpen) return null;
 
@@ -96,8 +111,26 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
             toast.error('Please fill in all leave details.');
             return;
         }
+        
         try {
             setLoading(true);
+            // 1. Check for conflicts
+            const conflictRes = await appointmentApi.get(`/schedule/doctor/${doctorId}/conflicts?start=${newLeave.start}&end=${newLeave.end}`);
+            if (conflictRes.data && conflictRes.data.length > 0) {
+                setConflicts(conflictRes.data);
+                setIsConflictView(true);
+                // Also fetch peers for reassign
+                try {
+                    // Better approach: fetch peers from doctor-service
+                    const peersRes = await fetch(`${process.env.NEXT_PUBLIC_DOCTOR_SERVICE_URL || '/api/doctors'}/${doctorId}/peers?specialization=General`, { 
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                    }).then(r => r.json());
+                    if (Array.isArray(peersRes)) setPeers(peersRes);
+                } catch (pe) { console.error("Peer fetch failed", pe); }
+                toast.error(`Detected ${conflictRes.data.length} conflicting appointments!`);
+                return;
+            }
+
             const payload = {
                 doctorId,
                 startDate: newLeave.start,
@@ -113,11 +146,50 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
             }]);
             setNewLeave({ start: '', end: '', reason: '' });
             toast.success('Time off added securely.');
-        } catch (error) {
-            toast.error('Failed to add time off.');
+        } catch {
+            toast.error('Failed to process request.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleBulkCancel = async () => {
+        try {
+            setLoading(true);
+            await appointmentApi.post(`/schedule/bulk-cancel`, {
+                appointmentIds: conflicts.map(c => c.id),
+                reason: `Doctor on leave: ${newLeave.reason}`
+            });
+            toast.success('All conflicting appointments cancelled & patients notified.');
+            setConflicts([]);
+            setIsConflictView(false);
+            // Continue with leave add
+            const payload = { doctorId, startDate: newLeave.start, endDate: newLeave.end, reason: newLeave.reason };
+            const res = await appointmentApi.post(`/schedule/doctor/${doctorId}/leaves`, payload);
+            setLeaves([...leaves, { id: res.data.id || Date.now(), start: newLeave.start, end: newLeave.end, reason: newLeave.reason }]);
+            setNewLeave({ start: '', end: '', reason: '' });
+        } catch { toast.error('Bulk cancel failed.'); }
+        finally { setLoading(false); }
+    };
+
+    const handleBulkReassign = async () => {
+        if (!selectedPeer) { toast.error('Please select a peer doctor.'); return; }
+        try {
+            setLoading(true);
+            await appointmentApi.post(`/schedule/bulk-reassign`, {
+                appointmentIds: conflicts.map(c => c.id),
+                targetDoctorId: selectedPeer
+            });
+            toast.success(`Appointments reassigned to Dr. ${peers.find(p => p.id == selectedPeer)?.lastName}.`);
+            setConflicts([]);
+            setIsConflictView(false);
+            // Continue with leave add
+            const payload = { doctorId, startDate: newLeave.start, endDate: newLeave.end, reason: newLeave.reason };
+            const res = await appointmentApi.post(`/schedule/doctor/${doctorId}/leaves`, payload);
+            setLeaves([...leaves, { id: res.data.id || Date.now(), start: newLeave.start, end: newLeave.end, reason: newLeave.reason }]);
+            setNewLeave({ start: '', end: '', reason: '' });
+        } catch { toast.error('Bulk reassignment failed.'); }
+        finally { setLoading(false); }
     };
 
     const handleRemoveLeave = async (id) => {
@@ -126,7 +198,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
             // await appointmentApi.delete(`/schedule/doctor/${doctorId}/leaves/${id}`);
             setLeaves(leaves.filter(l => l.id !== id));
             toast.success('Time off removed.');
-        } catch (error) {
+        } catch {
             toast.error('Failed to remove leave.');
         }
     };
@@ -270,8 +342,76 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
 
                     {activeTab === 'leaves' && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            {/* Add Leave Form */}
-                            <div className="p-6 bg-rose-50/50 border border-rose-100 rounded-2xl">
+                            {isConflictView ? (
+                                <div className="p-8 bg-amber-50 border-2 border-amber-200 rounded-[2.5rem] shadow-xl shadow-amber-500/5 animate-pulse-slow">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-14 h-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
+                                            <AlertCircle size={32} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-black text-amber-900 uppercase tracking-tight">Active Conflict Detected</h3>
+                                            <p className="text-amber-700 font-medium text-sm">There are {conflicts.length} appointments scheduled during this leave period.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 mb-8 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                        {conflicts.map(c => (
+                                            <div key={c.id} className="p-4 bg-white/60 rounded-xl border border-amber-200 flex justify-between items-center">
+                                                <div>
+                                                    <p className="text-xs font-black text-slate-800">Pt #{c.patientId} - {c.date}</p>
+                                                    <p className="text-[10px] font-bold text-slate-500">{c.time} • {c.consultationType}</p>
+                                                </div>
+                                                <Badge variant="warning">{c.status}</Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="p-6 bg-white rounded-3xl border border-amber-200 shadow-sm">
+                                            <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">Option A: Reassign</h4>
+                                            <select 
+                                                value={selectedPeer} 
+                                                onChange={(e) => setSelectedPeer(e.target.value)}
+                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none mb-4 focus:ring-2 focus:ring-amber-500"
+                                            >
+                                                <option value="">Select Replacement Doctor</option>
+                                                {peers.map(p => (
+                                                    <option key={p.id} value={p.id}>Dr. {p.lastName} ({p.specialization})</option>
+                                                ))}
+                                            </select>
+                                            <button 
+                                                disabled={!selectedPeer || loading}
+                                                onClick={handleBulkReassign}
+                                                className="w-full py-3 bg-teal-600 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] hover:bg-teal-700 disabled:opacity-50 transition-all"
+                                            >
+                                                Reassign All
+                                            </button>
+                                        </div>
+                                        <div className="p-6 bg-white rounded-3xl border border-amber-200 shadow-sm flex flex-col justify-between">
+                                            <div>
+                                                <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-2">Option B: Cancel</h4>
+                                                <p className="text-[11px] text-slate-500 font-medium mb-4 italic">Refunds will be processed automatically.</p>
+                                            </div>
+                                            <button 
+                                                disabled={loading}
+                                                onClick={handleBulkCancel}
+                                                className="w-full py-3 bg-rose-600 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] hover:bg-rose-700 transition-all"
+                                            >
+                                                Cancel All
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => setIsConflictView(false)}
+                                        className="w-full mt-6 py-2 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-all"
+                                    >
+                                        Dismiss and Edit Leave Range
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="p-6 bg-rose-50/50 border border-rose-100 rounded-2xl">
                                 <h3 className="text-sm font-bold text-rose-900 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <CalendarDays className="w-4 h-4" /> Block Dates / Holiday
                                 </h3>
@@ -321,9 +461,11 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId }) => {
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </>
                     )}
                 </div>
+            )}
+        </div>
 
                 {/* Footer Footer */}
                 <div className="p-6 border-t border-slate-100 bg-slate-50/80 flex justify-end gap-3">

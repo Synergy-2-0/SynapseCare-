@@ -14,7 +14,8 @@ import {
     Search,
     UserCog,
     Settings,
-    Clock
+    Clock,
+    ClipboardList
 } from 'lucide-react';
 import { DOCTOR_ROUTES, PATIENT_ROUTES, ADMIN_ROUTES } from '../../constants/routes';
 
@@ -43,7 +44,7 @@ const Sidebar = ({ onClose }) => {
         { id: 'appointments', icon: Calendar, label: 'Appointments', path: DOCTOR_ROUTES.APPOINTMENTS },
         { id: 'patients', icon: Users, label: 'My Patients', path: DOCTOR_ROUTES.PATIENTS },
         { id: 'consultations', icon: Video, label: 'Consultations', path: DOCTOR_ROUTES.TELEMEDICINE },
-        { id: 'prescriptions', icon: FileText, label: 'Prescriptions', path: DOCTOR_ROUTES.PRESCRIPTIONS },
+        { id: 'prescriptions', icon: ClipboardList, label: 'Prescriptions', path: DOCTOR_ROUTES.PRESCRIPTIONS },
         { id: 'schedule', icon: Clock, label: 'Schedule', path: DOCTOR_ROUTES.SCHEDULE },
     ];
 

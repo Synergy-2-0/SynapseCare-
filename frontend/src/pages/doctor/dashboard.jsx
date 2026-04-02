@@ -1,339 +1,308 @@
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import {
-    Activity,
-    Users,
-    Calendar,
-    TrendingUp,
-    Plus,
-    Clock,
-    ShieldCheck,
-    ArrowUpRight,
-    Search,
-    ChevronDown,
-    Zap,
-    LayoutGrid,
-    MessageSquare,
-    Stethoscope,
-    User
+import React, { useEffect, useState } from 'react';
+import { 
+    Users, Calendar, ClipboardList, 
+    Video, Activity, CheckCircle, Clock
 } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import Header from '../../components/layout/Header';
-import StatCard from '../../components/ui/StatCard';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import VerificationStatusBanner from '../../components/doctor/VerificationStatusBanner';
-import AppointmentCard from '../../components/doctor/AppointmentCard';
-import useDoctorProfile from '../../hooks/useDoctorProfile';
-import useToast from '../../hooks/useToast';
-import { DOCTOR_ROUTES } from '../../constants/routes';
-import { isToday } from '../../lib/utils';
-import { isDoctorApproved } from '../../lib/doctorVerification';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/router';
+import Head from 'next/head';
+import { appointmentApi, doctorApi } from '@/lib/api';
+import { AnimatePresence } from 'framer-motion';
+import { isToday, startOfWeek, addDays, format, isSameDay } from 'date-fns';
+import SessionPrescriptionModal from '@/components/doctor/SessionPrescriptionModal';
+import PatientContextDrawer from '@/components/doctor/PatientContextDrawer';
+import { isDoctorApproved } from '@/lib/doctorVerification';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+
+const Badge = ({ children, variant }) => {
+    const variants = {
+        success: 'bg-emerald-100/50 text-emerald-700 border-emerald-200/50',
+        primary: 'bg-teal-100/50 text-teal-700 border-teal-200/50',
+        warning: 'bg-amber-100/50 text-amber-700 border-amber-200/50',
+    };
+    return (
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${variants[variant] || variants.primary}`}>
+            {children}
+        </span>
+    );
+};
 
 const DoctorDashboard = () => {
+    const [userData, setUserData] = useState(null);
+    const [stats, setStats] = useState({ appointmentsToday: 0, activePatients: 0, hours: 8 });
+    const [appointments, setAppointments] = useState([]);
+    const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [activePostSession, setActivePostSession] = useState(null);
     const router = useRouter();
-    const { profile, fetchProfile, loading: profileLoading } = useDoctorProfile();
-    const [appointments] = useState([
-        {
-            id: 1,
-            patientId: 101,
-            patientName: 'Malith Perera',
-            appointmentDate: new Date().toISOString().split('T')[0],
-            status: 'CONFIRMED',
-            time: '09:30 AM',
-            tokenNumber: 'P-042'
-        },
-        {
-            id: 2,
-            patientId: 102,
-            patientName: 'Saman Kumara',
-            appointmentDate: new Date().toISOString().split('T')[0],
-            status: 'PAID',
-            time: '11:15 AM',
-            tokenNumber: 'P-045'
-        },
-        {
-            id: 3,
-            patientId: 103,
-            patientName: 'Devindi Ranasinghe',
-            appointmentDate: new Date().toISOString().split('T')[0],
-            status: 'PENDING',
-            time: '02:00 PM',
-            tokenNumber: 'P-051'
-        }
-    ]);
-
-    const appointmentsLoading = false;
-    useToast();
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            fetchProfile().catch((err) => {
-                if (err.response?.status === 404) {
-                    router.push('/doctor/setup');
+            const role = localStorage.getItem('user_role');
+            const id = localStorage.getItem('user_id');
+            const name = localStorage.getItem('user_name');
+
+            if (role !== 'DOCTOR') { router.push('/login'); return; }
+            setUserData({ name, id });
+
+            const fetchData = async () => {
+                try {
+                    const profileRes = await doctorApi.get('/profile/me');
+                    if (profileRes?.data?.specialization) {
+                        localStorage.setItem('user_specialization', profileRes.data.specialization);
+                    }
+                    if (!isDoctorApproved(profileRes?.data?.verificationStatus)) {
+                        router.replace('/doctor/setup');
+                        return;
+                    }
+
+                    const apptRes = await appointmentApi.get(`/doctor/${id}`);
+                    const allAppts = apptRes.data?.data || apptRes.data || [];
+                    const safeAppts = Array.isArray(allAppts) ? allAppts : [];
+                    
+                    setAppointments(safeAppts.filter(a => a.status !== 'CANCELLED'));
+                    setStats(prev => ({
+                        ...prev,
+                        appointmentsToday: safeAppts.filter(a => a.status === 'PAID' && a.date && isToday(new Date(a.date))).length,
+                        activePatients: new Set(safeAppts.map(a => a.patientId)).size
+                    }));
+                } catch (err) {
+                    console.error("Failed to fetch doctor dashboard", err);
+                } finally {
+                    setLoading(false);
                 }
-            });
+            };
+            fetchData();
         }
-    }, [fetchProfile, router]);
+    }, [router]);
 
-    useEffect(() => {
-        if (!profile) {
-            return;
-        }
-
-        if (!isDoctorApproved(profile.verificationStatus)) {
-            router.replace('/doctor/setup');
-        }
-    }, [profile, router]);
-
-    const todaysAppointments = appointments.filter(appt =>
-        isToday(appt.appointmentDate) && appt.status !== 'CANCELLED'
+    if (loading) return (
+        <div className="min-h-screen bg-[var(--bg-base)] flex items-center justify-center">
+            <div className="animate-pulse flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-full border-4 border-teal-500 border-t-transparent animate-spin"></div>
+                <div className="text-xl font-serif text-slate-700 tracking-wide">Synthesizing Clinic View...</div>
+            </div>
+        </div>
     );
-
-    const stats = [
-        {
-            label: 'Today\'s Workload',
-            value: todaysAppointments.length,
-            icon: Activity,
-            color: 'text-indigo-600',
-            bgColor: 'bg-indigo-50',
-            trend: { value: '+2 from avg', isPositive: true }
-        },
-        {
-            label: 'Patient Portfolio',
-            value: '1,248',
-            icon: Users,
-            color: 'text-sky-600',
-            bgColor: 'bg-sky-50',
-            trend: { value: '+12% growth', isPositive: true }
-        },
-        {
-            label: 'Monthly Earnings',
-            value: 'LKR 42.5k',
-            icon: TrendingUp,
-            color: 'text-emerald-600',
-            bgColor: 'bg-emerald-50',
-            trend: { value: 'Verified', isPositive: true }
-        }
-    ];
-
-    const handleViewDetails = (appointment) => {
-        router.push(`/doctor/appointments/${appointment.id}`);
-    };
-
-    const handleStartConsultation = (appointment) => {
-        router.push({
-            pathname: '/doctor/cases/new',
-            query: {
-                appointmentId: appointment.id,
-                patientId: appointment.patientId,
-                patientName: appointment.patientName,
-                patientAge: appointment.patientAge || 30,
-                patientGender: appointment.patientGender || 'Unknown'
-            }
-        });
-    };
-
-    if (profileLoading || appointmentsLoading) {
-        return <LoadingSpinner size="fullscreen" message="Accessing Secure Clinical Hub..." />;
-    }
 
     return (
         <DashboardLayout>
-            <Header
-                title={`Dr. ${profile?.userId || 'Practitioner'}`}
-                subtitle={profile?.specialization || 'Strategic Medical Intelligence & Patient Care'}
-                verificationStatus={profile ? {
-                    status: profile.verificationStatus,
-                    message: profile.verificationStatus
-                } : null}
-                actions={
-                    <div className="flex items-center gap-4">
-                        <Button 
-                            variant="primary" 
-                            size="md" 
-                            icon={Plus}
-                            onClick={() => router.push(DOCTOR_ROUTES.PRESCRIPTIONS)}
-                        >
-                            Quick RX
-                        </Button>
-                        <Button 
-                            variant="secondary" 
-                            size="md" 
-                            icon={Calendar}
-                            onClick={() => router.push(DOCTOR_ROUTES.SCHEDULE)}
-                        >
-                            Configure Slot
-                        </Button>
+            <Head>
+                <title>{userData?.name ? `Dr. ${userData.name} | Practitioner Dashboard` : 'Doctor Dashboard'} | SynapsCare</title>
+            </Head>
+            
+            <main className="relative">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-teal-200/20 blur-[100px] -z-10 rounded-full pointer-events-none"></div>
+
+                <header className="flex justify-between items-center mb-10">
+                    <div>
+                        <h2 className="text-3xl font-serif text-slate-900 tracking-tight text-center lg:text-left">Clinical Overview</h2>
+                        <p className="text-slate-500 font-medium mt-1">Status and performance at a glance.</p>
                     </div>
-                }
-            />
+                </header>
 
-            {profile && profile.verificationStatus !== 'APPROVED' && (
-                <VerificationStatusBanner status={profile.verificationStatus} />
-            )}
-
-            <div className="space-y-12">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {stats.map((stat, index) => (
-                        <StatCard
-                            key={index}
-                            label={stat.label}
-                            value={stat.value}
-                            icon={stat.icon}
-                            color={stat.color}
-                            bgColor={stat.bgColor}
-                            trend={stat.trend}
-                        />
-                    ))}
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-                    {/* Primary Workflow Column */}
-                    <div className="xl:col-span-8 space-y-10">
-                        <Card
-                            title="Patient Queue"
-                            subtitle="Prioritized clinical assessments for today's roster"
-                            padding="none"
-                            actions={
-                                <div className="flex items-center gap-2">
-                                     <button className="h-10 px-4 bg-slate-50 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest border border-slate-100 hover:bg-white hover:text-indigo-600 transition-all flex items-center gap-2">
-                                         Export <Plus size={14} />
-                                     </button>
-                                     <button className="h-10 px-4 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
-                                         View Full Stack
-                                     </button>
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+                    <div className="xl:col-span-3 space-y-8">
+                                <div className="bg-gradient-to-r from-teal-50 to-indigo-50 rounded-3xl p-8 flex justify-between items-center relative overflow-hidden shadow-sm border border-slate-100">
+                                    <div className="z-10">
+                                        <h2 className="text-3xl font-serif text-teal-900 mb-2">Good Morning, {userData?.name || 'Practitioner'}</h2>
+                                        <p className="text-teal-700/80 font-medium tracking-wide">Ready for your clinical rotation today.</p>
+                                    </div>
+                                    <div className="absolute right-0 bottom-0 pointer-events-none opacity-90 h-[120%] flex items-end">
+                                        <div className="w-48 h-48 bg-teal-200/40 rounded-full blur-3xl absolute -right-10 -bottom-10"></div>
+                                        <div className="relative flex items-center gap-4 px-12 pb-4">
+                                            <div className="w-16 h-32 bg-teal-600/10 rounded-t-full"></div>
+                                            <div className="w-20 h-40 bg-indigo-600/10 rounded-t-full"></div>
+                                            <div className="w-16 h-32 bg-teal-600/10 rounded-t-full"></div>
+                                        </div>
+                                    </div>
                                 </div>
-                            }
-                        >
-                            <div className="p-10 space-y-6">
-                                {todaysAppointments.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {todaysAppointments.map((appt) => (
-                                            <AppointmentCard
-                                                key={appt.id}
-                                                appointment={appt}
-                                                onViewDetails={handleViewDetails}
-                                                onStartConsultation={handleStartConsultation}
-                                            />
+
+                                <div>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-serif text-slate-800">Weekly Performance</h3>
+                                        <button className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1">
+                                            Current Rotation <Calendar className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                        {[
+                                            { label: 'Total Patients', value: stats.activePatients, icon: Users, bg: 'bg-teal-600', text: 'text-white', iconColor: 'text-white', iconBg: 'bg-white/20' },
+                                            { label: 'Avg. Severity', value: 'Normal', icon: Activity, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-amber-500', iconBg: 'bg-amber-50' },
+                                            { label: "Today's Visits", value: stats.appointmentsToday, icon: Calendar, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-rose-500', iconBg: 'bg-rose-50' },
+                                            { label: 'Tele-sessions', value: appointments.filter(a => a.mode === 'TELEMEDICINE').length, icon: Video, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-indigo-500', iconBg: 'bg-indigo-50' },
+                                        ].map((s, i) => (
+                                            <div key={i} className={`p-6 rounded-3xl ${s.bg} flex flex-col items-center justify-center shadow-sm border border-slate-100 hover:-translate-y-1 transition-all`}>
+                                                <div className={`w-12 h-12 ${s.iconBg} rounded-2xl flex items-center justify-center mb-4`}>
+                                                    <s.icon className={`w-6 h-6 ${s.iconColor}`} />
+                                                </div>
+                                                <div className={`text-xs font-black uppercase tracking-widest mb-1 opacity-80 ${s.text}`}>{s.label}</div>
+                                                <div className={`text-3xl font-black ${s.text}`}>{s.value}</div>
+                                            </div>
                                         ))}
                                     </div>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center py-20 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-100">
-                                        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-slate-300 shadow-sm border border-slate-50 mb-6">
-                                             <Calendar size={32} />
-                                        </div>
-                                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Active Sessions Scheduled</p>
-                                    </div>
-                                )}
-                            </div>
-                        </Card>
+                                </div>
 
-                        {/* Analytical Projection Tooltip Placeholder */}
-                        <div className="p-10 rounded-[3rem] bg-slate-900 text-white relative overflow-hidden group shadow-2xl shadow-indigo-100/20">
-                             <div className="absolute top-0 right-0 p-10 opacity-20 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
-                                 <TrendingUp size={240} strokeWidth={1} />
-                             </div>
-                             <div className="relative z-10 max-w-xl">
-                                 <div className="flex items-center gap-3 mb-6">
-                                     <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10">
-                                         <Zap size={24} className="text-indigo-400" />
-                                     </div>
-                                     <Badge variant="success">INTELLIGENT PREDICTION</Badge>
-                                 </div>
-                                 <h4 className="text-3xl font-black tracking-tight leading-tight">Projected Efficiency <br /> Increasing by 14.2%</h4>
-                                 <p className="text-slate-400 font-medium mt-4 text-sm leading-relaxed">Based on your current scheduling patterns, we've optimized your next clinical cycle to reduce patient waiting times by 12 minutes.</p>
-                                 <button className="mt-8 px-8 py-3.5 bg-white text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-transform">Enable Optimization</button>
-                             </div>
-                        </div>
+                                <div className="surface-card bg-white overflow-hidden flex flex-col mt-8 shadow-sm border border-slate-100 rounded-[2rem]">
+                                    <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                                        <div>
+                                            <h3 className="text-xl font-serif text-slate-900">Waitlist Queue</h3>
+                                            <p className="text-xs text-slate-500 mt-1">Real-time status of awaiting patients.</p>
+                                        </div>
+                                        <button className="px-4 py-2 bg-teal-50 text-teal-600 rounded-xl text-xs font-bold hover:bg-teal-100 transition-colors">
+                                            Manage Queue
+                                        </button>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="border-b border-slate-50 bg-slate-50/50 text-[10px] uppercase font-black tracking-widest text-slate-400">
+                                                    <th className="p-6 pl-8">Patient Identity</th>
+                                                    <th className="p-6">Visit Mode</th>
+                                                    <th className="p-6">Consultation Time</th>
+                                                    <th className="p-6">Clinical Status</th>
+                                                    <th className="p-6 pr-8 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50">
+                                                {appointments.filter(a => a.status !== 'PENDING').slice(0, 5).map((appt, i) => (
+                                                    <tr key={i} className="hover:bg-slate-50/30 transition-colors group cursor-pointer" onClick={() => { setSelectedAppointment(appt); setIsDrawerOpen(true); }}>
+                                                        <td className="p-6 pl-8">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex-shrink-0 shadow-sm">
+                                                                    <img src={`https://ui-avatars.com/api/?name=P${appt.patientId}&background=random&color=fff`} alt="P" />
+                                                                </div>
+                                                                <span className="font-bold text-slate-800">Patient #{appt.patientId}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-6">
+                                                            <Badge variant={appt.mode === 'TELEMEDICINE' ? 'primary' : 'success'}>
+                                                                {appt.mode}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="p-6">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-bold text-slate-700">{appt.date}</span>
+                                                                <span className="text-[10px] font-medium text-slate-500 mt-0.5">{appt.time}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-6">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`w-2 h-2 rounded-full ${appt.status === 'PAID' ? 'bg-teal-500' : 'bg-amber-500'} animate-pulse`} />
+                                                                <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">{appt.status}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-6 pr-8 text-right">
+                                                            {(appt.status === 'CONFIRMED' || appt.status === 'PAID') && (
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); setActivePostSession(appt); }}
+                                                                    className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-teal-600 hover:text-white transition-all ml-auto group-hover:shadow-lg group-hover:shadow-teal-500/20"
+                                                                    title="Issue Prescription"
+                                                                >
+                                                                    <ClipboardList className="w-5 h-5" />
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {appointments.filter(a => a.status !== 'PENDING').length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="5" className="p-12 text-center">
+                                                            <div className="flex flex-col items-center opacity-40">
+                                                                <Calendar size={48} className="text-slate-200 mb-4" />
+                                                                <p className="text-sm font-medium text-slate-400">No active sessions in queue.</p>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                     </div>
 
-                    {/* Secondary Intelligence Column */}
-                    <div className="xl:col-span-4 space-y-10">
-                        {/* Clinical Profile Management */}
-                        <Card
-                            title="Clinical Identity"
-                            subtitle="Global verification & profile status"
-                            variant="dark"
-                        >
-                            <div className="space-y-8">
-                                <div className="flex items-center gap-5 p-6 bg-white/5 rounded-3xl border border-white/5">
-                                    <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20 overflow-hidden relative group">
-                                         <User size={32} />
-                                         <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                         <h5 className="font-black text-xl tracking-tight leading-none group-hover:text-indigo-400 transition-colors">Dr. {profile?.userId || 'Staff'}</h5>
-                                         <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mt-2">Senior Specialist</p>
-                                    </div>
-                                </div>
-                                
-                                <div className="space-y-4">
-                                     <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                         <span>Profile Completeness</span>
-                                         <span className="text-indigo-400">82%</span>
-                                     </div>
-                                     <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                                         <motion.div 
-                                            initial={{ width: 0 }}
-                                            animate={{ width: '82%' }}
-                                            className="h-full bg-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.5)]" 
-                                         />
-                                     </div>
-                                </div>
-
-                                <Button 
-                                    variant="primary" 
-                                    size="md" 
-                                    className="w-full"
-                                    onClick={() => router.push(DOCTOR_ROUTES.PROFILE)}
-                                >
-                                    Refine Identity
-                                </Button>
-                            </div>
-                        </Card>
-
-                        {/* Recent Infrastructure Logs */}
-                        <Card
-                            title="System Intel"
-                            subtitle="Automated logs from clinical cloud"
-                        >
-                            <div className="space-y-6">
-                                {[
-                                    { msg: 'New Prescription synced to cloud', time: '12m ago', icon: Stethoscope, color: 'text-emerald-500' },
-                                    { msg: 'Token P-042 arrived at clinic', time: '45m ago', icon: User, color: 'text-indigo-500' },
-                                    { msg: 'System background audit complete', time: '2h ago', icon: ShieldCheck, color: 'text-sky-500' }
-                                ].map((log, i) => (
-                                    <div key={i} className="flex gap-4 group">
-                                        <div className={`w-10 h-10 rounded-xl bg-slate-50 ${log.color} flex items-center justify-center border border-slate-100 shrink-0 group-hover:scale-110 transition-transform`}>
-                                            <log.icon size={18} />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-slate-700 leading-tight">{log.msg}</span>
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-1">{log.time}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-
-                        {/* Help Desk Banner */}
-                        <div className="p-10 rounded-[2.5rem] bg-indigo-50 border border-indigo-100 group cursor-pointer hover:bg-indigo-100 transition-all">
-                             <div className="flex items-center gap-4 mb-4">
-                                 <div className="w-12 h-12 rounded-2xl bg-white border border-indigo-200 text-indigo-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                     <MessageSquare size={22} />
+                    <div className="space-y-8">
+                        <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden">
+                             <div className="flex justify-between items-center mb-8">
+                                 <h4 className="font-serif text-slate-900 text-xl">Clinic Calendar</h4>
+                                 <div className="flex gap-2">
+                                     <button className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-teal-600 bg-teal-50 rounded-lg">{format(new Date(), 'MMM')}</button>
                                  </div>
-                                 <h6 className="font-black text-slate-900 tracking-tight">Clinical Support</h6>
                              </div>
-                             <p className="text-xs font-medium text-slate-500 leading-relaxed italic">"Our tactical medical support team is ready to assist with any high-priority infrastructure issues."</p>
+                             <div className="flex justify-between text-center pb-6">
+                                 {[0, 1, 2, 3, 4, 5, 6].map((i) => {
+                                     const dayDate = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
+                                     const isCurrentDay = isSameDay(dayDate, new Date());
+                                     return (
+                                         <div key={i} className={`flex flex-col items-center gap-2 p-3 rounded-2xl transition-all ${isCurrentDay ? 'bg-teal-600 text-white shadow-xl shadow-teal-500/30 scale-110' : 'text-slate-400 hover:bg-slate-50'}`}>
+                                             <span className="text-[9px] font-black uppercase tracking-widest">{format(dayDate, 'EEE')}</span>
+                                             <span className={`text-sm font-black ${isCurrentDay ? 'text-white' : 'text-slate-800'}`}>{format(dayDate, 'd')}</span>
+                                         </div>
+                                     );
+                                 })}
+                             </div>
+                             <div className="border-t border-slate-50 pt-8">
+                                 <h4 className="font-serif text-slate-900 text-lg mb-6">System Health</h4>
+                                 <div className="grid grid-cols-2 gap-4">
+                                     <div className="p-4 bg-teal-50/50 rounded-[1.5rem] border border-teal-100/30 text-center group hover:bg-teal-50 transition-colors">
+                                         <div className="w-10 h-10 mx-auto bg-white rounded-xl flex items-center justify-center mb-3 shadow-sm text-teal-500">
+                                             <CheckCircle size={18} />
+                                         </div>
+                                         <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Efficiency</div>
+                                         <div className="text-sm font-black text-teal-700">92%</div>
+                                     </div>
+                                     <div className="p-4 bg-indigo-50/50 rounded-[1.5rem] border border-indigo-100/30 text-center group hover:bg-indigo-50 transition-colors">
+                                         <div className="w-10 h-10 mx-auto bg-white rounded-xl flex items-center justify-center mb-3 shadow-sm text-indigo-500">
+                                             <Clock size={18} />
+                                         </div>
+                                         <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Hours</div>
+                                         <div className="text-sm font-black text-indigo-700">8.5</div>
+                                     </div>
+                                 </div>
+                             </div>
+                        </div>
+
+                        <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-slate-200">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/20 blur-[50px] rounded-full" />
+                            <h4 className="font-serif text-xl mb-8 relative z-10">Patient Flow Tracker</h4>
+                            <div className="h-40 flex items-end justify-between gap-2 px-2 relative z-10">
+                                {[0, 1, 2, 3, 4, 5, 6].map((i) => {
+                                    const dayDate = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
+                                    const dayAppointments = appointments.filter(a => a.date && isSameDay(new Date(a.date), dayDate)).length;
+                                    const h = dayAppointments > 0 ? Math.min(100, Math.max(10, dayAppointments * 20)) : 10 + (i * 15 % 50); 
+                                    return (
+                                        <div key={i} className="flex flex-col items-center gap-2">
+                                            <div className="flex items-end gap-1.5 h-28">
+                                                <div className="w-2.5 bg-white/10 rounded-t-full transition-all duration-700" style={{ height: `${h}%` }}></div>
+                                                <div className="w-2.5 bg-teal-400 rounded-t-full shadow-[0_0_15px_rgba(45,212,191,0.3)] transition-all duration-1000 delay-100" style={{ height: `${h * 0.7}%` }}></div>
+                                            </div>
+                                            <span className="text-[9px] font-black uppercase tracking-widest opacity-40">
+                                                {format(dayDate, 'EEE')}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+                
+                <PatientContextDrawer 
+                    isOpen={isDrawerOpen} 
+                    onClose={() => setIsDrawerOpen(false)} 
+                    appointment={selectedAppointment} 
+                />
+                
+                <AnimatePresence>
+                    {activePostSession && (
+                        <SessionPrescriptionModal 
+                            session={activePostSession} 
+                            onClose={() => setActivePostSession(null)} 
+                            doctorId={userData?.id} 
+                        />
+                    )}
+                </AnimatePresence>
+            </main>
         </DashboardLayout>
     );
 };

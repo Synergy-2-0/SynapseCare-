@@ -6,5 +6,6 @@ public enum AppointmentStatus {
     CANCELLED,
     COMPLETED,
     REJECTED,
-    PENDING_PAYMENT
+    PENDING_PAYMENT,
+    PAID
 }

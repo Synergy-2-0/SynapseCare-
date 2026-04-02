@@ -160,6 +160,15 @@ public class DoctorService {
         return mapToProfileResponse(doctor);
     }
 
+    public List<DoctorProfileResponse> findPeers(Long doctorId, String specialization) {
+        log.debug("Finding peers for doctor {} in specialization {}", doctorId, specialization);
+        return doctorRepository.findBySpecializationAndVerificationStatus(specialization, VerificationStatus.APPROVED)
+                .stream()
+                .filter(d -> !d.getId().equals(doctorId))
+                .map(this::mapToProfileResponse)
+                .collect(Collectors.toList());
+    }
+
     /**
      * Search doctors - PUBLIC endpoint
      * Only returns doctors with:

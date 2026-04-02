@@ -22,7 +22,7 @@ export const DOCTOR_ROUTES = {
     PATIENTS: '/doctor/patients',
     PATIENT_DETAIL: (id) => `/doctor/patients/${id}`,
     PRESCRIPTIONS: '/doctor/prescriptions',
-    TELEMEDICINE: '/doctor/telemedicine-center',
+    TELEMEDICINE: '/doctor/consultations',
     ANALYTICS: '/doctor/analytics',
     SETTINGS: '/doctor/settings',
 };

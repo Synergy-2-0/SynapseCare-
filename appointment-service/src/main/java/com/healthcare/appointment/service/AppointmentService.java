@@ -274,6 +274,34 @@ public class AppointmentService {
         return mapToDto(appointment);
     }
 
+    public List<AppointmentDto> findConflicts(Long doctorId, LocalDate start, LocalDate end) {
+        return appointmentRepository.findByDoctorIdAndDateBetweenAndStatusIn(
+                doctorId, 
+                start, 
+                end, 
+                List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.PAID)
+        ).stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
+    public void bulkReassign(List<Long> appointmentIds, Long targetDoctorId) {
+        List<Appointment> appointments = appointmentRepository.findAllById(appointmentIds);
+        for (Appointment appointment : appointments) {
+            appointment.setDoctorId(targetDoctorId);
+            appointmentRepository.save(appointment);
+            publishEvent("APPOINTMENT_REASSIGNED", appointment);
+        }
+    }
+
+    public void bulkCancel(List<Long> appointmentIds, String reason) {
+        List<Appointment> appointments = appointmentRepository.findAllById(appointmentIds);
+        for (Appointment appointment : appointments) {
+            appointment.setStatus(AppointmentStatus.CANCELLED);
+            appointment.setReason(reason);
+            appointmentRepository.save(appointment);
+            publishEvent("APPOINTMENT_CANCELLED", appointment);
+        }
+    }
+
     private AppointmentDto mapToDto(Appointment entity) {
         return AppointmentDto.builder()
                 .id(entity.getId())
