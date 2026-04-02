@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { isDoctorApproved } from '@/lib/doctorVerification';
 import ScheduleTab from '@/components/doctor/ScheduleTab';
 import PatientContextDrawer from '@/components/doctor/PatientContextDrawer';
+import { useCallback } from 'react';
 
 const SchedulePage = () => {
     const [appointments, setAppointments] = useState([]);
@@ -15,34 +16,44 @@ const SchedulePage = () => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const router = useRouter();
 
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const role = localStorage.getItem('user_role');
-            const id = localStorage.getItem('user_id');
-            const name = localStorage.getItem('user_name');
+    const fetchData = useCallback(async () => {
+        if (typeof window === 'undefined') return;
 
-            if (role !== 'DOCTOR') { router.push('/login'); return; }
-            setUserData({ name, id });
+        const role = localStorage.getItem('user_role');
+        const userId = localStorage.getItem('user_id');
+        const name = localStorage.getItem('user_name');
 
-            const fetchData = async () => {
-                try {
-                    const profileRes = await doctorApi.get('/profile/me');
-                    if (!isDoctorApproved(profileRes?.data?.verificationStatus)) {
-                        router.replace('/doctor/setup');
-                        return;
-                    }
+        if (role !== 'DOCTOR') { router.push('/login'); return; }
+        setUserData({ name, userId, doctorId: null });
 
-                    const apptRes = await appointmentApi.get(`/doctor/${id}`);
-                    setAppointments((apptRes.data?.data || apptRes.data || []).filter(a => a.status !== 'CANCELLED'));
-                } catch (err) {
-                    console.error("Failed to fetch schedule data", err);
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchData();
+        try {
+            const profileRes = await doctorApi.get('/profile/me');
+            const doctorProfile = profileRes?.data;
+
+            if (!isDoctorApproved(doctorProfile?.verificationStatus)) {
+                router.replace('/doctor/setup');
+                return;
+            }
+
+            const doctorId = doctorProfile?.id;
+            if (!doctorId) {
+                throw new Error('Doctor profile ID is missing');
+            }
+
+            setUserData({ name, userId, doctorId });
+
+            const apptRes = await appointmentApi.get(`/doctor/${doctorId}`);
+            setAppointments(Array.isArray(apptRes.data?.data || apptRes.data || []) ? (apptRes.data?.data || apptRes.data || []) : []);
+        } catch (err) {
+            console.error("Failed to fetch schedule data", err);
+        } finally {
+            setLoading(false);
         }
     }, [router]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     if (loading) return null;
 
@@ -54,7 +65,8 @@ const SchedulePage = () => {
             <div className="relative">
                 <ScheduleTab 
                     appointments={appointments} 
-                    doctorId={userData?.id}
+                    doctorId={userData?.doctorId}
+                    onRefresh={fetchData}
                     onAppointmentClick={(appt) => {
                         setSelectedAppointment(appt);
                         setIsDrawerOpen(true);

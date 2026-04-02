@@ -27,7 +27,7 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { publicDoctorApi, appointmentApi } from '../../lib/api';
+import { publicDoctorApi, appointmentApi, patientApi } from '../../lib/api';
 import { SPECIALIZATION_LABELS } from '../../constants/specializations';
 
 // Real data only: Specialist profile synchronization using API dossier registry signals.
@@ -42,7 +42,7 @@ export default function DoctorProfile() {
     const [slots, setSlots] = useState([]);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [selectedSlot, setSelectedSlot] = useState(null);
-    const [bookingMode, setBookingMode] = useState('TELEHEALTH');
+    const [bookingMode, setBookingMode] = useState('TELEMEDICINE');
     const [bookingInProgress, setBookingInProgress] = useState(false);
 
     useEffect(() => {
@@ -117,8 +117,8 @@ export default function DoctorProfile() {
     const handleBooking = async () => {
         if (!selectedSlot || !doctor || !selectedDate) return;
         
-        const patientId = localStorage.getItem('user_id');
-        if (!patientId) {
+        const patientUserId = localStorage.getItem('user_id');
+        if (!patientUserId) {
             alert("Protocol Violation: Patient authentication required. Please login.");
             router.push('/login');
             return;
@@ -126,10 +126,20 @@ export default function DoctorProfile() {
 
         setBookingInProgress(true);
         try {
+            const patientRes = await patientApi.get(`/user/${patientUserId}`);
+            const patientProfile = patientRes.data?.data || patientRes.data;
+            const patientId = patientProfile?.id;
+
+            if (!patientId) {
+                throw new Error('Patient profile not found for current user');
+            }
+
+            localStorage.setItem('patient_id', String(patientId));
+
             // Transform startTime (8:30:00) to LocalTime format if needed. 
             // Our backend expects LocalTime string.
             const appointmentPayload = {
-                patientId: parseInt(patientId),
+                patientId: parseInt(patientId, 10),
                 doctorId: doctor.id,
                 date: selectedDate,
                 time: selectedSlot.startTime,
@@ -138,8 +148,8 @@ export default function DoctorProfile() {
                 reason: "Regular clinical consultation initiated via practitioner dossier."
             };
 
-            const response = await appointmentApi.post('/', appointmentPayload);
-            const newAppointment = response.data;
+            const response = await appointmentApi.post('/book', appointmentPayload);
+            const newAppointment = response.data?.data || response.data;
 
             // Redirect to payment with the REAL appointment ID
             router.push({
@@ -341,7 +351,7 @@ export default function DoctorProfile() {
                                 <div className="space-y-3">
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Consultation Mode</p>
                                     <div className="flex gap-2 p-2 bg-slate-50 rounded-2xl border border-slate-100">
-                                         {['TELEHEALTH', 'IN-PERSON'].map((mode) => (
+                                         {['TELEMEDICINE', 'IN_PERSON'].map((mode) => (
                                              <button 
                                                 key={mode}
                                                 onClick={() => setBookingMode(mode)}
@@ -350,8 +360,8 @@ export default function DoctorProfile() {
                                                 }`}
                                              >
                                                  <div className="flex items-center justify-center gap-2">
-                                                     {mode === 'TELEHEALTH' ? <Video size={10} /> : <MapPin size={10} />}
-                                                     {mode}
+                                                     {mode === 'TELEMEDICINE' ? <Video size={10} /> : <MapPin size={10} />}
+                                                     {mode === 'IN_PERSON' ? 'IN-PERSON' : 'TELEMEDICINE'}
                                                  </div>
                                              </button>
                                          ))}
