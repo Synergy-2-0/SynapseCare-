@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/router';
 import { ChevronRight, ShieldCheck, AlertCircle, Info } from 'lucide-react';
 import Badge from '../ui/Badge';
 
@@ -9,6 +10,9 @@ const Header = ({
     actions,
     verificationStatus
 }) => {
+    const router = useRouter();
+    const isPatientRoute = router.pathname.startsWith('/dashboard/patient') || router.pathname.startsWith('/patient');
+
     return (
         <div className="mb-12">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
@@ -18,7 +22,7 @@ const Header = ({
                         <div className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none">
                             {breadcrumbs.map((crumb, index) => (
                                 <React.Fragment key={index}>
-                                    <span className={index === breadcrumbs.length - 1 ? 'text-indigo-600' : ''}>
+                                    <span className={index === breadcrumbs.length - 1 ? (isPatientRoute ? 'text-teal-600' : 'text-indigo-600') : ''}>
                                         {crumb.label}
                                     </span>
                                     {index < breadcrumbs.length - 1 && (
@@ -30,16 +34,15 @@ const Header = ({
                     )}
 
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                        <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter leading-none">
+                        <h1 className={isPatientRoute ? 'text-4xl font-black text-slate-900 tracking-tighter leading-tight' : 'text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter leading-none'}>
                             {title}
                         </h1>
-                        
+
                         {verificationStatus && (
-                            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 shadow-sm ${
-                                verificationStatus.status === 'APPROVED' 
-                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                                : 'bg-amber-50 text-amber-600 border-amber-100'
-                            }`}>
+                            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 shadow-sm ${verificationStatus.status === 'APPROVED'
+                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                    : 'bg-amber-50 text-amber-600 border-amber-100'
+                                }`}>
                                 {verificationStatus.status === 'APPROVED' ? <ShieldCheck size={14} /> : <AlertCircle size={14} />}
                                 {verificationStatus.status === 'APPROVED' ? 'Verified Practitioner' : verificationStatus.message || 'Status Pending'}
                             </div>
@@ -47,7 +50,7 @@ const Header = ({
                     </div>
 
                     {subtitle && (
-                        <p className="text-lg text-slate-500 font-medium max-w-2xl leading-relaxed">
+                        <p className={isPatientRoute ? 'copy-description text-slate-500 font-medium max-w-2xl leading-relaxed' : 'text-lg text-slate-500 font-medium max-w-2xl leading-relaxed'}>
                             {subtitle}
                         </p>
                     )}
@@ -60,10 +63,10 @@ const Header = ({
                     </div>
                 )}
             </div>
-            
-            {/* Horizontal Divider with Subtle Indigo Glow */}
+
+            {/* Horizontal Divider with Subtle Accent Glow */}
             <div className="mt-10 h-px w-full bg-slate-200 relative">
-                 <div className="absolute left-0 top-0 h-px w-32 bg-indigo-500 shadow-[0_0_8px_rgba(79,70,229,0.5)]" />
+                <div className={`absolute left-0 top-0 h-px w-32 ${isPatientRoute ? 'bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.45)]' : 'bg-indigo-500 shadow-[0_0_8px_rgba(79,70,229,0.5)]'}`} />
             </div>
         </div>
     );
