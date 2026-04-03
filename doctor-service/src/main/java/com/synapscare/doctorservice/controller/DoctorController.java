@@ -61,6 +61,11 @@ public class DoctorController {
         return ResponseEntity.ok(doctor);
     }
 
+    @GetMapping("/debug/registries")
+    public ResponseEntity<List<DoctorProfileResponse>> debugRegistries() {
+        return ResponseEntity.ok(doctorService.getAllDoctors());
+    }
+
     @GetMapping("/{id}/available-slots")
     public ResponseEntity<List<AvailableSlotResponse>> getAvailableSlots(
             @PathVariable("id") Long id,

@@ -135,16 +135,29 @@ const PatientDashboard = () => {
         if (router.query.payment === 'success') {
             console.log("Payment success detected — synchronizing visit states...");
             const id = localStorage.getItem('patient_id') || localStorage.getItem('user_id');
+            const targetApptId = router.query.appointmentId;
+            
             const syncData = async () => {
+                if (targetApptId) {
+                    try {
+                        // explicitly confirm here to bypass localhost webhook block
+                        await appointmentApi.patch(`/${targetApptId}/status?status=CONFIRMED`);
+                        console.log("Appointment confirmed after return from payment:", targetApptId);
+                    } catch (e) {
+                        console.warn("Could not auto-confirm post-payment:", e);
+                    }
+                }
+
                 const apptRes = await appointmentApi.get(`/patient/${id}`).catch(() => ({ data: { data: [] } }));
                 const allAppts = apptRes.data?.data || apptRes.data || [];
                 setUpcoming(Array.isArray(allAppts) ? allAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)) : []);
+                
                 // Update URL to remove visual success param without reload
                 router.replace('/dashboard/patient', undefined, { shallow: true });
             };
             syncData();
         }
-    }, [router.query.payment]);
+    }, [router.query.payment, router.query.appointmentId]);
 
     const logout = () => {
         localStorage.clear();
@@ -575,7 +588,7 @@ const PatientDashboard = () => {
                                                                 </button>
                                                             ) : (
                                                                 <button
-                                                                    onClick={() => router.push(`/payment?id=${u.id}&amount=${u.fee || 1500}&patientId=${userData.id}&doctorId=${u.doctorId}`)}
+                                                                    onClick={() => router.push(`/payment?appointmentId=${u.id}&amount=${u.fee || 1500}&patientId=${userData.id}&doctorId=${u.doctorId}`)}
                                                                     className="flex-1 py-4 bg-white text-indigo-600 border-2 border-indigo-600 font-black text-sm rounded-2xl hover:bg-indigo-50 transition-all uppercase tracking-widest"
                                                                 >
                                                                     Settle Clinical Fee

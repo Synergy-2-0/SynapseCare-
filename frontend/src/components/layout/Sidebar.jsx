@@ -80,10 +80,15 @@ const Sidebar = ({ onClose }) => {
     return (
         <aside className="w-[280px] bg-white border-r border-slate-100 flex flex-col h-screen sticky top-0 z-50 overflow-hidden shadow-sm">
             {/* Logo Section - Clean Sans-Serif as in reference image */}
-            <div className="flex items-center gap-3 px-8 py-10 cursor-pointer" onClick={() => router.push('/')}>
-                <Image src="/logo.png" alt="SynapseCare" width={32} height={32} className="w-8 h-8 object-contain" />
+            <div className="flex items-center gap-3 px-8 py-10 cursor-pointer" onClick={() => {
+                if (currentRole === 'DOCTOR') router.push(DOCTOR_ROUTES.DASHBOARD);
+                else if (currentRole === 'PATIENT') router.push(PATIENT_ROUTES.DASHBOARD);
+                else if (currentRole === 'ADMIN') router.push(ADMIN_ROUTES.DASHBOARD);
+                else router.push('/');
+            }}>
+                <Image src="/logo.png" alt="SynapseDoc" width={32} height={32} className="w-8 h-8 object-contain" />
                 <span className="text-2xl font-bold tracking-tight text-slate-900 font-sans">
-                    Synapse<span className="text-teal-600">Care</span>
+                    Synapse<span className="text-teal-600">Doc</span>
                 </span>
             </div>
 

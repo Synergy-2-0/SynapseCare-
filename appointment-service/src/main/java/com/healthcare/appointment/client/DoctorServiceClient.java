@@ -78,8 +78,10 @@ public class DoctorServiceClient {
 
             AvailableSlotClientDto[] body = response.getBody();
             return body == null ? List.of() : Arrays.asList(body);
+        } catch (HttpClientErrorException.NotFound ex) {
+            throw new ResourceNotFoundException("Clinical availability node not found for doctor ID: " + doctorId);
         } catch (RestClientException ex) {
-            throw new DoctorServiceUnavailableException("Doctor service is currently unavailable");
+            throw new DoctorServiceUnavailableException("Doctor service is currently unavailable for availability synchronization");
         }
     }
 

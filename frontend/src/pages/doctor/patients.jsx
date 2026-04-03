@@ -21,7 +21,7 @@ const PatientsPage = () => {
             const name = localStorage.getItem('user_name');
 
             if (role !== 'DOCTOR') { router.push('/login'); return; }
-            setUserData({ name, id });
+            setUserData({ name, authId: id });
 
             const fetchData = async () => {
                 try {
@@ -30,6 +30,9 @@ const PatientsPage = () => {
                         router.replace('/doctor/setup');
                         return;
                     }
+                    
+                    const dbId = profileRes.data?.id || id;
+                    setUserData({ name, id: dbId, authId: id });
                 } catch (err) {
                     console.error("Failed to check profile", err);
                 } finally {

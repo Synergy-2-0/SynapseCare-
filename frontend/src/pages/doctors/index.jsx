@@ -44,15 +44,16 @@ const DoctorsList = () => {
                 const response = await publicDoctorApi.get('/search');
                 // Map the new backend fields to the UI card structure
                 const mappedDoctors = response.data.map(doc => ({
-                    id: doc.id,
+                    id: doc.userId, // Standardized to clinical identity across microservices
+                    dbId: doc.id,
                     name: (doc.firstName && doc.lastName) 
                         ? `${doc.firstName} ${doc.lastName}`
-                        : `Specialist Node #${doc.id}`, // Neutral fallback for missing database fields
+                        : `Specialist Node #${doc.userId}`, 
                     specialization: doc.specialization || "Clinical Practice",
-                    image: doc.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doc.id}`,
-                    location: "SynapseCare Global Hub", // Mock location as it's not in DB yet
-                    rating: 4.8 + (doc.id % 5) * 0.05, // Slight variation in rating for visual appeal
-                    reviews: 50 + (doc.id * 7) % 200,
+                    image: doc.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doc.userId}`,
+                    location: "SynapseCare Global Hub", 
+                    rating: 4.8 + (doc.userId % 5) * 0.05, 
+                    reviews: 50 + (doc.userId * 7) % 200,
                     experience: doc.experience ? `${doc.experience}+ Years` : "Senior Practitioner",
                     availableToday: doc.isAvailable,
                     fee: doc.consultationFee || 1500
