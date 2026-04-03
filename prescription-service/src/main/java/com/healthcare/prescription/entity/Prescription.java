@@ -24,27 +24,19 @@ public class Prescription {
     @Column(nullable = false)
     private Long patientId;
 
-    // Denormalized fields for PDF generation
-    private String doctorName;
-    private String doctorSpecialization;
-    private String doctorLicenseNumber;
-    private String patientName;
-    private Integer patientAge;
-    private String patientGender;
-
     @Column(nullable = false)
     private String medicineName;
 
-    @Column(nullable = false)
+    @Column
     private String dosage;
 
-    @Column(nullable = false)
+    @Column
     private String duration;
 
-    @Column(nullable = false, length = 1000)
+    @Column(length = 1000)
     private String instructions;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdDate;
 
     @Column(length = 1000)
@@ -56,4 +48,13 @@ public class Prescription {
 
     @Column(length = 100)
     private String diagnosisCode;
+
+    // Billing / Inventory (Pharmacist Logic)
+    private Double unitPrice;
+    private Integer quantity;
+    private Double unitDiscount;
+    private Double totalAmount;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive;
 }
