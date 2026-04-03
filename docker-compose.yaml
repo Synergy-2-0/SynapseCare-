@@ -52,6 +52,8 @@ services:
       - 'SPRING_RABBITMQ_PORT=5672'
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
+      - 'DOCTOR_SERVICE_URL=http://doctor-service:8082'
+      - 'PATIENT_SERVICE_URL=http://patient-service:8084'
     depends_on:
       postgres:
         condition: service_healthy
