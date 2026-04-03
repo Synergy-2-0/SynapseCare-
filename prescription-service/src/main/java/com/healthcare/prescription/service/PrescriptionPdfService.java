@@ -75,20 +75,11 @@ public class PrescriptionPdfService {
 
         // Doctor info
         Font doctorFont = new Font(Font.HELVETICA, 12, Font.NORMAL, new Color(51, 51, 51));
-        String doctorInfo = String.format("Dr. %s - %s",
-                prescription.getDoctorName() != null ? prescription.getDoctorName() : "N/A",
-                prescription.getDoctorSpecialization() != null ? prescription.getDoctorSpecialization() : "General Medicine");
+        String doctorInfo = String.format("Doctor ID: %d",
+                prescription.getDoctorId());
         Paragraph doctorPara = new Paragraph(doctorInfo, doctorFont);
         doctorPara.setAlignment(Element.ALIGN_CENTER);
         document.add(doctorPara);
-
-        // License number
-        if (prescription.getDoctorLicenseNumber() != null) {
-            Font licenseFont = new Font(Font.HELVETICA, 10, Font.ITALIC, new Color(102, 102, 102));
-            Paragraph licensePara = new Paragraph("License No: " + prescription.getDoctorLicenseNumber(), licenseFont);
-            licensePara.setAlignment(Element.ALIGN_CENTER);
-            document.add(licensePara);
-        }
 
         document.add(Chunk.NEWLINE);
     }
@@ -110,27 +101,24 @@ public class PrescriptionPdfService {
         table.setWidths(new float[]{1, 1});
 
         // Patient Name
-        PdfPCell labelCell = new PdfPCell(new Phrase("Patient Name:", labelFont));
+        PdfPCell labelCell = new PdfPCell(new Phrase("Patient ID:", labelFont));
         labelCell.setBorder(Rectangle.NO_BORDER);
         labelCell.setPaddingBottom(5);
         table.addCell(labelCell);
 
-        String patientName = prescription.getPatientName() != null ? prescription.getPatientName() : "N/A";
+        String patientName = String.valueOf(prescription.getPatientId());
         PdfPCell valueCell = new PdfPCell(new Phrase(patientName, valueFont));
         valueCell.setBorder(Rectangle.NO_BORDER);
         valueCell.setPaddingBottom(5);
         table.addCell(valueCell);
 
         // Age/Gender
-        labelCell = new PdfPCell(new Phrase("Age / Gender:", labelFont));
+        labelCell = new PdfPCell(new Phrase("", labelFont));
         labelCell.setBorder(Rectangle.NO_BORDER);
         labelCell.setPaddingBottom(5);
         table.addCell(labelCell);
 
-        String ageGender = String.format("%s / %s",
-                prescription.getPatientAge() != null ? prescription.getPatientAge() + " years" : "N/A",
-                prescription.getPatientGender() != null ? prescription.getPatientGender() : "N/A");
-        valueCell = new PdfPCell(new Phrase(ageGender, valueFont));
+        valueCell = new PdfPCell(new Phrase("", valueFont));
         valueCell.setBorder(Rectangle.NO_BORDER);
         valueCell.setPaddingBottom(5);
         table.addCell(valueCell);
@@ -250,7 +238,7 @@ public class PrescriptionPdfService {
         sigTable.addCell(leftCell);
 
         // Right side - signature line
-        String doctorName = prescription.getDoctorName() != null ? "Dr. " + prescription.getDoctorName() : "Doctor's Signature";
+        String doctorName = "Doctor ID: " + prescription.getDoctorId();
         PdfPCell rightCell = new PdfPCell();
         rightCell.setBorder(Rectangle.NO_BORDER);
         rightCell.setHorizontalAlignment(Element.ALIGN_CENTER);

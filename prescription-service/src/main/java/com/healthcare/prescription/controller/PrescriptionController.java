@@ -49,11 +49,9 @@ public class PrescriptionController {
         byte[] pdfContent = prescriptionService.generatePdf(id);
         PrescriptionDto prescription = prescriptionService.getById(id);
 
-        String filename = String.format("prescription_%d_%s.pdf",
+        String filename = String.format("prescription_%d_%d.pdf",
                 id,
-                prescription.getPatientName() != null
-                        ? prescription.getPatientName().replaceAll("\\s+", "_")
-                        : "patient");
+                prescription.getPatientId());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
