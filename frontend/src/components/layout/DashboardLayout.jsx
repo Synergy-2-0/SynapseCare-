@@ -13,7 +13,7 @@ const DashboardLayout = ({ children, title = "" }) => {
     const [isAuthorized, setIsAuthorized] = useState(false);
     const router = useRouter();
 
-    const displayTitle = title ? `${title} | SynapsCare` : "SynapsCare Dashboard";
+    const displayTitle = title ? `${title} | SynapseDoc` : "SynapseDoc Dashboard";
 
     const getAllowedRolesForPath = (pathname) => {
         if (pathname.startsWith('/dashboard/admin')) return ['ADMIN'];

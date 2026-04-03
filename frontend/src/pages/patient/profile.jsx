@@ -11,12 +11,7 @@ const PatientProfilePage = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [form, setForm] = useState({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phoneNumber: ''
-    });
+    const [clinicalId, setClinicalId] = useState(null);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -27,18 +22,25 @@ const PatientProfilePage = () => {
                     return;
                 }
 
-                const response = await patientApi.get(`/${userId}`);
+                // Call /user/{userId} to resolve the profile
+                const response = await patientApi.get(`/user/${userId}`);
                 const payload = response?.data?.data ?? response?.data ?? {};
 
+                setClinicalId(payload.id);
                 setForm({
-                    firstName: payload.firstName || '',
-                    lastName: payload.lastName || '',
+                    firstName: payload.name?.split(' ')[0] || '',
+                    lastName: payload.name?.split(' ').slice(1).join(' ') || '',
                     email: payload.email || localStorage.getItem('user_email') || '',
-                    phoneNumber: payload.phoneNumber || ''
+                    phoneNumber: payload.phone || ''
                 });
             } catch (err) {
-                console.error('Failed to fetch patient profile:', err);
-                setError('Unable to load profile details.');
+                console.warn('Patient profile record missing for user - initializing empty form.');
+                setForm({
+                    firstName: localStorage.getItem('user_name')?.split(' ')[0] || '',
+                    lastName: localStorage.getItem('user_name')?.split(' ').slice(1).join(' ') || '',
+                    email: localStorage.getItem('user_email') || '',
+                    phoneNumber: localStorage.getItem('user_phone') || ''
+                });
             } finally {
                 setLoading(false);
             }
@@ -60,8 +62,23 @@ const PatientProfilePage = () => {
             }
 
             setSaving(true);
-            await patientApi.put(`/${userId}`, form);
+            const payload = {
+                userId: parseInt(userId, 10),
+                name: `${form.firstName} ${form.lastName}`.trim(),
+                email: form.email,
+                phone: form.phoneNumber
+            };
+
+            if (clinicalId) {
+                await patientApi.put(`/${clinicalId}`, payload);
+            } else {
+                const res = await patientApi.post('/', payload);
+                setClinicalId(res.data?.id || res.data?.data?.id);
+            }
+            
             setSuccess('Profile updated successfully.');
+            localStorage.setItem('user_name', payload.name);
+            localStorage.setItem('user_phone', payload.phone);
         } catch (err) {
             console.error('Failed to update patient profile:', err);
             setError(err?.response?.data?.message || 'Unable to update profile.');

@@ -25,28 +25,37 @@ public class PrescriptionService {
                 .appointmentId(dto.getAppointmentId())
                 .doctorId(dto.getDoctorId())
                 .patientId(dto.getPatientId())
-                .doctorName(dto.getDoctorName())
-                .doctorSpecialization(dto.getDoctorSpecialization())
-                .doctorLicenseNumber(dto.getDoctorLicenseNumber())
-                .patientName(dto.getPatientName())
-                .patientAge(dto.getPatientAge())
-                .patientGender(dto.getPatientGender())
                 .medicineName(dto.getMedicineName())
                 .dosage(dto.getDosage())
                 .duration(dto.getDuration())
                 .instructions(dto.getInstructions())
                 .createdDate(LocalDateTime.now())
                 .followUpNotes(dto.getFollowUpNotes())
-                .diagnosis(dto.getDiagnosis())
-                .diagnosisCode(dto.getDiagnosisCode())
+                .diagnosis(dto.getDiagnosis() != null ? dto.getDiagnosis() : "")
+                .diagnosisCode(dto.getDiagnosisCode() != null ? dto.getDiagnosisCode() : "")
+                .unitPrice(dto.getUnitPrice())
+                .quantity(dto.getQuantity())
+                .unitDiscount(dto.getUnitDiscount())
+                .totalAmount(
+                    (dto.getUnitPrice() != null ? dto.getUnitPrice() : 0.0) * 
+                    (dto.getQuantity() != null ? dto.getQuantity() : 0) - 
+                    (dto.getUnitDiscount() != null ? dto.getUnitDiscount() : 0.0)
+                )
+                .isActive(true)
                 .build();
 
         prescription = prescriptionRepository.save(prescription);
-        log.info("Prescription created for appointment {}", prescription.getAppointmentId());
+        log.info("Prescription created with ID: {} for appointment: {}", prescription.getId(), prescription.getAppointmentId());
 
         // Notify that consultation is completed and prescription is ready
-        rabbitTemplate.convertAndSend("healthcare.exchange", "prescription.created",
-            dto.getAppointmentId().toString());
+        if (prescription.getAppointmentId() != null) {
+            try {
+                rabbitTemplate.convertAndSend("healthcare.exchange", "prescription.created",
+                    prescription.getAppointmentId().toString());
+            } catch (Exception e) {
+                log.error("Failed to send RabbitMQ notification for prescription: {}", e.getMessage());
+            }
+        }
 
         return mapToDto(prescription);
     }
@@ -87,12 +96,6 @@ public class PrescriptionService {
                 .appointmentId(entity.getAppointmentId())
                 .doctorId(entity.getDoctorId())
                 .patientId(entity.getPatientId())
-                .doctorName(entity.getDoctorName())
-                .doctorSpecialization(entity.getDoctorSpecialization())
-                .doctorLicenseNumber(entity.getDoctorLicenseNumber())
-                .patientName(entity.getPatientName())
-                .patientAge(entity.getPatientAge())
-                .patientGender(entity.getPatientGender())
                 .medicineName(entity.getMedicineName())
                 .dosage(entity.getDosage())
                 .duration(entity.getDuration())
@@ -101,6 +104,10 @@ public class PrescriptionService {
                 .followUpNotes(entity.getFollowUpNotes())
                 .diagnosis(entity.getDiagnosis())
                 .diagnosisCode(entity.getDiagnosisCode())
+                .unitPrice(entity.getUnitPrice())
+                .quantity(entity.getQuantity())
+                .unitDiscount(entity.getUnitDiscount())
+                .totalAmount(entity.getTotalAmount())
                 .build();
     }
 }

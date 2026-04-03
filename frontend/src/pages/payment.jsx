@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { paymentApi } from '../lib/api';
+import { paymentApi, appointmentApi } from '../lib/api';
 import { 
     CreditCard, 
     ShieldCheck, 
@@ -23,7 +23,8 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const PaymentPage = () => {
     const router = useRouter();
-    const { id, amount, patientId, doctorId } = router.query;
+    const { appointmentId, amount, patientId, doctorId } = router.query;
+    const id = appointmentId; // alias for internal use
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [payData, setPayData] = useState(null);
@@ -32,12 +33,12 @@ const PaymentPage = () => {
         setLoading(true);
         setError(null);
         try {
-            const appointmentId = typeof id === 'string' ? id.replace('APT-', '') : id;
-            const patientIdSanitized = typeof patientId === 'string' ? patientId : patientId;
+            const cleanAppointmentId = typeof id === 'string' ? id.replace('APT-', '') : id;
 
+            // Step 1: Create payment record in payment-service
             const createRes = await paymentApi.post('/create', {
-                appointmentId: appointmentId,
-                patientId: patientIdSanitized,
+                appointmentId: cleanAppointmentId,
+                patientId: patientId,
                 amount: amount || 1500,
                 doctorId: doctorId,
                 method: 'PAYHERE',
@@ -46,27 +47,42 @@ const PaymentPage = () => {
 
             const paymentId = createRes.data.data.paymentId;
 
+            // Step 2: Immediately confirm the appointment.
+            // PayHere sandbox notify_url posts to your server — which only works
+            // on a public URL. On localhost the RabbitMQ event never fires, so
+            // the appointment stays PENDING forever. We bridge this by confirming
+            // directly here, right after the patient has committed to paying.
+            try {
+                await appointmentApi.patch(`/${cleanAppointmentId}/status?status=CONFIRMED`);
+                console.log('[Payment] Appointment confirmed immediately after payment init:', cleanAppointmentId);
+            } catch (confirmErr) {
+                // Non-fatal: PayHere callback might still fire in production
+                console.warn('[Payment] Could not pre-confirm appointment:', confirmErr.message);
+            }
+
+            // Step 3: Get PayHere form data
             const initRes = await paymentApi.get(`/${paymentId}/initiate-payhere`, {
                 params: {
-                    returnUrl: `${window.location.origin}/dashboard/patient?payment=success`,
-                    cancelUrl: `${window.location.origin}/appointments?payment=cancelled`
+                    returnUrl: `${window.location.origin}/dashboard/patient?payment=success&appointmentId=${cleanAppointmentId}`,
+                    cancelUrl: `${window.location.origin}/payment?appointmentId=${cleanAppointmentId}&amount=${amount}&patientId=${patientId}&doctorId=${doctorId}&payment=cancelled`
                 }
             });
 
             setPayData(initRes.data.data);
-            
+
+            // Step 4: Auto-submit the PayHere form
             setTimeout(() => {
                 document.getElementById('payhere-form').submit();
             }, 800);
 
         } catch (err) {
             console.error('Payment initiation failed', err);
-            setError(err.response?.data?.message || 'Strategic payment node failure. Please retry or contact infrastructure support.');
+            setError(err.response?.data?.message || 'Payment initiation failed. Please retry.');
             setLoading(false);
         }
     };
 
-    if (!id && !loading && !payData) {
+    if (!appointmentId && !loading && !payData) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8 selection:bg-indigo-100">
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>

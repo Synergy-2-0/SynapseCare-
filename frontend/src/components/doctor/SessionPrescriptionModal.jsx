@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, FileText, Pill, Send, ShieldCheck } from 'lucide-react';
+import { X, FileText, Pill, Send, ShieldCheck, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { prescriptionApi } from '@/lib/api';
+import { prescriptionApi, appointmentApi } from '@/lib/api';
 import SOAPNotes from './SOAPNotes';
 
 const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
@@ -15,8 +15,10 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
         e.preventDefault();
         setSubmitting(true);
         try {
+            let rxCount = 0;
+            // 1. Issue Prescriptions if any are filled
             for (const med of medications) {
-                if (med.name) {
+                if (med.name && med.name.trim() !== '') {
                     await prescriptionApi.post('/create', {
                         appointmentId: session.id,
                         doctorId: parseInt(doctorId),
@@ -28,13 +30,22 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
                         followUpNotes: session.inheritedNotes || '',
                         createdDate: new Date().toISOString()
                     });
+                    rxCount++;
                 }
             }
-            toast.success("Prescription issued beautifully!");
+
+            // 2. Explicitly Complete the Appointment Session
+            await appointmentApi.patch(`/${session.id}/status?status=COMPLETED`);
+
+            if (rxCount > 0) {
+                toast.success(`Consultation finalized with ${rxCount} prescriptions.`);
+            } else {
+                toast.success("Consultation notes saved and session completed.");
+            }
             onClose();
         } catch (err) {
             console.error(err);
-            toast.error("Failed to issue prescription.");
+            toast.error("Failed to finalize clinical session.");
         } finally {
             setSubmitting(false);
         }
@@ -113,17 +124,17 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
                                         <div className="grid grid-cols-2 gap-5 mb-5">
                                             <div>
                                                 <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-1.5 block">Drug Name</label>
-                                                <input required value={med.name} onChange={e => updateMedication(i, 'name', e.target.value)} placeholder="e.g. Amoxicillin" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all" />
+                                                <input value={med.name} onChange={e => updateMedication(i, 'name', e.target.value)} placeholder="e.g. Amoxicillin (Optional)" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all" />
                                             </div>
                                             <div>
                                                 <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-1.5 block">Dosage</label>
-                                                <input required value={med.dosage} onChange={e => updateMedication(i, 'dosage', e.target.value)} placeholder="e.g. 500mg" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all" />
+                                                <input value={med.dosage} onChange={e => updateMedication(i, 'dosage', e.target.value)} placeholder="e.g. 500mg" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all" />
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-5">
                                             <div>
                                                 <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-1.5 block">Duration</label>
-                                                <input required value={med.duration} onChange={e => updateMedication(i, 'duration', e.target.value)} placeholder="e.g. 7 Days" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all" />
+                                                <input value={med.duration} onChange={e => updateMedication(i, 'duration', e.target.value)} placeholder="e.g. 7 Days" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all" />
                                             </div>
                                             <div>
                                                 <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-1.5 block">Lab Test (if needed)</label>
@@ -132,7 +143,7 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
                                         </div>
                                         <div className="mt-4">
                                             <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-1.5 block">Instructions</label>
-                                            <textarea required value={med.instructions} onChange={e => updateMedication(i, 'instructions', e.target.value)} placeholder="e.g. Take 2 times a day" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all resize-y min-h-[80px]" />
+                                            <textarea value={med.instructions} onChange={e => updateMedication(i, 'instructions', e.target.value)} placeholder="e.g. Take 2 times a day" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all resize-y min-h-[80px]" />
                                         </div>
                                         {medications.length > 1 && (
                                             <button type="button" onClick={() => setMedications(medications.filter((_, idx) => idx !== i))} className="absolute right-4 top-4 text-slate-300 hover:text-rose-500 transition-colors">
@@ -145,7 +156,7 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
 
                             <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent">
                                 <button type="submit" form="rx-form" disabled={submitting} className="w-full py-4 text-white bg-teal-600 hover:bg-teal-700 rounded-2xl shadow-lg shadow-teal-600/20 font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                                    {submitting ? 'Authenticating & Issuing...' : 'Finalize Session & Issue Rx'} <Send className="w-4 h-4" />
+                                    {submitting ? 'Authenticating & Finalizing...' : 'Complete Consultation Session'} <CheckCircle size={18} />
                                 </button>
                             </div>
                         </div>

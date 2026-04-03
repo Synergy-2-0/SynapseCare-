@@ -36,6 +36,7 @@ public class SecurityConfig {
                                 "/api/doctors/all",
                                 "/api/doctors/*",
                                 "/api/doctors/*/available-slots",
+                                "/api/doctors/debug/**",
                                 "/actuator/**"
                         ).permitAll()
                         // Doctor endpoints

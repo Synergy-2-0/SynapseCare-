@@ -36,6 +36,7 @@ const LoginPage = () => {
             if (email) localStorage.setItem('user_email', email);
             if (userId !== undefined && userId !== null) localStorage.setItem('user_id', String(userId));
             if (name) localStorage.setItem('user_name', name);
+            if (user.phoneNumber || data.phoneNumber) localStorage.setItem('user_phone', user.phoneNumber || data.phoneNumber);
             if (user.verificationStatus) localStorage.setItem('user_verificationStatus', user.verificationStatus);
 
             // Role based routing

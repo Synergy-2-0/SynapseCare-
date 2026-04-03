@@ -40,7 +40,7 @@ export default function DoctorProfile() {
     const [loading, setLoading] = useState(true);
     const [slotsLoading, setSlotsLoading] = useState(false);
     const [slots, setSlots] = useState([]);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA'));
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [bookingMode, setBookingMode] = useState('TELEMEDICINE');
     const [bookingInProgress, setBookingInProgress] = useState(false);
@@ -61,7 +61,8 @@ export default function DoctorProfile() {
                 const doc = response.data;
                 
                 const richDoctor = {
-                    id: doc.id,
+                    id: doc.userId || doc.id, // Used for URL routing ONLY — the auth userId
+                    dbId: doc.id,             // Internal DB PK — used for all API payload calls
                     name: (doc.firstName && doc.lastName) ? `${doc.firstName} ${doc.lastName}` : `Dr. Specialist`,
                     specialization: doc.specialization || "Clinical Practice",
                     image: doc.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doc.id}`,
@@ -83,6 +84,23 @@ export default function DoctorProfile() {
                     verificationStatus: doc.verificationStatus
                 };
                 setDoctor(richDoctor);
+
+                // Fetch slots using dbId (internal pk) — this is what appointment service
+                // stores as doctorId in the appointments table, ensuring consistent conflict checks.
+                if (selectedDate) {
+                    setSlotsLoading(true);
+                    try {
+                        const slotsRes = await appointmentApi.get(`/doctor/${doc.id}/available-slots`, {
+                            params: { date: selectedDate }
+                        });
+                        setSlots(slotsRes.data || []);
+                    } catch (err) {
+                        console.error("Failed to fetch available slots:", err);
+                        setSlots([]);
+                    } finally {
+                        setSlotsLoading(false);
+                    }
+                }
             } catch (error) {
                 console.error("Failed to fetch node dossier registry signal:", error);
                 setDoctor(null);
@@ -92,26 +110,6 @@ export default function DoctorProfile() {
         };
 
         fetchDoctorDetail();
-    }, [id]);
-
-    useEffect(() => {
-        const fetchAvailableSlots = async () => {
-            if (!id || !selectedDate) return;
-            setSlotsLoading(true);
-            try {
-                // Fetch from appointmentApi to get filtered slots (excluding already booked ones)
-                const res = await appointmentApi.get(`/doctor/${id}/available-slots`, {
-                    params: { date: selectedDate }
-                });
-                setSlots(res.data || []);
-            } catch (err) {
-                console.error("Failed to fetch registry available slots from appointment service:", err);
-                setSlots([]);
-            } finally {
-                setSlotsLoading(false);
-            }
-        };
-        fetchAvailableSlots();
     }, [id, selectedDate]);
 
     const handleBooking = async () => {
@@ -126,12 +124,34 @@ export default function DoctorProfile() {
 
         setBookingInProgress(true);
         try {
-            const patientRes = await patientApi.get(`/user/${patientUserId}`);
-            const patientProfile = patientRes.data?.data || patientRes.data;
-            const patientId = patientProfile?.id;
+            let patientId;
+            try {
+                const patientRes = await patientApi.get(`/user/${patientUserId}`);
+                const patientProfile = patientRes.data?.data || patientRes.data;
+                patientId = patientProfile?.id;
+            } catch (err) {
+                if (err.response?.status === 404) {
+                    console.warn("Clinical ID missing for session - performing automated clinical initialization...");
+                    const user_name = localStorage.getItem('user_name') || 'Anonymous Patient';
+                    const user_email = localStorage.getItem('user_email') || `patient_${patientUserId}@synapscare.com`;
+                    const user_phone = localStorage.getItem('user_phone') || '+0000000000';
+                    
+                    const createRes = await patientApi.post('/', { 
+                        userId: parseInt(patientUserId, 10),
+                        name: user_name,
+                        email: user_email,
+                        phone: user_phone
+                    });
+                    const newProfile = createRes.data?.data || createRes.data;
+                    patientId = newProfile.id;
+                    console.log("Automated clinical initialization successful. Profile ID:", patientId);
+                } else {
+                    throw err;
+                }
+            }
 
             if (!patientId) {
-                throw new Error('Patient profile not found for current user');
+                throw new Error('Clinical Identity resolution failure: System could not allocate or locate your patient record.');
             }
 
             localStorage.setItem('patient_id', String(patientId));
@@ -140,7 +160,9 @@ export default function DoctorProfile() {
             // Our backend expects LocalTime string.
             const appointmentPayload = {
                 patientId: parseInt(patientId, 10),
-                doctorId: doctor.id,
+                // Use dbId (doctor service internal pk = 3883), NOT routing userId (=28).
+                // The appointment service stores and queries doctorId by this pk.
+                doctorId: doctor.dbId || doctor.id,
                 date: selectedDate,
                 time: selectedSlot.startTime,
                 fee: doctor.fee,
@@ -148,19 +170,28 @@ export default function DoctorProfile() {
                 reason: "Regular clinical consultation initiated via practitioner dossier."
             };
 
-            const response = await appointmentApi.post('/book', appointmentPayload);
-            const newAppointment = response.data?.data || response.data;
+            try {
+                const response = await appointmentApi.post('/book', appointmentPayload);
+                const newAppointment = response.data?.data || response.data;
 
-            // Redirect to payment with the REAL appointment ID
-            router.push({
-                pathname: '/payment',
-                query: { 
-                    id: newAppointment.id,
-                    amount: doctor.fee,
-                    patientId: patientId,
-                    doctorId: doctor.id
-                }
-            });
+                // Redirect to payment — use 'appointmentId' NOT 'id' to avoid
+                // colliding with the /doctors/[id] dynamic route param, which
+                // would cause this page's useEffect to re-fire with appointment.id.
+                router.push({
+                    pathname: '/payment',
+                    query: { 
+                        appointmentId: newAppointment.id,
+                        amount: doctor.fee,
+                        patientId: patientId,
+                        doctorId: doctor.dbId || doctor.id  // DB pk, consistent with booking payload
+                    }
+                });
+            } catch (apiErr) {
+                console.error("Clinical Node Synchronizer failure:", apiErr);
+                const errorMsg = apiErr.response?.data?.message || apiErr.message;
+                alert(`Tactical failure in booking registry: ${errorMsg}. Please verify your parameters and re-synchronize.`);
+                setBookingInProgress(false);
+            }
         } catch (error) {
             console.error("Critical Failure: Could not initialize booking record", error);
             alert("Clinical Sync Failure: This slot might have just been booked. Please choose another node.");
@@ -338,7 +369,7 @@ export default function DoctorProfile() {
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Consultation Date</p>
                                     <input 
                                         type="date" 
-                                        min={new Date().toISOString().split('T')[0]}
+                                    min={new Date().toLocaleDateString('en-CA')}
                                         value={selectedDate}
                                         onChange={(e) => {
                                             setSelectedDate(e.target.value);
