@@ -75,7 +75,7 @@ const PatientProfilePage = () => {
                 const res = await patientApi.post('/', payload);
                 setClinicalId(res.data?.id || res.data?.data?.id);
             }
-            
+
             setSuccess('Profile updated successfully.');
             localStorage.setItem('user_name', payload.name);
             localStorage.setItem('user_phone', payload.phone);
@@ -107,7 +107,7 @@ const PatientProfilePage = () => {
                                 type="text"
                                 value={form.firstName}
                                 onChange={(event) => setForm((prev) => ({ ...prev, firstName: event.target.value }))}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400"
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400"
                                 required
                             />
                         </div>
@@ -117,7 +117,7 @@ const PatientProfilePage = () => {
                                 type="text"
                                 value={form.lastName}
                                 onChange={(event) => setForm((prev) => ({ ...prev, lastName: event.target.value }))}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400"
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400"
                                 required
                             />
                         </div>
@@ -130,7 +130,7 @@ const PatientProfilePage = () => {
                                 type="email"
                                 value={form.email}
                                 onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400"
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400"
                                 required
                             />
                         </div>
@@ -140,7 +140,7 @@ const PatientProfilePage = () => {
                                 type="text"
                                 value={form.phoneNumber}
                                 onChange={(event) => setForm((prev) => ({ ...prev, phoneNumber: event.target.value }))}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400"
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400"
                                 required
                             />
                         </div>
