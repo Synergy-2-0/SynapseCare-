@@ -18,16 +18,21 @@ public class MedicalReport {
 
     private Long patientId;
 
+    @Column(length = 512)
     private String fileName;
 
+    @Column(length = 512)
     private String objectName; // MinIO object key
 
+    @Column(length = 128)
     private String fileType; // MIME type
 
     private Long fileSize; // Size in bytes
 
+    @Column(columnDefinition = "TEXT")
     private String fileUrl; // Presigned URL (generated on demand)
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(length = 50)
