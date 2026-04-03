@@ -288,6 +288,7 @@ services:
       - 'APPOINTMENT_SERVICE_URL=http://appointment-service:8083'
       - 'PATIENT_SERVICE_URL=http://patient-service:8084'
       - 'INTEGRATION_SERVICE_URL=http://ai-symptom-checker-service:8085'
+      - 'AI_SERVICE_URL=http://ai-symptom-checker-service:8085'
       - 'PAYMENT_SERVICE_URL=http://payment-service:8086'
       - 'TELEMEDICINE_SERVICE_URL=http://telemedicine-service:8087'
       - 'PRESCRIPTION_SERVICE_URL=http://prescription-service:8088'
