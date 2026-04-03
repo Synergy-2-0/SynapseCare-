@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { integrationApi } from '../lib/api';
+import { symptomApi } from '../lib/api';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import Head from 'next/head';
@@ -26,30 +26,44 @@ const AISymptomChecker = () => {
 
     const handleSend = async (e) => {
         e.preventDefault();
-        if (!input.trim()) return;
+        
+        const trimmedInput = input.trim();
+        if (!trimmedInput) return;
+        
+        if (trimmedInput.length < 5) {
+            setMessages(prev => [...prev, { 
+                role: 'assistant', 
+                text: "Please describe your symptoms in more detail (at least 5 characters) so I can provide an accurate analysis." 
+            }]);
+            return;
+        }
 
-        const userMsg = { role: 'user', text: input };
+        const userMsg = { role: 'user', text: trimmedInput };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setLoading(true);
 
         try {
-            const res = await integrationApi.post('/ai/symptoms', input, {
-                headers: { 'Content-Type': 'text/plain' }
-            });
-            const textResponse = res.data?.data || res.data || "Analysis failed.";
-
-            const lower = input.toLowerCase();
-            let suggestedSpecialty = "General Physician";
-            if (lower.includes('chest') || lower.includes('heart')) suggestedSpecialty = "Cardiologist";
-            else if (lower.includes('head') || lower.includes('brain')) suggestedSpecialty = "Neurologist";
+            // Updated to use symptomApi and /check endpoint with correct payload structure
+            const res = await symptomApi.post('/check', { symptoms: input });
+            const data = res.data;
             
-            setAnalysis({ specialty: suggestedSpecialty });
+            // SymptomResponse mapping: { analysis, possibleConditions, recommendedSpecialties, urgencyLevel, disclaimer }
+            const textResponse = data.analysis || "Analysis failed.";
+            const suggestedSpecialty = (data.recommendedSpecialties && data.recommendedSpecialties.length > 0) 
+                ? data.recommendedSpecialties[0] 
+                : "General Physician";
+            
+            setAnalysis({ 
+                specialty: suggestedSpecialty,
+                urgency: data.urgencyLevel,
+                disclaimer: data.disclaimer
+            });
 
             const assistantMsg = { 
                 role: 'assistant', 
                 text: textResponse,
-                recommendation: `Follow up context: ${suggestedSpecialty} recommended.`
+                recommendation: `Status: ${data.urgencyLevel || 'Informational'}. Specialty: ${suggestedSpecialty} recommended.`
             };
             setMessages(prev => [...prev, assistantMsg]);
         } catch (error) {
