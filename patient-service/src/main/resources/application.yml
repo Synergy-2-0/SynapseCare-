@@ -28,6 +28,9 @@ spring:
     port: 5672
     username: ${RABBIT_USER:admin}
     password: ${RABBIT_PASS:admin123}
+    listener:
+      simple:
+        missing-queues-fatal: false
     template:
       exchange: ${PATIENT_EXCHANGE:patient.exchange}
       routing-key: ${PATIENT_ROUTING_KEY:patient.routing.key}
