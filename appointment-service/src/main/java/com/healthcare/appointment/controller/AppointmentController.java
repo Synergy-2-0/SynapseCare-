@@ -1,6 +1,7 @@
 package com.healthcare.appointment.controller;
 
 import com.healthcare.appointment.client.DoctorServiceClient;
+import com.healthcare.appointment.dto.BlockSlotRequest;
 import com.healthcare.appointment.dto.ApiResponse;
 import com.healthcare.appointment.dto.AppointmentDto;
 import com.healthcare.appointment.dto.RescheduleAppointmentDto;
@@ -11,9 +12,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -30,6 +34,20 @@ public class AppointmentController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, "Appointment booked successfully", booked));
     }
+
+        @PostMapping("/doctor/{doctorId}/blocked-slots")
+        public ResponseEntity<ApiResponse<AppointmentDto>> blockSlot(
+            @PathVariable("doctorId") Long doctorId,
+            @Valid @RequestBody BlockSlotRequest request,
+            @AuthenticationPrincipal com.healthcare.appointment.security.UserPrincipal userPrincipal) {
+        AppointmentDto blocked = appointmentService.blockSlot(
+            doctorId,
+            userPrincipal != null ? userPrincipal.getUserId() : null,
+            request
+        );
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(new ApiResponse<>(true, "Slot blocked successfully", blocked));
+        }
 
     @PutMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<AppointmentDto>> cancelAppointment(@PathVariable("id") Long id) {
@@ -75,10 +93,24 @@ public class AppointmentController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Doctor appointments fetched", appointments));
     }
 
+    @GetMapping("/doctor/{doctorId}/available-slots")
+    public ResponseEntity<List<com.healthcare.appointment.dto.client.AvailableSlotClientDto>> getAvailableSlots(
+            @PathVariable("doctorId") Long doctorId,
+            @RequestParam("date") java.time.LocalDate date) {
+        return ResponseEntity.ok(appointmentService.getFilteredAvailableSlots(doctorId, date));
+    }
+
     @GetMapping("/doctor/{doctorId}/patients")
     public ResponseEntity<ApiResponse<List<com.healthcare.appointment.dto.client.PatientClientDto>>> getPatientsByDoctor(@PathVariable("doctorId") Long doctorId) {
         List<com.healthcare.appointment.dto.client.PatientClientDto> patients = appointmentService.getPatientsByDoctor(doctorId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Doctor's patients fetched successfully", patients));
+    }
+
+    @GetMapping("/doctor/{doctorId}/booked-slots")
+    public ResponseEntity<List<java.time.LocalTime>> getBookedSlots(
+            @PathVariable("doctorId") Long doctorId,
+            @RequestParam("date") java.time.LocalDate date) {
+        return ResponseEntity.ok(appointmentService.getBookedSlots(doctorId, date));
     }
 
     @GetMapping("/doctors/search")

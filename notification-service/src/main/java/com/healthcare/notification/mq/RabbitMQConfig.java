@@ -3,6 +3,7 @@ package com.healthcare.notification.mq;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -38,17 +39,17 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding notificationBinding(Queue notificationQueue, TopicExchange healthcareExchange) {
+    public Binding notificationBinding(@Qualifier("notificationQueue") Queue notificationQueue, TopicExchange healthcareExchange) {
         return BindingBuilder.bind(notificationQueue).to(healthcareExchange).with("payment.success");
     }
 
     @Bean
-    public Binding appointmentBinding(Queue appointmentNotificationQueue, TopicExchange appointmentExchange) {
+    public Binding appointmentBinding(@Qualifier("appointmentNotificationQueue") Queue appointmentNotificationQueue, TopicExchange appointmentExchange) {
         return BindingBuilder.bind(appointmentNotificationQueue).to(appointmentExchange).with(APPOINTMENT_ROUTING_KEY);
     }
 
     @Bean
-    public Binding prescriptionBinding(Queue prescriptionQueue, TopicExchange healthcareExchange) {
+    public Binding prescriptionBinding(@Qualifier("prescriptionQueue") Queue prescriptionQueue, TopicExchange healthcareExchange) {
         return BindingBuilder.bind(prescriptionQueue).to(healthcareExchange).with("prescription.created");
     }
 

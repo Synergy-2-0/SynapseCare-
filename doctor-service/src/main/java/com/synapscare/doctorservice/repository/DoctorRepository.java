@@ -22,6 +22,8 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
     List<Doctor> findByVerificationStatus(VerificationStatus status);
 
+    List<Doctor> findBySpecializationAndVerificationStatus(String specialization, VerificationStatus status);
+
     @Query("SELECT d FROM Doctor d WHERE " +
             "d.specialization IS NOT NULL AND " +
             "d.consultationFee IS NOT NULL AND " +

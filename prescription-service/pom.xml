@@ -11,6 +11,10 @@
     <artifactId>prescription-service</artifactId>
     <name>prescription-service</name>
 
+    <properties>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

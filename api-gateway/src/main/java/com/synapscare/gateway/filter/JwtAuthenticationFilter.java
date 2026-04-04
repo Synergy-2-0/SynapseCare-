@@ -48,6 +48,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/doctors/search",
             "/api/doctors/all",
             "/api/doctors/*",
+            "/api/appointments/doctor/*/available-slots",
             "/api/payments/payhere/notify"
     );
 
@@ -118,6 +119,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if (path.startsWith("/api/doctors/profile")) return false; // Explicitly NOT public
         if (path.startsWith("/api/doctors/availability")) return false; 
         if (path.startsWith("/api/doctors/schedule")) return false;
+
+        if (pathMatcher.match("/api/doctors/*", path)) return true;
+        if (pathMatcher.match("/api/doctors/*/available-slots", path)) return true;
         
         return PUBLIC_PATHS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
     }

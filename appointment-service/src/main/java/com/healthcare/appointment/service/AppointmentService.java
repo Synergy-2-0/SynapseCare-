@@ -2,6 +2,7 @@ package com.healthcare.appointment.service;
 
 import com.healthcare.appointment.client.DoctorServiceClient;
 import com.healthcare.appointment.client.PatientServiceClient;
+import com.healthcare.appointment.dto.BlockSlotRequest;
 import com.healthcare.appointment.dto.AppointmentDto;
 import com.healthcare.appointment.dto.AppointmentEvent;
 import com.healthcare.appointment.dto.RescheduleAppointmentDto;
@@ -17,8 +18,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,6 +30,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class AppointmentService {
+
+    private static final List<AppointmentStatus> OCCUPIED_STATUSES = List.of(
+            AppointmentStatus.PENDING,
+            AppointmentStatus.PENDING_PAYMENT,
+            AppointmentStatus.CONFIRMED,
+            AppointmentStatus.IN_PROGRESS,
+            AppointmentStatus.PAID,
+            AppointmentStatus.BLOCKED
+    );
 
     private final AppointmentRepository appointmentRepository;
     private final DoctorServiceClient doctorServiceClient;
@@ -57,7 +70,7 @@ public class AppointmentService {
                 dto.getDoctorId(),
                 dto.getDate(),
                 dto.getTime(),
-                List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED)
+                OCCUPIED_STATUSES
         );
 
         if (isBooked) {
@@ -147,7 +160,7 @@ public class AppointmentService {
                 appointment.getDoctorId(),
                 dto.getDate(),
                 dto.getTime(),
-            List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED),
+            OCCUPIED_STATUSES,
             appointment.getId()
         );
 
@@ -198,6 +211,45 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    public List<java.time.LocalTime> getBookedSlots(Long doctorId, java.time.LocalDate date) {
+        return appointmentRepository.findByDoctorIdAndDateAndStatusIn(
+                doctorId, 
+                date, 
+                OCCUPIED_STATUSES
+        ).stream()
+         .map(Appointment::getTime)
+         .collect(Collectors.toList());
+    }
+
+    public List<AvailableSlotClientDto> getFilteredAvailableSlots(Long doctorId, java.time.LocalDate date) {
+        // 1. Get base slots from doctor-service
+        List<AvailableSlotClientDto> slots = doctorServiceClient.getAvailableSlots(doctorId, date);
+        
+        // 2. Get booked times from our local DB
+        java.util.Set<java.time.LocalTime> bookedTimes = appointmentRepository.findByDoctorIdAndDateAndStatusIn(
+                doctorId, 
+                date, 
+                OCCUPIED_STATUSES
+        ).stream()
+         .map(com.healthcare.appointment.entity.Appointment::getTime)
+         .collect(Collectors.toSet());
+
+        // 3. Mark slots as unavailable if booked
+        return slots.stream()
+                .map(slot -> {
+                    if (bookedTimes.contains(slot.getStartTime())) {
+                        return AvailableSlotClientDto.builder()
+                                .date(slot.getDate())
+                                .startTime(slot.getStartTime())
+                                .endTime(slot.getEndTime())
+                                .isAvailable(false)
+                                .build();
+                    }
+                    return slot;
+                })
+                .collect(Collectors.toList());
+    }
+
     public List<com.healthcare.appointment.dto.client.PatientClientDto> getPatientsByDoctor(Long doctorId) {
         return appointmentRepository.findByDoctorIdOrderByDateAscTimeAsc(doctorId)
                 .stream()
@@ -230,6 +282,72 @@ public class AppointmentService {
             publishEvent("PAYMENT_REQUESTED", appointment);
         }
         return mapToDto(appointment);
+    }
+
+    public List<AppointmentDto> findConflicts(Long doctorId, LocalDate start, LocalDate end) {
+        return appointmentRepository.findByDoctorIdAndDateBetweenAndStatusIn(
+                doctorId, 
+                start, 
+                end, 
+                OCCUPIED_STATUSES
+        ).stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
+    public AppointmentDto blockSlot(Long doctorId, Long userId, BlockSlotRequest request) {
+        DoctorProfileClientDto doctor = doctorServiceClient.getDoctorById(doctorId);
+        if (doctor == null) {
+            throw new ResourceNotFoundException("Doctor not found");
+        }
+
+        if (userId != null && doctor.getUserId() != null && !doctor.getUserId().equals(userId)) {
+            throw new SlotConflictException("Not authorized to block this slot");
+        }
+
+        boolean alreadyOccupied = appointmentRepository.existsByDoctorIdAndDateAndTimeAndStatusIn(
+                doctorId,
+                request.getDate(),
+                request.getTime(),
+                OCCUPIED_STATUSES
+        );
+        if (alreadyOccupied) {
+            throw new SlotConflictException("Doctor already has an appointment or blocked slot at this time");
+        }
+
+        long existingCount = appointmentRepository.countByDoctorIdAndDate(doctorId, request.getDate());
+        Appointment appointment = Appointment.builder()
+                .patientId(null)
+                .doctorId(doctorId)
+                .date(request.getDate())
+                .time(request.getTime())
+                .reason(request.getReason() != null ? request.getReason() : "Doctor blocked this slot")
+                .fee(0.0)
+                .notes("Blocked by doctor")
+                .consultationType("BLOCKED")
+                .tokenNumber((int) existingCount + 1)
+                .status(AppointmentStatus.BLOCKED)
+                .build();
+
+        appointment = appointmentRepository.save(appointment);
+        return mapToDto(appointment);
+    }
+
+    public void bulkReassign(List<Long> appointmentIds, Long targetDoctorId) {
+        List<Appointment> appointments = appointmentRepository.findAllById(appointmentIds);
+        for (Appointment appointment : appointments) {
+            appointment.setDoctorId(targetDoctorId);
+            appointmentRepository.save(appointment);
+            publishEvent("APPOINTMENT_REASSIGNED", appointment);
+        }
+    }
+
+    public void bulkCancel(List<Long> appointmentIds, String reason) {
+        List<Appointment> appointments = appointmentRepository.findAllById(appointmentIds);
+        for (Appointment appointment : appointments) {
+            appointment.setStatus(AppointmentStatus.CANCELLED);
+            appointment.setReason(reason);
+            appointmentRepository.save(appointment);
+            publishEvent("APPOINTMENT_CANCELLED", appointment);
+        }
     }
 
     private AppointmentDto mapToDto(Appointment entity) {

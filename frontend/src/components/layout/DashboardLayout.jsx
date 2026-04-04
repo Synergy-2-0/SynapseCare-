@@ -8,11 +8,12 @@ import LoadingSpinner from '../ui/LoadingSpinner';
 
 const DashboardLayout = ({ children, title = "" }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [userData, setUserData] = useState({ name: 'Practitioner', specialization: 'General Physician' });
     const [isClient, setIsClient] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const router = useRouter();
 
-    const displayTitle = title ? `${title} | SynapsCare` : "SynapsCare Dashboard";
+    const displayTitle = title ? `${title} | SynapseDoc` : "SynapseDoc Dashboard";
 
     const getAllowedRolesForPath = (pathname) => {
         if (pathname.startsWith('/dashboard/admin')) return ['ADMIN'];
@@ -52,6 +53,10 @@ const DashboardLayout = ({ children, title = "" }) => {
 
         if (allowedRoles.includes(role)) {
             setIsAuthorized(true);
+            setUserData({
+                name: localStorage.getItem('user_name') || 'Practitioner',
+                specialization: localStorage.getItem('user_specialization') || 'General Physician'
+            });
             return;
         }
 
@@ -132,11 +137,15 @@ const DashboardLayout = ({ children, title = "" }) => {
 
                         <div className="flex items-center gap-3 group cursor-pointer">
                             <div className="text-right hidden sm:block">
-                                <p className="text-sm font-bold font-serif text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent-teal)] transition-colors">Dr. Identity</p>
-                                <p className="text-[10px] font-medium text-[var(--text-muted)] mt-0.5">General Physician</p>
+                                <p className="text-sm font-bold font-serif text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent-teal)] transition-colors">Dr. {userData.name}</p>
+                                <p className="text-[10px] font-medium text-[var(--text-muted)] mt-0.5">{userData.specialization}</p>
                             </div>
                             <div className="w-10 h-10 rounded-full bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-center text-[var(--accent-teal)] relative group-hover:scale-105 transition-transform">
-                                <User size={20} />
+                                <img 
+                                    src={`https://ui-avatars.com/api/?name=${userData.name}&background=0D9488&color=fff`} 
+                                    alt={userData.name}
+                                    className="w-full h-full rounded-full object-cover p-0.5"
+                                />
                                 <div className="absolute 0 right-0 bottom-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
                             </div>
                         </div>

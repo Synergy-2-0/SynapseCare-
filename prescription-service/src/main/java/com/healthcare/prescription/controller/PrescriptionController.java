@@ -25,35 +25,33 @@ public class PrescriptionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PrescriptionDto> getById(@PathVariable("id") Long id) {
+    public ResponseEntity<PrescriptionDto> getById(@PathVariable(name = "id") Long id) {
         return ResponseEntity.ok(prescriptionService.getById(id));
     }
 
     @GetMapping("/patient/{patientId}")
-    public ResponseEntity<List<PrescriptionDto>> getByPatient(@PathVariable("patientId") Long patientId) {
+    public ResponseEntity<List<PrescriptionDto>> getByPatient(@PathVariable(name = "patientId") Long patientId) {
         return ResponseEntity.ok(prescriptionService.getByPatientId(patientId));
     }
 
     @GetMapping("/doctor/{doctorId}")
-    public ResponseEntity<List<PrescriptionDto>> getByDoctor(@PathVariable("doctorId") Long doctorId) {
+    public ResponseEntity<List<PrescriptionDto>> getByDoctor(@PathVariable(name = "doctorId") Long doctorId) {
         return ResponseEntity.ok(prescriptionService.getByDoctorId(doctorId));
     }
 
     @GetMapping("/appointment/{appointmentId}")
-    public ResponseEntity<List<PrescriptionDto>> getByAppointment(@PathVariable("appointmentId") Long appointmentId) {
+    public ResponseEntity<List<PrescriptionDto>> getByAppointment(@PathVariable(name = "appointmentId") Long appointmentId) {
         return ResponseEntity.ok(prescriptionService.getByAppointmentId(appointmentId));
     }
 
     @GetMapping("/{id}/pdf")
-    public ResponseEntity<byte[]> downloadPdf(@PathVariable("id") Long id) {
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable(name = "id") Long id) {
         byte[] pdfContent = prescriptionService.generatePdf(id);
         PrescriptionDto prescription = prescriptionService.getById(id);
 
-        String filename = String.format("prescription_%d_%s.pdf",
+        String filename = String.format("prescription_%d_%d.pdf",
                 id,
-                prescription.getPatientName() != null
-                        ? prescription.getPatientName().replaceAll("\\s+", "_")
-                        : "patient");
+                prescription.getPatientId());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);

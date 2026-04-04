@@ -50,7 +50,11 @@ public class Doctor {
     @Column(length = 2000)
     private String bio;
 
+    @Column(columnDefinition = "TEXT")
     private String profileImageUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String licenseDocumentUrl;
 
     @Column(nullable = false)
     private Boolean isAvailable = true;

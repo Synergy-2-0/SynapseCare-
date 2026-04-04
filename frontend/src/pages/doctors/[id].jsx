@@ -27,7 +27,8 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { publicDoctorApi } from '../../lib/api';
+import { publicDoctorApi, appointmentApi, patientApi } from '../../lib/api';
+import { SPECIALIZATION_LABELS } from '../../constants/specializations';
 
 // Real data only: Specialist profile synchronization using API dossier registry signals.
 
@@ -37,8 +38,12 @@ export default function DoctorProfile() {
     
     const [doctor, setDoctor] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [slotsLoading, setSlotsLoading] = useState(false);
+    const [slots, setSlots] = useState([]);
+    const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA'));
     const [selectedSlot, setSelectedSlot] = useState(null);
-    const [bookingMode, setBookingMode] = useState('TELEHEALTH');
+    const [bookingMode, setBookingMode] = useState('TELEMEDICINE');
+    const [bookingInProgress, setBookingInProgress] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -55,13 +60,13 @@ export default function DoctorProfile() {
                 const response = await publicDoctorApi.get(`/${id}`);
                 const doc = response.data;
                 
-                // Map API response to rich UI structure
                 const richDoctor = {
-                    id: doc.id,
-                    name: (doc.firstName && doc.lastName) ? `${doc.firstName} ${doc.lastName}` : `Specialist Node #${doc.id}`,
+                    id: doc.userId || doc.id, // Used for URL routing ONLY — the auth userId
+                    dbId: doc.id,             // Internal DB PK — used for all API payload calls
+                    name: (doc.firstName && doc.lastName) ? `${doc.firstName} ${doc.lastName}` : `Dr. Specialist`,
                     specialization: doc.specialization || "Clinical Practice",
                     image: doc.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doc.id}`,
-                    location: "Global Healthcare Node 04, NY", // Future: get from doctor entity
+                    location: "Global Healthcare Node 04, NY",
                     rating: 4.8 + (doc.id % 5) * 0.05,
                     reviews: 50 + (doc.id * 7) % 200,
                     experience: doc.experience ? `${doc.experience}+ Years Clinical Experience` : "Senior Practice",
@@ -75,16 +80,27 @@ export default function DoctorProfile() {
                         "Personalized Neural Protocols",
                         "Strategic Health Monitoring"
                     ],
-                    slots: [
-                        { time: "08:30 AM", available: true },
-                        { time: "10:15 AM", available: true },
-                        { time: "01:30 PM", available: true },
-                        { time: "04:45 PM", available: false }
-                    ],
                     fee: doc.consultationFee || 1500,
                     verificationStatus: doc.verificationStatus
                 };
                 setDoctor(richDoctor);
+
+                // Fetch slots using dbId (internal pk) — this is what appointment service
+                // stores as doctorId in the appointments table, ensuring consistent conflict checks.
+                if (selectedDate) {
+                    setSlotsLoading(true);
+                    try {
+                        const slotsRes = await appointmentApi.get(`/doctor/${doc.id}/available-slots`, {
+                            params: { date: selectedDate }
+                        });
+                        setSlots(slotsRes.data || []);
+                    } catch (err) {
+                        console.error("Failed to fetch available slots:", err);
+                        setSlots([]);
+                    } finally {
+                        setSlotsLoading(false);
+                    }
+                }
             } catch (error) {
                 console.error("Failed to fetch node dossier registry signal:", error);
                 setDoctor(null);
@@ -94,19 +110,94 @@ export default function DoctorProfile() {
         };
 
         fetchDoctorDetail();
-    }, [id]);
+    }, [id, selectedDate]);
 
-    const handleBooking = () => {
-        if (!selectedSlot) return;
-        router.push({
-            pathname: '/payment',
-            query: { 
-                id: `APT-${Math.floor(Math.random() * 10000)}`,
-                amount: doctor.fee,
-                patientId: localStorage.getItem('user_id'),
-                doctorId: doctor.id
+    const handleBooking = async () => {
+        if (!selectedSlot || !doctor || !selectedDate) return;
+        
+        const patientUserId = localStorage.getItem('user_id');
+        if (!patientUserId) {
+            alert("Protocol Violation: Patient authentication required. Please login.");
+            router.push('/login');
+            return;
+        }
+
+        setBookingInProgress(true);
+        try {
+            let patientId;
+            try {
+                const patientRes = await patientApi.get(`/user/${patientUserId}`);
+                const patientProfile = patientRes.data?.data || patientRes.data;
+                patientId = patientProfile?.id;
+            } catch (err) {
+                if (err.response?.status === 404) {
+                    console.warn("Clinical ID missing for session - performing automated clinical initialization...");
+                    const user_name = localStorage.getItem('user_name') || 'Anonymous Patient';
+                    const user_email = localStorage.getItem('user_email') || `patient_${patientUserId}@synapscare.com`;
+                    const user_phone = localStorage.getItem('user_phone') || '+0000000000';
+                    
+                    const createRes = await patientApi.post('/', { 
+                        userId: parseInt(patientUserId, 10),
+                        name: user_name,
+                        email: user_email,
+                        phone: user_phone
+                    });
+                    const newProfile = createRes.data?.data || createRes.data;
+                    patientId = newProfile.id;
+                    console.log("Automated clinical initialization successful. Profile ID:", patientId);
+                } else {
+                    throw err;
+                }
             }
-        });
+
+            if (!patientId) {
+                throw new Error('Clinical Identity resolution failure: System could not allocate or locate your patient record.');
+            }
+
+            localStorage.setItem('patient_id', String(patientId));
+
+            // Transform startTime (8:30:00) to LocalTime format if needed. 
+            // Our backend expects LocalTime string.
+            const appointmentPayload = {
+                patientId: parseInt(patientId, 10),
+                // Use dbId (doctor service internal pk = 3883), NOT routing userId (=28).
+                // The appointment service stores and queries doctorId by this pk.
+                doctorId: doctor.dbId || doctor.id,
+                date: selectedDate,
+                time: selectedSlot.startTime,
+                fee: doctor.fee,
+                consultationType: bookingMode,
+                reason: "Regular clinical consultation initiated via practitioner dossier."
+            };
+
+            try {
+                const response = await appointmentApi.post('/book', appointmentPayload);
+                const newAppointment = response.data?.data || response.data;
+
+                // Redirect to payment — use 'appointmentId' NOT 'id' to avoid
+                // colliding with the /doctors/[id] dynamic route param, which
+                // would cause this page's useEffect to re-fire with appointment.id.
+                router.push({
+                    pathname: '/payment',
+                    query: { 
+                        appointmentId: newAppointment.id,
+                        amount: doctor.fee,
+                        patientId: patientId,
+                        doctorId: doctor.dbId || doctor.id  // DB pk, consistent with booking payload
+                    }
+                });
+            } catch (apiErr) {
+                console.error("Clinical Node Synchronizer failure:", apiErr);
+                const errorMsg = apiErr.response?.data?.message || apiErr.message;
+                alert(`Tactical failure in booking registry: ${errorMsg}. Please verify your parameters and re-synchronize.`);
+                setBookingInProgress(false);
+            }
+        } catch (error) {
+            console.error("Critical Failure: Could not initialize booking record", error);
+            alert("Clinical Sync Failure: This slot might have just been booked. Please choose another node.");
+        } finally {
+            setBookingInProgress(false);
+        }
     };
 
     if (loading) return <LoadingSpinner size="fullscreen" message="Accessing Specialized Practitioner Dossier..." />;
@@ -127,7 +218,7 @@ export default function DoctorProfile() {
     return (
         <>
             <Head>
-                <title>{doctor?.name ? `Dr. ${doctor.name} | ${doctor.specialization}` : 'Specialist Profile'} | SynapsCare</title>
+                <title>{doctor?.name ? `Dr. ${doctor.name} | ${SPECIALIZATION_LABELS[doctor.specialization] || doctor.specialization}` : 'Specialist Profile'} | SynapsCare</title>
                 <meta name="description" content={doctor?.about ? doctor.about.substring(0, 160) : "View expert medical profile and book appointments with top-tier specialists"} />
             </Head>
             <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100 overflow-x-hidden">
@@ -185,7 +276,7 @@ export default function DoctorProfile() {
                                  </div>
                                  <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase tracking-widest mb-4">Dr. {doctor.name}</h1>
                                  <h2 className="text-2xl font-black text-indigo-600 tracking-tight flex items-center gap-3">
-                                     {doctor.specialization} <div className="h-0.5 w-12 bg-indigo-200" />
+                                     {SPECIALIZATION_LABELS[doctor.specialization] || doctor.specialization} <div className="h-0.5 w-12 bg-indigo-200" />
                                  </h2>
                              </div>
 
@@ -214,7 +305,7 @@ export default function DoctorProfile() {
                                  <BookOpen size={20} className="text-indigo-600" /> Clinical Statement
                              </h3>
                              <p className="text-lg font-medium text-slate-500 leading-relaxed italic max-w-3xl">
-                                 "{doctor.about}"
+                                 &quot;{doctor.about}&quot;
                              </p>
                              <div className="absolute right-0 bottom-0 p-12 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
                                  <Stethoscope size={180} />
@@ -272,45 +363,76 @@ export default function DoctorProfile() {
 
                         {/* Booking Controls */}
                         <div className="p-10 space-y-10">
-                            {/* Mode Toggle */}
-                            <div className="flex gap-2 p-2 bg-slate-50 rounded-2xl border border-slate-100">
-                                 {['TELEHEALTH', 'IN-PERSON'].map((mode) => (
-                                     <button 
-                                        key={mode}
-                                        onClick={() => setBookingMode(mode)}
-                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                            bookingMode === mode ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-indigo-600'
-                                        }`}
-                                     >
-                                         <div className="flex items-center justify-center gap-2">
-                                             {mode === 'TELEHEALTH' ? <Video size={12} /> : <MapPin size={12} />}
-                                             {mode}
-                                         </div>
-                                     </button>
-                                 ))}
+                            {/* Date & Mode Selection */}
+                            <div className="space-y-6">
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Consultation Date</p>
+                                    <input 
+                                        type="date" 
+                                    min={new Date().toLocaleDateString('en-CA')}
+                                        value={selectedDate}
+                                        onChange={(e) => {
+                                            setSelectedDate(e.target.value);
+                                            setSelectedSlot(null);
+                                        }}
+                                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Consultation Mode</p>
+                                    <div className="flex gap-2 p-2 bg-slate-50 rounded-2xl border border-slate-100">
+                                         {['TELEMEDICINE', 'IN_PERSON'].map((mode) => (
+                                             <button 
+                                                key={mode}
+                                                onClick={() => setBookingMode(mode)}
+                                                className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                                    bookingMode === mode ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-indigo-600'
+                                                }`}
+                                             >
+                                                 <div className="flex items-center justify-center gap-2">
+                                                     {mode === 'TELEMEDICINE' ? <Video size={10} /> : <MapPin size={10} />}
+                                                     {mode === 'IN_PERSON' ? 'IN-PERSON' : 'TELEMEDICINE'}
+                                                 </div>
+                                             </button>
+                                         ))}
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Slot Cluster */}
                             <div className="space-y-4">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Available Nodes Today</p>
+                                <div className="flex justify-between items-center">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Available Nodes</p>
+                                    {slotsLoading && <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />}
+                                </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                     {doctor.slots.map((slot, i) => (
-                                         <button 
-                                            key={i}
-                                            disabled={!slot.available}
-                                            onClick={() => setSelectedSlot(slot.time)}
-                                            className={`p-4 rounded-2xl font-black text-xs uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
-                                                !slot.available 
-                                                ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed italic' 
-                                                : selectedSlot === slot.time 
-                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xl scale-[1.05]' 
-                                                : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-400 hover:text-indigo-600'
-                                            }`}
-                                         >
-                                             {selectedSlot === slot.time && <Check size={12} className="text-white" />}
-                                             {slot.time}
-                                         </button>
-                                     ))}
+                                     {slots.length > 0 ? (
+                                         slots.map((slot, i) => {
+                                             const displayTime = slot.startTime.substring(0, 5); // From HH:mm:ss to HH:mm
+                                             return (
+                                                <button 
+                                                    key={i}
+                                                    disabled={!slot.isAvailable}
+                                                    onClick={() => setSelectedSlot(slot)}
+                                                    className={`p-4 rounded-2xl font-black text-xs uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                                                        !slot.isAvailable 
+                                                        ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed italic' 
+                                                        : selectedSlot === slot 
+                                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xl scale-[1.05]' 
+                                                        : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-400 hover:text-indigo-600'
+                                                    }`}
+                                                >
+                                                    {selectedSlot === slot && <Check size={12} className="text-white" />}
+                                                    {displayTime}
+                                                </button>
+                                            );
+                                         })
+                                     ) : (
+                                         <div className="col-span-2 p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
+                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed"> No available nodes for this date.<br/>Please select another clinical window. </p>
+                                         </div>
+                                     )}
                                 </div>
                             </div>
 
@@ -332,11 +454,11 @@ export default function DoctorProfile() {
                                 variant="primary" 
                                 size="xl" 
                                 className="w-full"
-                                disabled={!selectedSlot}
+                                disabled={!selectedSlot || bookingInProgress}
                                 onClick={handleBooking}
                                 icon={Zap}
                             >
-                                {selectedSlot ? 'Finalize Booking Protocol' : 'Select Command Node'}
+                                {bookingInProgress ? 'Synchronizing Archive...' : selectedSlot ? 'Finalize Booking Protocol' : 'Select Command Node'}
                             </Button>
                         </div>
 

@@ -31,7 +31,9 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                 <div className="flex items-center gap-3 text-xs font-bold text-teal-600 uppercase tracking-widest mb-2">
                                     <Activity className="w-4 h-4" /> Clinical Context
                                 </div>
-                                <h2 className="text-3xl font-serif text-slate-900">Patient #{appointment.patientId}</h2>
+                                <h2 className="text-3xl font-serif text-slate-900">
+                                    {appointment.name || `Patient #${appointment.patientId || appointment.id}`}
+                                </h2>
                             </div>
                             <button onClick={onClose} className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 shadow-sm transition-all group">
                                 <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
