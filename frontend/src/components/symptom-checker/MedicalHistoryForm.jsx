@@ -93,14 +93,14 @@ const MedicalHistoryForm = ({
                             onChange={(e) => setConditionInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCondition(conditionInput))}
                             placeholder="Type or select a condition..."
-                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 text-sm"
+                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400 text-sm"
                             list="conditions-list"
                         />
                         <button
                             type="button"
                             onClick={() => addCondition(conditionInput)}
                             disabled={!conditionInput.trim()}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
                         >
                             Add
                         </button>
@@ -120,7 +120,7 @@ const MedicalHistoryForm = ({
                 {/* Current Medications */}
                 <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-3">
-                        <Pill className="w-4 h-4 text-blue-600" />
+                        <Pill className="w-4 h-4 text-teal-600" />
                         Current Medications
                     </label>
 
@@ -130,13 +130,13 @@ const MedicalHistoryForm = ({
                             {medications.map(medication => (
                                 <span
                                     key={medication}
-                                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 border border-blue-200 rounded-lg text-sm"
+                                    className="inline-flex items-center gap-1 px-3 py-1 bg-teal-50 border border-teal-200 rounded-lg text-sm"
                                 >
-                                    <span className="text-blue-700">{medication}</span>
+                                    <span className="text-teal-700">{medication}</span>
                                     <button
                                         type="button"
                                         onClick={() => removeMedication(medication)}
-                                        className="text-blue-500 hover:text-blue-700"
+                                        className="text-teal-500 hover:text-teal-700"
                                     >
                                         <X className="w-3 h-3" />
                                     </button>
@@ -153,14 +153,14 @@ const MedicalHistoryForm = ({
                             onChange={(e) => setMedicationInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addMedication(medicationInput))}
                             placeholder="Type or select a medication..."
-                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 text-sm"
+                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400 text-sm"
                             list="medications-list"
                         />
                         <button
                             type="button"
                             onClick={() => addMedication(medicationInput)}
                             disabled={!medicationInput.trim()}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
                         >
                             Add
                         </button>
@@ -219,7 +219,7 @@ const MedicalHistoryForm = ({
                                             removeAllergy(allergy);
                                         }
                                     }}
-                                    className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                                    className="w-4 h-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
                                 />
                                 <span className="text-sm text-slate-700">{allergy}</span>
                             </label>
@@ -234,13 +234,13 @@ const MedicalHistoryForm = ({
                             onChange={(e) => setAllergyInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAllergy(allergyInput))}
                             placeholder="Other allergies or specific substances..."
-                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 text-sm"
+                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400 text-sm"
                         />
                         <button
                             type="button"
                             onClick={() => addAllergy(allergyInput)}
                             disabled={!allergyInput.trim()}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
                         >
                             Add
                         </button>

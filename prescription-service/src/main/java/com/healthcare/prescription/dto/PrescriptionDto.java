@@ -13,16 +13,6 @@ public class PrescriptionDto {
     private Long doctorId;
     private Long patientId;
 
-    // Doctor info for PDF
-    private String doctorName;
-    private String doctorSpecialization;
-    private String doctorLicenseNumber;
-
-    // Patient info for PDF
-    private String patientName;
-    private Integer patientAge;
-    private String patientGender;
-
     // Medication details
     private String medicineName;
     private String dosage;
@@ -35,4 +25,10 @@ public class PrescriptionDto {
     // Diagnosis
     private String diagnosis;
     private String diagnosisCode;
+
+    // Billing fields
+    private Double unitPrice;
+    private Integer quantity;
+    private Double unitDiscount;
+    private Double totalAmount;
 }

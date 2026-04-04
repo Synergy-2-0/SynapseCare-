@@ -5,6 +5,7 @@ import com.healthcare.appointment.entity.AppointmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -24,5 +25,11 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> findByDoctorIdAndDateAndStatusIn(Long doctorId, LocalDate date, List<AppointmentStatus> statuses);
 
     long countByDoctorIdAndDate(Long doctorId, LocalDate date);
+
+    List<Appointment> findByDoctorIdAndDateBetweenAndStatusIn(
+        Long doctorId, LocalDate start, LocalDate end, List<AppointmentStatus> statuses);
+
+    // Used by the payment-window expiry scheduler to find stale PENDING bookings
+    List<Appointment> findByStatusAndCreatedAtBefore(AppointmentStatus status, LocalDateTime cutoff);
     
 }

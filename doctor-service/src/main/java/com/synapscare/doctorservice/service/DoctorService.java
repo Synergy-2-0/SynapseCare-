@@ -138,26 +138,50 @@ public class DoctorService {
      * Only returns doctor if verification status is APPROVED and profile complete
      */
     public DoctorProfileResponse getDoctorById(Long id) {
-        Doctor doctor = doctorRepository.findById(id)
-                .orElseThrow(() -> new DoctorNotFoundException(id));
+        log.debug("Clinical registry lookup signal for practitioner: {}", id);
+        Doctor doctor = resolveDoctor(id);
 
-        // Security: Only return APPROVED doctors with complete profiles for public access
+        // Validation: Identity must be APPROVED for public engagement dossier access
         if (doctor.getVerificationStatus() != VerificationStatus.APPROVED) {
-            throw new DoctorNotFoundException("Doctor not found or not verified");
+            log.warn("Security Alert: Tactical lookup on unvalidated profile {}. Status={}", id, doctor.getVerificationStatus());
+            throw new DoctorNotFoundException("Clinical identity not yet validated for public engagement");
         }
 
-        // Ensure profile is complete
+        // Completion check: Dossier must be complete for public exposure
         if (doctor.getSpecialization() == null || doctor.getConsultationFee() == null) {
-            throw new DoctorNotFoundException("Doctor profile incomplete");
+            log.warn("Dossier Incomplete: Clinical registry entry {} is lacking critical credentials", id);
+            throw new DoctorNotFoundException("Clinical profile undergoing synchronization");
         }
 
         return mapToProfileResponse(doctor);
+    }
+
+    /**
+     * Unified Clinical Identity Resolution Protocol
+     * Standardizes ID vs UserID lookups across all service modules.
+     */
+    private Doctor resolveDoctor(Long id) {
+        return doctorRepository.findById(id)
+                .or(() -> doctorRepository.findByUserId(id))
+                .orElseThrow(() -> {
+                    log.error("Clinical Node Identity Failure: Identity registry MISS for identifier {}", id);
+                    return new DoctorNotFoundException(id);
+                });
     }
 
     public DoctorProfileResponse getDoctorByUserId(Long userId) {
         Doctor doctor = doctorRepository.findByUserId(userId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor not found for user: " + userId));
         return mapToProfileResponse(doctor);
+    }
+
+    public List<DoctorProfileResponse> findPeers(Long doctorId, String specialization) {
+        log.debug("Finding peers for doctor {} in specialization {}", doctorId, specialization);
+        return doctorRepository.findBySpecializationAndVerificationStatus(specialization, VerificationStatus.APPROVED)
+                .stream()
+                .filter(d -> !d.getId().equals(doctorId))
+                .map(this::mapToProfileResponse)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -167,29 +191,34 @@ public class DoctorService {
      * - APPROVED verification status
      */
     public List<DoctorProfileResponse> searchDoctors(String specialization, BigDecimal minFee, BigDecimal maxFee) {
-        log.debug("Searching doctors: specialization={}, minFee={}, maxFee={}", specialization, minFee, maxFee);
+        log.info("Tactical clinical search initiated. Criteria: specialization={}, minFee={}, maxFee={}", 
+                specialization, minFee, maxFee);
 
-        List<Doctor> doctors = doctorRepository.searchDoctors(minFee, maxFee);
-        log.debug("Found {} approved doctors with complete profiles", doctors.size());
+        // Fetching strictly APPROVED doctors to ensure identity resolution later
+        List<Doctor> approvedDoctors = doctorRepository.findByVerificationStatus(VerificationStatus.APPROVED);
+        log.debug("Identified {} approved clinical nodes in valid registry.", approvedDoctors.size());
 
-        if (specialization != null && !specialization.isBlank()) {
-            String term = specialization.toLowerCase();
-            doctors = doctors.stream()
-                .filter(d -> d.getSpecialization() != null
-                    && d.getSpecialization().toLowerCase().contains(term))
+        List<Doctor> filtered = approvedDoctors.stream()
+                .filter(d -> d.getSpecialization() != null && d.getConsultationFee() != null) // Profile must be complete
+                .filter(d -> {
+                    if (specialization == null || specialization.isBlank()) return true;
+                    return d.getSpecialization().toLowerCase().contains(specialization.toLowerCase());
+                })
+                .filter(d -> {
+                    if (minFee == null) return true;
+                    return d.getConsultationFee().compareTo(minFee) >= 0;
+                })
+                .filter(d -> {
+                    if (maxFee == null) return true;
+                    return d.getConsultationFee().compareTo(maxFee) <= 0;
+                })
                 .collect(Collectors.toList());
-            log.debug("After specialization filter '{}': {} doctors", specialization, doctors.size());
-        }
 
-        List<DoctorProfileResponse> result = doctors.stream()
+        log.info("Clinical search result: {} dossiers matched the engagement criteria.", filtered.size());
+
+        return filtered.stream()
                 .map(this::mapToProfileResponse)
                 .collect(Collectors.toList());
-
-        if (result.isEmpty()) {
-            log.warn("⚠️ Search returned empty. Possible reasons: 1) No doctors registered, 2) Doctors haven't completed profile, 3) Doctors not verified");
-        }
-
-        return result;
     }
 
     /**
@@ -229,9 +258,20 @@ public class DoctorService {
             throw new InvalidAvailabilityException("Start time must be before end time");
         }
 
-        DoctorAvailability availability = new DoctorAvailability();
-        availability.setDoctorId(doctorId);
-        availability.setDayOfWeek(request.getDayOfWeek());
+        List<DoctorAvailability> existingForDay = availabilityRepository.findByDoctorIdAndDayOfWeek(doctorId, request.getDayOfWeek());
+
+        DoctorAvailability availability;
+        if (existingForDay.isEmpty()) {
+            availability = new DoctorAvailability();
+            availability.setDoctorId(doctorId);
+            availability.setDayOfWeek(request.getDayOfWeek());
+        } else {
+            availability = existingForDay.get(0);
+            if (existingForDay.size() > 1) {
+                availabilityRepository.deleteAll(existingForDay.subList(1, existingForDay.size()));
+            }
+        }
+
         availability.setStartTime(request.getStartTime());
         availability.setEndTime(request.getEndTime());
         availability.setIsActive(request.getIsActive());
@@ -386,17 +426,16 @@ public class DoctorService {
      * Generates 30-minute slots from general or specific availability.
      */
     public List<AvailableSlotResponse> getAvailableSlots(Long doctorId, LocalDate date) {
-        Doctor doctor = doctorRepository.findById(doctorId)
-                .orElseThrow(() -> new DoctorNotFoundException(doctorId));
-
-        // Security: Only return slots for APPROVED and available doctors
+        Doctor doctor = resolveDoctor(doctorId);
+        log.info("Synchronizing availability protocol for clinical node: {} on {}", doctor.getId(), date);
+        
         if (!doctor.getIsAvailable() || doctor.getVerificationStatus() != VerificationStatus.APPROVED) {
-            log.warn("Doctor {} is not available or not yet approved for public scheduling", doctorId);
+            log.warn("Tactical Check Failure: Clinical node {} is not available for public scheduling protocol", doctorId);
             return List.of();
         }
 
         // 1. Check if there's a schedule override for this specific date
-        List<DoctorSchedule> overrides = scheduleRepository.findByDoctorIdAndDateBetween(doctorId, date, date);
+        List<DoctorSchedule> overrides = scheduleRepository.findByDoctorIdAndDateBetween(doctor.getId(), date, date);
         if (!overrides.isEmpty()) {
             boolean dayOff = overrides.stream().anyMatch(s -> Boolean.FALSE.equals(s.getIsAvailable()));
             if (dayOff) {
@@ -415,9 +454,9 @@ public class DoctorService {
         com.synapscare.doctorservice.enums.DayOfWeek dow = 
             com.synapscare.doctorservice.enums.DayOfWeek.valueOf(date.getDayOfWeek().name());
             
-        List<DoctorAvailability> weeklySlots = availabilityRepository.findByDoctorIdAndDayOfWeek(doctorId, dow);
+        List<DoctorAvailability> weeklySlots = availabilityRepository.findByDoctorIdAndDayOfWeek(doctor.getId(), dow);
         if (weeklySlots.isEmpty()) {
-            log.info("No weekly availability found for doctor {} on {}", doctorId, dow);
+            log.info("No weekly availability found for node {} on {}", doctor.getId(), dow);
             return List.of();
         }
 

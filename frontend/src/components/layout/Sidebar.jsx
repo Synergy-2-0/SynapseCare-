@@ -14,7 +14,8 @@ import {
     Search,
     UserCog,
     Settings,
-    Clock
+    Clock,
+    ClipboardList
 } from 'lucide-react';
 import { DOCTOR_ROUTES, PATIENT_ROUTES, ADMIN_ROUTES } from '../../constants/routes';
 
@@ -43,7 +44,7 @@ const Sidebar = ({ onClose }) => {
         { id: 'appointments', icon: Calendar, label: 'Appointments', path: DOCTOR_ROUTES.APPOINTMENTS },
         { id: 'patients', icon: Users, label: 'My Patients', path: DOCTOR_ROUTES.PATIENTS },
         { id: 'consultations', icon: Video, label: 'Consultations', path: DOCTOR_ROUTES.TELEMEDICINE },
-        { id: 'prescriptions', icon: FileText, label: 'Prescriptions', path: DOCTOR_ROUTES.PRESCRIPTIONS },
+        { id: 'prescriptions', icon: ClipboardList, label: 'Prescriptions', path: DOCTOR_ROUTES.PRESCRIPTIONS },
         { id: 'schedule', icon: Clock, label: 'Schedule', path: DOCTOR_ROUTES.SCHEDULE },
     ];
 
@@ -79,10 +80,15 @@ const Sidebar = ({ onClose }) => {
     return (
         <aside className="w-[280px] bg-white border-r border-slate-100 flex flex-col h-screen sticky top-0 z-50 overflow-hidden shadow-sm">
             {/* Logo Section - Clean Sans-Serif as in reference image */}
-            <div className="flex items-center gap-3 px-8 py-10 cursor-pointer" onClick={() => router.push('/')}>
-                <Image src="/logo.png" alt="SynapseCare" width={32} height={32} className="w-8 h-8 object-contain" />
+            <div className="flex items-center gap-3 px-8 py-10 cursor-pointer" onClick={() => {
+                if (currentRole === 'DOCTOR') router.push(DOCTOR_ROUTES.DASHBOARD);
+                else if (currentRole === 'PATIENT') router.push(PATIENT_ROUTES.DASHBOARD);
+                else if (currentRole === 'ADMIN') router.push(ADMIN_ROUTES.DASHBOARD);
+                else router.push('/');
+            }}>
+                <Image src="/logo.png" alt="SynapseDoc" width={32} height={32} className="w-8 h-8 object-contain" />
                 <span className="text-2xl font-bold tracking-tight text-slate-900 font-sans">
-                    Synapse<span className="text-teal-600">Care</span>
+                    Synapse<span className="text-teal-600">Doc</span>
                 </span>
             </div>
 

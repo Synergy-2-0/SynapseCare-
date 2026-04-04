@@ -50,7 +50,7 @@ const BodyLocationSelector = ({
                                     className={`
                                         flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors
                                         ${isSelected
-                                            ? 'border-blue-300 bg-blue-50'
+                                            ? 'border-teal-300 bg-teal-50'
                                             : 'border-slate-200 hover:border-slate-300'
                                         }
                                     `}
@@ -59,11 +59,10 @@ const BodyLocationSelector = ({
                                         type="checkbox"
                                         checked={isSelected}
                                         onChange={() => handleRegionClick(region.id)}
-                                        className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                                        className="w-4 h-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
                                     />
-                                    <span className={`text-sm font-medium ${
-                                        isSelected ? 'text-blue-700' : 'text-slate-700'
-                                    }`}>
+                                    <span className={`text-sm font-medium ${isSelected ? 'text-teal-700' : 'text-slate-700'
+                                        }`}>
                                         {region.label}
                                     </span>
                                 </label>
@@ -84,13 +83,13 @@ const BodyLocationSelector = ({
 
                             {/* Highlight selected regions */}
                             {selectedRegions.includes('head') && (
-                                <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-blue-400 bg-opacity-50 rounded-full"></div>
+                                <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-teal-400 bg-opacity-50 rounded-full"></div>
                             )}
                             {selectedRegions.includes('chest') && (
-                                <div className="absolute top-12 left-1/2 transform -translate-x-1/2 w-10 h-6 bg-blue-400 bg-opacity-50 rounded"></div>
+                                <div className="absolute top-12 left-1/2 transform -translate-x-1/2 w-10 h-6 bg-teal-400 bg-opacity-50 rounded"></div>
                             )}
                             {selectedRegions.includes('abdomen') && (
-                                <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-8 h-6 bg-blue-400 bg-opacity-50 rounded"></div>
+                                <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-8 h-6 bg-teal-400 bg-opacity-50 rounded"></div>
                             )}
                         </div>
                     </div>
@@ -102,9 +101,9 @@ const BodyLocationSelector = ({
 
             {/* Selected regions summary */}
             {selectedRegions.length > 0 && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="mt-4 p-3 bg-teal-50 border border-teal-200 rounded-lg">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-blue-800">
+                        <span className="text-sm font-medium text-teal-800">
                             Affected areas: {selectedRegions.map(id =>
                                 BODY_REGIONS.find(r => r.id === id)?.label
                             ).join(', ')}
@@ -112,7 +111,7 @@ const BodyLocationSelector = ({
                         <button
                             type="button"
                             onClick={() => onRegionToggle([])}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            className="text-xs text-teal-600 hover:text-teal-800 font-medium"
                         >
                             Clear All
                         </button>

@@ -27,12 +27,12 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue userRegisteredQueue() {
-        return new Queue(USER_REGISTERED_QUEUE);
+        return new Queue(USER_REGISTERED_QUEUE, true);
     }
 
     @Bean
-    public TopicExchange userExchange() {
-        return new TopicExchange(USER_EXCHANGE);
+    public DirectExchange userExchange() {
+        return new DirectExchange(USER_EXCHANGE, true, false);
     }
 
     @Bean

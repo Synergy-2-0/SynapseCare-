@@ -82,10 +82,10 @@ const SeveritySlider = ({
                                 className={`
                                     w-6 h-6 rounded-full text-xs font-medium transition-colors
                                     ${localValue === num
-                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        ? 'bg-teal-600 text-white shadow-sm'
                                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }
-                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+                                    focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1
                                 `}
                             >
                                 {num}
