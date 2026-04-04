@@ -45,7 +45,7 @@ const DoctorRecommendationCard = ({
             transition={{ duration: 0.3 }}
             className={`
                 bg-white border border-slate-200 rounded-2xl p-5
-                shadow-sm hover:shadow-md hover:border-blue-200
+                shadow-sm hover:shadow-md hover:border-teal-200
                 transition-all duration-300
                 ${className}
             `}
@@ -60,7 +60,7 @@ const DoctorRecommendationCard = ({
                             className="w-14 h-14 rounded-xl object-cover"
                         />
                     ) : (
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-lg">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white font-semibold text-lg">
                             {initials}
                         </div>
                     )}
@@ -109,7 +109,7 @@ const DoctorRecommendationCard = ({
 
                     {/* Matched specialty indicator */}
                     {matchedSpecialty && matchedSpecialty !== specialization && (
-                        <p className="text-xs text-blue-600 mt-2">
+                        <p className="text-xs text-teal-600 mt-2">
                             Matched for: {matchedSpecialty}
                         </p>
                     )}

@@ -30,7 +30,7 @@ const CollapsibleSection = ({
             <button
                 type="button"
                 onClick={handleToggle}
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-inset"
                 aria-expanded={isOpen}
             >
                 <div className="flex items-center gap-3">
@@ -42,7 +42,7 @@ const CollapsibleSection = ({
                     )}
 
                     {/* Section Icon */}
-                    {Icon && <Icon className="w-5 h-5 text-blue-600" />}
+                    {Icon && <Icon className="w-5 h-5 text-teal-600" />}
 
                     {/* Title */}
                     <div className="flex items-center gap-2">
@@ -58,7 +58,7 @@ const CollapsibleSection = ({
                 {/* Badge */}
                 <div className="flex items-center gap-2">
                     {badge && (
-                        <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
+                        <span className="text-xs font-medium px-2 py-1 bg-teal-100 text-teal-700 rounded-md">
                             {badge}
                         </span>
                     )}

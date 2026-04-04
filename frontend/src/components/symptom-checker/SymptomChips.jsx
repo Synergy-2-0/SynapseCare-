@@ -43,10 +43,10 @@ const SymptomChips = ({
                                 className={`
                                     px-3 py-2 rounded-lg text-sm font-medium transition-colors
                                     ${isSelected
-                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        ? 'bg-teal-600 text-white shadow-sm'
                                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                     }
-                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+                                    focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1
                                 `}
                             >
                                 <span className="flex items-center gap-1.5">
@@ -61,15 +61,15 @@ const SymptomChips = ({
 
             {/* Selected symptoms summary */}
             {selectedSymptoms.length > 0 && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="mb-4 p-3 bg-teal-50 border border-teal-200 rounded-lg">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-blue-800">
+                        <span className="text-sm font-medium text-teal-800">
                             Selected: {selectedSymptoms.join(', ')}
                         </span>
                         <button
                             type="button"
                             onClick={() => onSymptomToggle([])}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            className="text-xs text-teal-600 hover:text-teal-800 font-medium"
                         >
                             Clear All
                         </button>
@@ -87,7 +87,7 @@ const SymptomChips = ({
                     placeholder="Describe any other symptoms or provide more details about the selected symptoms..."
                     value={additionalSymptoms}
                     onChange={(event) => onAdditionalSymptomsChange?.(event.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 text-sm resize-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400 text-sm resize-none"
                 />
                 <p className="text-xs text-slate-500 mt-1">
                     Include details like location, intensity, triggers, or patterns

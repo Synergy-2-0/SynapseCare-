@@ -52,6 +52,8 @@ services:
       - 'SPRING_RABBITMQ_PORT=5672'
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
+      - 'DOCTOR_SERVICE_URL=http://doctor-service:8082'
+      - 'PATIENT_SERVICE_URL=http://patient-service:8084'
     depends_on:
       postgres:
         condition: service_healthy
@@ -129,11 +131,33 @@ services:
       - 'SPRING_RABBITMQ_PORT=5672'
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
+      - 'MINIO_URL=http://minio:9000'
+      - 'MINIO_ACCESS_KEY=minioadmin'
+      - 'MINIO_SECRET_KEY=minioadmin'
+      - 'MINIO_BUCKET=medical-reports'
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      minio:
+        condition: service_started
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: synapscare-minio
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      - 'MINIO_ROOT_USER=minioadmin'
+      - 'MINIO_ROOT_PASSWORD=minioadmin'
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
     networks:
       - healthcare-network
     restart: unless-stopped
@@ -264,6 +288,7 @@ services:
       - 'APPOINTMENT_SERVICE_URL=http://appointment-service:8083'
       - 'PATIENT_SERVICE_URL=http://patient-service:8084'
       - 'INTEGRATION_SERVICE_URL=http://ai-symptom-checker-service:8085'
+      - 'AI_SERVICE_URL=http://ai-symptom-checker-service:8085'
       - 'PAYMENT_SERVICE_URL=http://payment-service:8086'
       - 'TELEMEDICINE_SERVICE_URL=http://telemedicine-service:8087'
       - 'PRESCRIPTION_SERVICE_URL=http://prescription-service:8088'
@@ -287,4 +312,5 @@ networks:
 
 volumes:
   rabbitmq-data:
+  minio-data:
 

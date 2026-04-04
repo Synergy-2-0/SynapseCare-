@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:5432/synapscare
     username: ${DB_USER:postgres}
-    password: ${DB_PASS:Luqa}
+    password: ${DB_PASS:1234}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -28,6 +28,9 @@ spring:
     port: 5672
     username: ${RABBIT_USER:admin}
     password: ${RABBIT_PASS:admin123}
+    listener:
+      simple:
+        missing-queues-fatal: false
     template:
       exchange: ${PATIENT_EXCHANGE:patient.exchange}
       routing-key: ${PATIENT_ROUTING_KEY:patient.routing.key}

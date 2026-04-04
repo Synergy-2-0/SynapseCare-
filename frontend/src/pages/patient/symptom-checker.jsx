@@ -134,7 +134,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
 
     const isFormValid = () => {
         return (selectedSymptoms.length > 0 || additionalSymptoms.trim()) &&
-               duration && onset;
+            duration && onset;
     };
 
     const urgencyLevel = getUrgencyLevel(redFlag, severity);
@@ -247,7 +247,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
                         {/* Patient Information */}
                         <Card padding="md">
                             <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                                <AlertCircle className="w-5 h-5 text-blue-600" />
+                                <AlertCircle className="w-5 h-5 text-teal-600" />
                                 Patient Information (Optional)
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -260,7 +260,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
                                         value={age}
                                         onChange={(e) => setAge(e.target.value)}
                                         placeholder="Your age"
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 text-sm"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400 text-sm"
                                         min="1"
                                         max="120"
                                     />
@@ -272,7 +272,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
                                     <select
                                         value={gender}
                                         onChange={(e) => setGender(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 text-sm"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400 text-sm"
                                     >
                                         <option value="">Select gender</option>
                                         <option value="male">Male</option>
@@ -315,7 +315,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
                             animate={{ opacity: 1, y: 0 }}
                             className="mt-8"
                         >
-                            <Card padding="md" className="border-l-4 border-l-blue-600">
+                            <Card padding="md" className="border-l-4 border-l-teal-600">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                                         <CheckCircle className="w-5 h-5 text-emerald-600" />
@@ -337,7 +337,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
                                             {result.possibleConditions.map((condition, i) => (
                                                 <span
                                                     key={i}
-                                                    className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-lg"
+                                                    className="px-3 py-1 bg-teal-100 text-teal-800 text-sm rounded-lg"
                                                 >
                                                     {condition}
                                                 </span>
@@ -417,7 +417,7 @@ Please provide a detailed medical analysis with possible conditions and recommen
                     {/* AI Assistant Info */}
                     <Card padding="md">
                         <div className="text-center">
-                            <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-teal-500 rounded-xl mx-auto mb-3 flex items-center justify-center">
+                            <div className="w-12 h-12 bg-linear-to-br from-teal-500 to-emerald-500 rounded-xl mx-auto mb-3 flex items-center justify-center">
                                 <Brain className="w-6 h-6 text-white" />
                             </div>
                             <h3 className="font-semibold text-slate-900 mb-1">
@@ -441,19 +441,19 @@ Please provide a detailed medical analysis with possible conditions and recommen
                         </h3>
                         <ol className="space-y-2 text-sm text-slate-600">
                             <li className="flex gap-2">
-                                <span className="font-medium text-blue-600 shrink-0">1.</span>
+                                <span className="font-medium text-teal-600 shrink-0">1.</span>
                                 Select your symptoms from common conditions
                             </li>
                             <li className="flex gap-2">
-                                <span className="font-medium text-blue-600 shrink-0">2.</span>
+                                <span className="font-medium text-teal-600 shrink-0">2.</span>
                                 Rate severity and specify duration
                             </li>
                             <li className="flex gap-2">
-                                <span className="font-medium text-blue-600 shrink-0">3.</span>
+                                <span className="font-medium text-teal-600 shrink-0">3.</span>
                                 Add location and medical history (optional)
                             </li>
                             <li className="flex gap-2">
-                                <span className="font-medium text-blue-600 shrink-0">4.</span>
+                                <span className="font-medium text-teal-600 shrink-0">4.</span>
                                 Get AI analysis and doctor recommendations
                             </li>
                         </ol>
