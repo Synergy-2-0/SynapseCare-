@@ -2,19 +2,21 @@ services:
   postgres:
     image: postgres:15
     container_name: synapscare-postgres
+    stop_grace_period: 90s
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
       POSTGRES_DB: synapscare
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - ./docker-data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d synapscare -h localhost"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 12
+      start_period: 60s
     networks:
       - healthcare-network
 
@@ -31,7 +33,8 @@ services:
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
     networks:
       - healthcare-network
     volumes:
@@ -78,7 +81,10 @@ services:
       - 'SPRING_RABBITMQ_PORT=5672'
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
+      - 'APP_SEED_ENABLED=true'
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
