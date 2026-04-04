@@ -44,6 +44,14 @@ export default function DoctorProfile() {
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [bookingMode, setBookingMode] = useState('TELEMEDICINE');
     const [bookingInProgress, setBookingInProgress] = useState(false);
+    const [redirectingToPayment, setRedirectingToPayment] = useState(false);
+    const [bookingNotice, setBookingNotice] = useState('');
+    const [profileImageFailed, setProfileImageFailed] = useState(false);
+
+    const getFallbackImage = (seed) => `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}`;
+    const currentDoctorImage = profileImageFailed
+        ? getFallbackImage(doctor?.dbId || doctor?.id || 'doctor')
+        : (doctor?.image || getFallbackImage(doctor?.dbId || doctor?.id || 'doctor'));
 
     useEffect(() => {
         if (!id) return;
@@ -84,6 +92,7 @@ export default function DoctorProfile() {
                     verificationStatus: doc.verificationStatus
                 };
                 setDoctor(richDoctor);
+                setProfileImageFailed(false);
 
                 // Fetch slots using dbId (internal pk) — this is what appointment service
                 // stores as doctorId in the appointments table, ensuring consistent conflict checks.
@@ -123,6 +132,8 @@ export default function DoctorProfile() {
         }
 
         setBookingInProgress(true);
+        setRedirectingToPayment(false);
+        setBookingNotice('');
         try {
             let patientId;
             try {
@@ -174,27 +185,34 @@ export default function DoctorProfile() {
                 const response = await appointmentApi.post('/book', appointmentPayload);
                 const newAppointment = response.data?.data || response.data;
 
+                setBookingNotice('Booking confirmed. Redirecting to payment...');
+                setRedirectingToPayment(true);
+
                 // Redirect to payment — use 'appointmentId' NOT 'id' to avoid
                 // colliding with the /doctors/[id] dynamic route param, which
                 // would cause this page's useEffect to re-fire with appointment.id.
-                router.push({
-                    pathname: '/payment',
-                    query: {
-                        appointmentId: newAppointment.id,
-                        amount: doctor.fee,
-                        patientId: patientId,
-                        doctorId: doctor.dbId || doctor.id  // DB pk, consistent with booking payload
-                    }
-                });
+                setTimeout(() => {
+                    router.push({
+                        pathname: '/payment',
+                        query: {
+                            appointmentId: newAppointment.id,
+                            amount: doctor.fee,
+                            patientId: patientId,
+                            doctorId: doctor.dbId || doctor.id  // DB pk, consistent with booking payload
+                        }
+                    });
+                }, 1400);
             } catch (apiErr) {
                 console.error("Clinical Node Synchronizer failure:", apiErr);
                 const errorMsg = apiErr.response?.data?.message || apiErr.message;
                 alert(`Tactical failure in booking registry: ${errorMsg}. Please verify your parameters and re-synchronize.`);
                 setBookingInProgress(false);
+                setRedirectingToPayment(false);
             }
         } catch (error) {
             console.error("Critical Failure: Could not initialize booking record", error);
             alert("Clinical Sync Failure: This slot might have just been booked. Please choose another node.");
+            setRedirectingToPayment(false);
         } finally {
             setBookingInProgress(false);
         }
@@ -243,7 +261,12 @@ export default function DoctorProfile() {
                     <div className="flex items-center gap-6">
                         <Badge variant="success" size="sm" pulse>AVAILABLE</Badge>
                         <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden relative group cursor-pointer">
-                            <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
+                            <img
+                                src={currentDoctorImage}
+                                alt={doctor.name}
+                                onError={() => setProfileImageFailed(true)}
+                                className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+                            />
                         </div>
                     </div>
                 </nav>
@@ -257,7 +280,12 @@ export default function DoctorProfile() {
                                 <div className="aspect-square bg-white rounded-[3rem] p-6 border-2 border-slate-100 shadow-2xl shadow-teal-100/30 relative group overflow-hidden">
                                     <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-teal-50/50 to-transparent pointer-events-none" />
                                     <div className="w-full h-full bg-slate-50 rounded-[2.5rem] overflow-hidden border border-slate-100 relative z-10">
-                                        <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        <img
+                                            src={currentDoctorImage}
+                                            alt={doctor.name}
+                                            onError={() => setProfileImageFailed(true)}
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        />
                                     </div>
                                     <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-teal-200 z-20 group-hover:rotate-12 transition-transform">
                                         <Zap size={24} fill="white" />
@@ -415,10 +443,10 @@ export default function DoctorProfile() {
                                                         disabled={!slot.isAvailable}
                                                         onClick={() => setSelectedSlot(slot)}
                                                         className={`p-4 rounded-2xl font-bold text-sm tracking-tight border transition-all flex items-center justify-center gap-2 ${!slot.isAvailable
-                                                                ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
-                                                                : selectedSlot === slot
-                                                                    ? 'bg-teal-600 text-white border-teal-600 shadow-xl scale-[1.05]'
-                                                                    : 'bg-white border-slate-100 text-slate-500 hover:border-teal-400 hover:text-teal-600'
+                                                            ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                                                            : selectedSlot === slot
+                                                                ? 'bg-teal-600 text-white border-teal-600 shadow-xl scale-[1.05]'
+                                                                : 'bg-white border-slate-100 text-slate-500 hover:border-teal-400 hover:text-teal-600'
                                                             }`}
                                                     >
                                                         {selectedSlot === slot && <Check size={12} className="text-white" />}
@@ -452,12 +480,18 @@ export default function DoctorProfile() {
                                     variant="primary"
                                     size="xl"
                                     className="w-full normal-case tracking-tight font-bold"
-                                    disabled={!selectedSlot || bookingInProgress}
+                                    disabled={!selectedSlot || bookingInProgress || redirectingToPayment}
                                     onClick={handleBooking}
                                     icon={Zap}
                                 >
-                                    {bookingInProgress ? 'Synchronizing Archive...' : selectedSlot ? 'Finalize Booking Protocol' : 'Select Command Node'}
+                                    {bookingInProgress ? 'Synchronizing Archive...' : redirectingToPayment ? 'Redirecting To Payment...' : selectedSlot ? 'Finalize Booking Protocol' : 'Select Command Node'}
                                 </Button>
+
+                                {bookingNotice && (
+                                    <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-bold tracking-tight text-center">
+                                        {bookingNotice}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Infrastructure Footer */}
