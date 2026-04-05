@@ -159,6 +159,17 @@ const PatientDashboard = () => {
         }
     }, [router.query.payment, router.query.appointmentId]);
 
+    useEffect(() => {
+        if (!router.isReady) return;
+
+        const requestedTab = router.query.tab;
+        const allowedTabs = new Set(['overview', 'appointments', 'prescriptions', 'reports', 'payments', 'telemedicine', 'chat', 'profile']);
+
+        if (typeof requestedTab === 'string' && allowedTabs.has(requestedTab)) {
+            setActiveTab(requestedTab);
+        }
+    }, [router.isReady, router.query.tab]);
+
     const logout = () => {
         localStorage.clear();
         router.push('/login');

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { appointmentApi } from '../lib/api';
+import { appointmentApi, patientApi } from '../lib/api';
 import {
     Calendar,
     Clock,
@@ -36,9 +36,21 @@ const AppointmentsPage = () => {
 
             const fetchData = async () => {
                 try {
-                    const endpoint = role === 'DOCTOR'
-                        ? `/doctor/${userId}`
-                        : `/patient/${userId}`;
+                    let endpoint = `/patient/${userId}`;
+
+                    if (role === 'DOCTOR') {
+                        endpoint = `/doctor/${userId}`;
+                    } else {
+                        try {
+                            const patientRes = await patientApi.get(`/user/${userId}`);
+                            const payload = patientRes?.data?.data ?? patientRes?.data ?? {};
+                            const clinicalId = payload?.id || userId;
+                            endpoint = `/patient/${clinicalId}`;
+                        } catch (resolveErr) {
+                            endpoint = `/patient/${userId}`;
+                        }
+                    }
+
                     const res = await appointmentApi.get(endpoint);
                     const payload = res?.data?.data ?? res?.data ?? [];
                     const normalized = Array.isArray(payload)
@@ -166,16 +178,16 @@ const AppointmentsPage = () => {
                         action={
                             <Button
                                 variant="primary"
-                                                onClick={() => {
-                                                    if (userRole === 'DOCTOR') {
-                                                        router.push('/doctor/dashboard');
-                                                        return;
-                                                    }
+                                onClick={() => {
+                                    if (userRole === 'DOCTOR') {
+                                        router.push('/doctor/dashboard');
+                                        return;
+                                    }
 
-                                                    router.push('/patient/find-doctors');
-                                                }}
+                                    router.push('/patient/find-doctors');
+                                }}
                             >
-                                                {userRole === 'DOCTOR' ? 'Go to Dashboard' : 'Find a Doctor'}
+                                {userRole === 'DOCTOR' ? 'Go to Dashboard' : 'Find a Doctor'}
                             </Button>
                         }
                     />
@@ -237,7 +249,7 @@ const AppointmentsPage = () => {
                                             size="sm"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                router.push(`/payment?id=${appt.id}&amount=1500&patientId=${appt.patientId}`);
+                                                router.push(`/payment?appointmentId=${appt.id}&amount=${appt.fee || 1500}&patientId=${appt.patientId}${appt.doctorId ? `&doctorId=${appt.doctorId}` : ''}`);
                                             }}
                                         >
                                             Pay Now
