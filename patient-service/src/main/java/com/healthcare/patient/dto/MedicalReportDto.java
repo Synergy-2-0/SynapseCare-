@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 public class MedicalReportDto {
     private Long id;
     private Long patientId;
+    private Long appointmentId;
     private String fileName;
     private String fileUrl;
     private String fileType;

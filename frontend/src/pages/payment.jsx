@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { paymentApi, appointmentApi } from '../lib/api';
 import {
     CreditCard,
     ShieldCheck,
@@ -9,17 +8,14 @@ import {
     AlertCircle,
     CheckCircle2,
     Zap,
-    ArrowRight,
-    Wallet,
-    Info,
-    Check
+    Wallet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Head from 'next/head';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { paymentApi, appointmentApi } from '../lib/api';
 
 const PaymentPage = () => {
     const router = useRouter();
@@ -47,20 +43,7 @@ const PaymentPage = () => {
 
             const paymentId = createRes.data.data.paymentId;
 
-            // Step 2: Immediately confirm the appointment.
-            // PayHere sandbox notify_url posts to your server — which only works
-            // on a public URL. On localhost the RabbitMQ event never fires, so
-            // the appointment stays PENDING forever. We bridge this by confirming
-            // directly here, right after the patient has committed to paying.
-            try {
-                await appointmentApi.patch(`/${cleanAppointmentId}/status?status=CONFIRMED`);
-                console.log('[Payment] Appointment confirmed immediately after payment init:', cleanAppointmentId);
-            } catch (confirmErr) {
-                // Non-fatal: PayHere callback might still fire in production
-                console.warn('[Payment] Could not pre-confirm appointment:', confirmErr.message);
-            }
-
-            // Step 3: Get PayHere form data
+            // Step 2: Get PayHere form data
             const initRes = await paymentApi.get(`/${paymentId}/initiate-payhere`, {
                 params: {
                     returnUrl: `${window.location.origin}/dashboard/patient?payment=success&appointmentId=${cleanAppointmentId}`,
@@ -70,7 +53,7 @@ const PaymentPage = () => {
 
             setPayData(initRes.data.data);
 
-            // Step 4: Auto-submit the PayHere form
+            // Step 3: Auto-submit the PayHere form
             setTimeout(() => {
                 document.getElementById('payhere-form').submit();
             }, 800);

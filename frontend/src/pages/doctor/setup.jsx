@@ -2,8 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Image as ImageIcon, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 import { doctorApi } from '../../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
+import { supabaseStorage } from '../../lib/supabase';
 import { SPECIALIZATIONS, SPECIALIZATION_LABELS } from '../../constants/specializations';
 import { normalizeVerificationStatus, VERIFICATION_STATUS } from '../../lib/doctorVerification';
 
@@ -182,32 +184,28 @@ export default function DoctorSetupPage() {
             let profileImageUrl = photoPreview;
             let licenseImageUrl = null;
 
-            // Helper for Cloudinary Unsigned Upload
-            const uploadToCloudinary = async (file) => {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'synapcare_preset');
-                // Using cloud name provided
-                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dao7fkewx';
+            // Helper for Supabase S3-Compatible Upload
+            const uploadToSupabase = async (file, folder) => {
+                const fileExt = file.name.split('.').pop();
+                const userName = localStorage.getItem('user_name')?.replace(/\s+/g, '_').toLowerCase() || 'unnamed';
+                const fileName = `${folder}/${userName}_${Date.now()}.${fileExt}`;
 
-                const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                if (data.secure_url) {
-                    return data.secure_url;
+                const { error } = await supabaseStorage.upload(file, fileName);
+
+                if (error) {
+                    throw new Error(error.message || 'Failed to upload to clinical-media registry');
                 }
-                throw new Error(data.error?.message || 'Failed to upload image');
+
+                return supabaseStorage.getPublicUrl(fileName);
             };
 
             // 1. Upload files if selected
             if (photoFile) {
-                profileImageUrl = await uploadToCloudinary(photoFile);
+                profileImageUrl = await uploadToSupabase(photoFile, 'profile-photos');
             }
 
             if (licenseFile) {
-                licenseImageUrl = await uploadToCloudinary(licenseFile);
+                licenseImageUrl = await uploadToSupabase(licenseFile, 'licenses');
             }
 
             // 2. Build payload — use Cloudinary URL if uploaded, else existing DB URL
@@ -222,16 +220,29 @@ export default function DoctorSetupPage() {
                 consultationFee: parseFloat(formData.consultationFee) || 0
             };
 
+            let profileResponse;
             if (hasExistingProfile) {
-                await doctorApi.put('/profile', payload);
+                profileResponse = await doctorApi.put('/profile', payload);
             } else {
-                await doctorApi.post('/profile', payload);
+                profileResponse = await doctorApi.post('/profile', payload);
                 setHasExistingProfile(true);
             }
-            localStorage.setItem('user_verificationStatus', VERIFICATION_STATUS.PENDING);
-            setVerificationStatus(VERIFICATION_STATUS.PENDING);
-            setShowForm(false);
+
+            const normalizedStatus = normalizeVerificationStatus(profileResponse?.data?.verificationStatus);
+
+            setVerificationStatus(normalizedStatus);
+            setShowForm(normalizedStatus !== VERIFICATION_STATUS.APPROVED);
             setRejectionReason('');
+
+            if (normalizedStatus === VERIFICATION_STATUS.APPROVED) {
+                localStorage.setItem('user_verificationStatus', VERIFICATION_STATUS.APPROVED);
+                toast.success('Profile saved. Verification already approved. Redirecting...');
+                router.push('/doctor/dashboard');
+                return;
+            }
+
+            localStorage.setItem('user_verificationStatus', VERIFICATION_STATUS.PENDING);
+            setShowForm(false);
 
             toast.success("Profile submitted successfully!");
         } catch (err) {
@@ -329,7 +340,7 @@ export default function DoctorSetupPage() {
 
                         <div className="relative z-10 flex items-center gap-4 mb-2">
                             <AlertCircle className="w-8 h-8 text-teal-100" />
-                            <h2 className="text-3xl font-black tracking-tight">Complete Your Profile</h2>
+                            <h2 className="text-3xl font-serif font-bold">Complete Your Profile</h2>
                         </div>
                         <p className="text-teal-50 text-lg relative z-10">
                             Provide your professional details to establish your doctor account for review.
@@ -470,7 +481,14 @@ export default function DoctorSetupPage() {
 
                                             <div className="flex-shrink-0">
                                                 {photoPreview ? (
-                                                    <img src={photoPreview} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" />
+                                                    <Image
+                                                        src={photoPreview}
+                                                        alt="Preview"
+                                                        width={64}
+                                                        height={64}
+                                                        className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
+                                                        unoptimized
+                                                    />
                                                 ) : (
                                                     <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-slate-200 transition-colors">
                                                         <ImageIcon className="w-6 h-6 text-slate-400" />

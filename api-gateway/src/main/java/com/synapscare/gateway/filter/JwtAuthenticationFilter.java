@@ -120,6 +120,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if (path.startsWith("/api/doctors/availability")) return false; 
         if (path.startsWith("/api/doctors/schedule")) return false;
 
+        if (path.startsWith("/api/doctors/") && path.endsWith("/available-slots")) return true;
+
         if (pathMatcher.match("/api/doctors/*", path)) return true;
         if (pathMatcher.match("/api/doctors/*/available-slots", path)) return true;
         

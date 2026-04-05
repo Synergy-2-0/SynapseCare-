@@ -25,9 +25,11 @@ const createApiInstance = (baseURL, isPublic = false) => {
         // Don't add auth headers for public endpoints
         if (!isPublic && typeof window !== 'undefined') {
             const userId = localStorage.getItem('user_id');
+            const userRole = localStorage.getItem('user_role');
             const token = localStorage.getItem('auth_token');
             if (token) config.headers.Authorization = `Bearer ${token}`;
             if (userId) config.headers['X-User-Id'] = userId;
+            if (userRole) config.headers['X-User-Role'] = userRole;
         }
         return config;
     });
@@ -69,8 +71,10 @@ export const createFileUploadInstance = (baseURL) => {
         if (typeof window !== 'undefined') {
             const token = localStorage.getItem('auth_token');
             const userId = localStorage.getItem('user_id');
+            const userRole = localStorage.getItem('user_role');
             if (token) config.headers.Authorization = `Bearer ${token}`;
             if (userId) config.headers['X-User-Id'] = userId;
+            if (userRole) config.headers['X-User-Role'] = userRole;
         }
         return config;
     });

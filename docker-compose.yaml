@@ -2,19 +2,21 @@ services:
   postgres:
     image: postgres:15
     container_name: synapscare-postgres
+    stop_grace_period: 90s
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
+      POSTGRES_PASSWORD: Luqa
       POSTGRES_DB: synapscare
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - ./docker-data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d synapscare -h localhost"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 12
+      start_period: 60s
     networks:
       - healthcare-network
 
@@ -31,7 +33,8 @@ services:
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
     networks:
       - healthcare-network
     volumes:
@@ -43,9 +46,9 @@ services:
     ports:
       - '8083:8083'
     environment:
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=appointment-service'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
@@ -55,8 +58,6 @@ services:
       - 'DOCTOR_SERVICE_URL=http://doctor-service:8082'
       - 'PATIENT_SERVICE_URL=http://patient-service:8084'
     depends_on:
-      postgres:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
@@ -71,16 +72,19 @@ services:
     ports:
       - '8081:8081'
     environment:
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=userService'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
       - 'SPRING_RABBITMQ_PORT=5672'
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
+      - 'APP_SEED_ENABLED=true'
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
@@ -93,9 +97,9 @@ services:
     ports:
       - '8082:8082'
     environment:
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
       - 'SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect'
@@ -105,9 +109,9 @@ services:
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
       - 'APP_AUTH_SERVICE_URL=http://auth-service:8081'
+      - 'SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=-1'
+      - 'SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=-1'
     depends_on:
-      postgres:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       auth-service:
@@ -122,42 +126,17 @@ services:
     ports:
       - '8084:8084'
     environment:
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=patient-service'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
       - 'SPRING_RABBITMQ_PORT=5672'
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
-      - 'MINIO_URL=http://minio:9000'
-      - 'MINIO_ACCESS_KEY=minioadmin'
-      - 'MINIO_SECRET_KEY=minioadmin'
-      - 'MINIO_BUCKET=medical-reports'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      minio:
-        condition: service_started
-    networks:
-      - healthcare-network
-    restart: unless-stopped
-
-  minio:
-    image: minio/minio:latest
-    container_name: synapscare-minio
-    ports:
-      - '9000:9000'
-      - '9001:9001'
-    environment:
-      - 'MINIO_ROOT_USER=minioadmin'
-      - 'MINIO_ROOT_PASSWORD=minioadmin'
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio-data:/data
+      - 'SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=-1'
+      - 'SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=-1'
     networks:
       - healthcare-network
     restart: unless-stopped
@@ -180,9 +159,9 @@ services:
     ports:
       - '8086:8086'
     environment:
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=payment-service'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
@@ -193,8 +172,6 @@ services:
       - 'PAYHERE_MERCHANT_SECRET=MTcyODEzMjU3MzIyNzA0OTMxODkyMDU1NjQ2NTExMjAwNjgyODc2Mg=='
       - 'APP_NOTIFY_URL=https://synapscare-payment.loca.lt/api/payments/payhere/notify'
     depends_on:
-      postgres:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
@@ -207,9 +184,9 @@ services:
     ports:
       - '8087:8087'
     environment:
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=telemedicine-service'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
@@ -220,8 +197,6 @@ services:
       - 'JITSI_APP_ID=synapscare'
       - 'JITSI_APP_SECRET=synapscare-jitsi-secret-2024'
     depends_on:
-      postgres:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
@@ -234,9 +209,9 @@ services:
     ports:
       - '8088:8088'
     environment:
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=prescription-service'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
@@ -244,8 +219,6 @@ services:
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
     depends_on:
-      postgres:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
@@ -258,9 +231,9 @@ services:
     ports:
       - '8089:8089'
     environment:
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/synapscare'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/synapscare'
       - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - 'SPRING_DATASOURCE_PASSWORD=1234'
+      - 'SPRING_DATASOURCE_PASSWORD=Luqa'
       - 'SPRING_JPA_HIBERNATE_DDL_AUTO=update'
       - 'SPRING_APPLICATION_NAME=notification-service'
       - 'SPRING_RABBITMQ_HOST=rabbitmq'
@@ -268,8 +241,6 @@ services:
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
     depends_on:
-      postgres:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
@@ -293,6 +264,9 @@ services:
       - 'TELEMEDICINE_SERVICE_URL=http://telemedicine-service:8087'
       - 'PRESCRIPTION_SERVICE_URL=http://prescription-service:8088'
       - 'NOTIFICATION_SERVICE_URL=http://notification-service:8089'
+      - 'SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=-1'
+      - 'SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=-1'
+      - 'SPRING_CODEC_MAX_IN_MEMORY_SIZE=-1'
     depends_on:
       - auth-service
       - doctor-service
@@ -312,5 +286,4 @@ networks:
 
 volumes:
   rabbitmq-data:
-  minio-data:
 

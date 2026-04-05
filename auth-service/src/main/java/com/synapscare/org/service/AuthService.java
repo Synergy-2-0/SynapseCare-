@@ -75,6 +75,15 @@ public class AuthService {
                     .lastName(savedUser.getLastName())
                     .phoneNumber(savedUser.getPhoneNumber())
                     .roles(Set.of("PATIENT"))
+                    .bloodGroup(request.getBloodGroup())
+                    .allergies(request.getAllergies())
+                    .chronicIllnesses(request.getChronicIllnesses())
+                    .height(request.getHeight())
+                    .weight(request.getWeight())
+                    .emergencyContact(request.getEmergencyContact())
+                    .dob(request.getDob())
+                    .gender(request.getGender())
+                    .profileImageUrl(request.getProfileImageUrl())
                     .build();
 
             rabbitTemplate.convertAndSend(
