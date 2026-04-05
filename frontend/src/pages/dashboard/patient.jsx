@@ -60,71 +60,67 @@ const PatientDashboard = () => {
                 return;
             }
 
-            const fetchData = async () => {
-                try {
-                    // Step 1: Resolve Clinical Profile by user ID -> patient ID mapping.
-                    setLoading(true);
-                    const id = localStorage.getItem('user_id');
-                    const name = localStorage.getItem('user_name');
+                    const fetchData = async () => {
+                        try {
+                            setLoading(true);
+                            const id = localStorage.getItem('user_id');
+                            const name = localStorage.getItem('user_name');
 
-                    const patientRes = await patientApi.get(`/user/${id}`).catch(err => {
-                        if (err.response?.status === 401) logout();
-                        return { data: { data: {} } };
-                    });
-                    const patientInfo = patientRes.data?.data || patientRes.data || {};
-                    const clinicalId = patientInfo.id;
+                            // Step 1: Resolve Clinical Profile
+                            let clinicalId = null;
+                            try {
+                                const patientRes = await patientApi.get(`/user/${id}`);
+                                const patientInfo = patientRes.data?.data || patientRes.data || {};
+                                clinicalId = patientInfo.id;
+                                if (clinicalId) localStorage.setItem('patient_id', String(clinicalId));
+                                setUserData({ ...patientInfo, name: patientInfo.name || name, id, clinicalId });
+                            } catch (err) {
+                                console.warn("Clinical Identity Registry Miss - using placeholder for session:", id);
+                                setUserData({ name: name || 'Authorized Patient', id, clinicalId: null });
+                            }
 
-                    if (!clinicalId) {
-                        console.warn("Could not resolve clinical ID for user:", id);
-                        setUserData({ name: name, id, clinicalId: null });
-                        setLoading(false);
-                        return;
-                    }
+                            // Step 2: Fetch clinical records (with individual safety nets)
+                            if (clinicalId) {
+                                const [apptRes, historyRes, reportRes, paymentRes, prescRes] = await Promise.all([
+                                    appointmentApi.get(`/patient/${clinicalId}`).catch(() => ({ data: [] })),
+                                    medicalHistoryApi.get(`/patient/${clinicalId}`).catch(() => ({ data: [] })),
+                                    patientApi.get(`/${clinicalId}/reports`).catch(() => ({ data: [] })),
+                                    paymentApi.get(`/patient/${clinicalId}/history`).catch(() => ({ data: [] })),
+                                    prescriptionApi.get(`/patient/${clinicalId}`).catch(() => ({ data: [] }))
+                                ]);
 
-                    localStorage.setItem('patient_id', String(clinicalId));
+                                const notifRes = await notificationApi.get(`/user/${id}`).catch(() => ({ data: [] }));
 
-                    // Step 2: Fetch clinical records using the correct clinicalId
-                    const [apptRes, historyRes, reportRes, paymentRes, prescRes, notifRes] = await Promise.all([
-                        appointmentApi.get(`/patient/${clinicalId}`).catch(() => ({ data: { data: [] } })),
-                        medicalHistoryApi.get(`/patient/${clinicalId}`).catch(() => ({ data: { data: [] } })),
-                        patientApi.get(`/${clinicalId}/reports`).catch(() => ({ data: { data: [] } })),
-                        paymentApi.get(`/patient/${clinicalId}/history`).catch(() => ({ data: { data: [] } })),
-                        prescriptionApi.get(`/patient/${clinicalId}`).catch(() => ({ data: { data: [] } })),
-                        notificationApi.get(`/user/${id}`).catch(() => ({ data: { data: [] } }))
-                    ]);
+                                const safeData = (res) => {
+                                    const d = res?.data?.data || res?.data || [];
+                                    return Array.isArray(d) ? d : [];
+                                };
 
-                    const allAppts = apptRes.data?.data || apptRes.data || [];
-                    const historyInfo = historyRes.data?.data || historyRes.data || [];
-                    const reportInfo = reportRes.data?.data || reportRes.data || [];
-                    const paymentInfo = paymentRes.data?.data || paymentRes.data || [];
-                    const prescriptionInfo = prescRes.data?.data || prescRes.data || [];
-                    const notificationInfo = notifRes.data?.data || notifRes.data || [];
+                                const safeAppts = safeData(apptRes);
+                                const safeHistory = safeData(historyRes);
+                                const safeReports = safeData(reportRes);
+                                const safePayments = safeData(paymentRes);
+                                const safePrescriptions = safeData(prescRes);
+                                const safeNotifications = safeData(notifRes);
 
-                    const safeAppts = Array.isArray(allAppts) ? allAppts : [];
-                    const safeHistory = Array.isArray(historyInfo) ? historyInfo : [];
-                    const safeReports = Array.isArray(reportInfo) ? reportInfo : [];
-                    const safePayments = Array.isArray(paymentInfo) ? paymentInfo : [];
-                    const safePrescriptions = Array.isArray(prescriptionInfo) ? prescriptionInfo : [];
-                    const safeNotifications = Array.isArray(notificationInfo) ? notificationInfo : [];
-
-                    setUserData({ ...patientInfo, name: patientInfo.name || name, id, clinicalId });
-                    setUpcoming(safeAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)));
-                    setHistory(safeHistory);
-                    setReports(safeReports);
-                    setPayments(safePayments);
-                    setPrescriptions(safePrescriptions);
-                    setNotifications(safeNotifications);
-                    setStats({
-                        appointments: safeAppts.length,
-                        reports: safeReports.length,
-                        prescriptions: safePrescriptions.length
-                    });
-                } catch (err) {
-                    console.error('Failed to fetch dashboard data', err);
-                } finally {
-                    setLoading(false);
-                }
-            };
+                                setUpcoming(safeAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)));
+                                setHistory(safeHistory);
+                                setReports(safeReports);
+                                setPayments(safePayments);
+                                setPrescriptions(safePrescriptions);
+                                setNotifications(safeNotifications);
+                                setStats({
+                                    appointments: safeAppts.length,
+                                    reports: safeReports.length,
+                                    prescriptions: safePrescriptions.length
+                                });
+                            }
+                        } catch (err) {
+                            console.error('Critical Dashboard Failure:', err);
+                        } finally {
+                            setLoading(false);
+                        }
+                    };
 
             fetchData();
         }
@@ -227,7 +223,7 @@ const PatientDashboard = () => {
     const navItems = [
         { id: 'overview', icon: LayoutDashboard, label: 'Health Center' },
         { id: 'appointments', icon: Calendar, label: 'Visits & Tokens' },
-        { id: 'prescriptions', icon: Shield, label: 'Digital Rx' },
+        { id: 'prescriptions', icon: Shield, label: 'My Prescriptions' },
         { id: 'reports', icon: FileText, label: 'Records Vault' },
         { id: 'payments', icon: CreditCard, label: 'Billing Nest' },
         { id: 'telemedicine', icon: Video, label: 'Virtual Clinic' },

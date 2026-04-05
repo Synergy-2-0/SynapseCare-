@@ -148,4 +148,14 @@ public class PaymentController {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Payment summary", paymentService.getPaymentSummary()));
     }
+
+    /**
+     * GET /api/payments/admin/ledger
+     * Admin: Get all transactions for the global ledger.
+     */
+    @GetMapping("/admin/ledger")
+    public ResponseEntity<ApiResponse<List<PaymentDto>>> getAllPayments() {
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Global transaction ledger", paymentService.getAllPayments()));
+    }
 }
