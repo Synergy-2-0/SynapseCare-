@@ -7,7 +7,6 @@ import com.healthcare.telemedicine.entity.TelemedicineSession;
 import com.healthcare.telemedicine.entity.SessionStatus;
 import com.healthcare.telemedicine.events.SessionCreatedEvent;
 import com.healthcare.telemedicine.events.SessionEndedEvent;
-import com.healthcare.telemedicine.exception.SessionConflictException;
 import com.healthcare.telemedicine.exception.SessionNotFoundException;
 import com.healthcare.telemedicine.exception.UnauthorizedAccessException;
 import com.healthcare.telemedicine.exception.InvalidSessionStateException;
@@ -23,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -141,7 +141,7 @@ public class TelemedicineSessionService {
     public SessionResponse doctorJoin(String sessionId, Long doctorId) {
         TelemedicineSession session = findSessionByIdOrThrow(sessionId);
 
-        if (!session.getDoctorId().equals(doctorId)) {
+        if (!Objects.equals(session.getDoctorId(), doctorId)) {
             throw new UnauthorizedAccessException("Access denied: You are not the doctor for this session");
         }
 
@@ -167,7 +167,7 @@ public class TelemedicineSessionService {
     public SessionResponse patientJoin(String sessionId, Long patientId) {
         TelemedicineSession session = findSessionByIdOrThrow(sessionId);
 
-        if (!session.getPatientId().equals(patientId)) {
+        if (!Objects.equals(session.getPatientId(), patientId)) {
             throw new UnauthorizedAccessException("Access denied: You are not the patient for this session");
         }
 

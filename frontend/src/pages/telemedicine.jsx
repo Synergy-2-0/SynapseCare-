@@ -34,6 +34,19 @@ const TelemedicinePage = () => {
     const jitsiContainerRef = useRef(null);
     const jitsiApiRef = useRef(null);
 
+    const resolveRoomName = (sessionData) => {
+        if (sessionData?.roomName) return sessionData.roomName;
+        const meetingLink = sessionData?.meetingLink || sessionData?.meetingUrl || sessionData?.sessionUrl;
+        if (!meetingLink) return null;
+        try {
+            const url = new URL(meetingLink);
+            const pathRoom = url.pathname?.replace(/^\/+/, '');
+            return pathRoom || null;
+        } catch {
+            return null;
+        }
+    };
+
     useEffect(() => {
         if (!appointmentId) return;
 
@@ -44,7 +57,17 @@ const TelemedicinePage = () => {
                 const role = localStorage.getItem('user_role');
 
                 // Step 1: Get or create session by appointmentId
-                const sessionRes = await telemedicineApi.get(`/sessions/appointment/${appointmentId}`);
+                // Support both endpoint shapes while services are on mixed versions.
+                let sessionRes;
+                try {
+                    sessionRes = await telemedicineApi.get(`/appointments/${appointmentId}/session`);
+                } catch (sessionErr) {
+                    if (sessionErr?.response?.status !== 404) {
+                        throw sessionErr;
+                    }
+                    sessionRes = await telemedicineApi.get(`/sessions/appointment/${appointmentId}`);
+                }
+
                 const sessionData = sessionRes.data.data;
 
                 if (!sessionData) {
@@ -54,13 +77,59 @@ const TelemedicinePage = () => {
                 // Step 2: Join session with role-based endpoint
                 let joinRes;
                 if (role === 'DOCTOR') {
-                    joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/doctor`, null, {
-                        params: { doctorId: userId }
-                    });
+                    try {
+                        joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/doctor`, null, {
+                            params: { doctorId: userId }
+                        });
+                    } catch (joinErr) {
+                        const status = joinErr?.response?.status;
+                        const fallbackRoom = resolveRoomName(sessionData);
+                        if ((status === 500 || status === 404) && fallbackRoom) {
+                            console.warn('Doctor join endpoint failed; falling back to direct room join using session payload', {
+                                status,
+                                sessionId: sessionData.sessionId,
+                                roomName: fallbackRoom
+                            });
+                            joinRes = {
+                                data: {
+                                    data: {
+                                        ...sessionData,
+                                        roomName: fallbackRoom,
+                                        accessToken: null
+                                    }
+                                }
+                            };
+                        } else {
+                            throw joinErr;
+                        }
+                    }
                 } else {
-                    joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/patient`, null, {
-                        params: { patientId: userId }
-                    });
+                    try {
+                        joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/patient`, null, {
+                            params: { patientId: userId }
+                        });
+                    } catch (joinErr) {
+                        const status = joinErr?.response?.status;
+                        const fallbackRoom = resolveRoomName(sessionData);
+                        if ((status === 500 || status === 404) && fallbackRoom) {
+                            console.warn('Patient join endpoint failed; falling back to direct room join using session payload', {
+                                status,
+                                sessionId: sessionData.sessionId,
+                                roomName: fallbackRoom
+                            });
+                            joinRes = {
+                                data: {
+                                    data: {
+                                        ...sessionData,
+                                        roomName: fallbackRoom,
+                                        accessToken: null
+                                    }
+                                }
+                            };
+                        } else {
+                            throw joinErr;
+                        }
+                    }
                 }
 
                 setSession(joinRes.data.data);
