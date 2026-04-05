@@ -5,20 +5,20 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "consultation_sessions")
+@Table(name = "telemedicine_sessions")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ConsultationSession {
+public class TelemedicineSession {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String sessionId;           // UUID
+    private String sessionId;           // UUID - room identifier
 
     @Column(nullable = false)
     private Long appointmentId;
@@ -30,7 +30,7 @@ public class ConsultationSession {
     private Long patientId;
 
     @Column(nullable = false)
-    private String meetingLink;         // Jitsi room URL
+    private String sessionUrl;          // Jitsi room URL (aligned with reference)
 
     @Column(nullable = false)
     private String roomName;            // Jitsi room name
@@ -41,20 +41,32 @@ public class ConsultationSession {
     private LocalDateTime scheduledStartTime;   // When session is allowed to start
     private LocalDateTime scheduledEndTime;     // When session ends
 
-    private LocalDateTime actualStartTime;
-    private LocalDateTime actualEndTime;
-
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private SessionStatus status;
 
-    @Column(columnDefinition = "TEXT")
-    private String consultationNotes;   // Doctor's notes after session
+    private LocalDateTime startedAt;    // When session actually started (aligned with reference)
+    private LocalDateTime endedAt;      // When session actually ended (aligned with reference)
+    
+    private String endedBy;             // User ID who ended the session (aligned with reference)
 
-    private LocalDateTime createdAt;
+    @Column(columnDefinition = "TEXT")
+    private String notes;               // Doctor's consultation notes (aligned with reference)
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;    // Audit timestamp
+    
+    private LocalDateTime updatedAt;    // Last update timestamp (aligned with reference)
 
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (status == null) status = SessionStatus.SCHEDULED;
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

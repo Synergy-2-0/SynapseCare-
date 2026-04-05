@@ -4,10 +4,19 @@ export const VERIFICATION_STATUS = {
     REJECTED: 'REJECTED'
 };
 
+const getStoredVerificationStatus = () => {
+    if (typeof window === 'undefined') {
+        return '';
+    }
+
+    return String(localStorage.getItem('user_verificationStatus') || '').toUpperCase();
+};
+
 export const normalizeVerificationStatus = (status, isVerified = false) => {
     const normalized = String(status || '').toUpperCase();
+    const stored = getStoredVerificationStatus();
 
-    if (normalized === VERIFICATION_STATUS.APPROVED || isVerified) {
+    if (normalized === VERIFICATION_STATUS.APPROVED || stored === VERIFICATION_STATUS.APPROVED || isVerified) {
         return VERIFICATION_STATUS.APPROVED;
     }
 

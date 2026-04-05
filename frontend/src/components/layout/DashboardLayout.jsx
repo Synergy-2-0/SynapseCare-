@@ -9,6 +9,7 @@ import LoadingSpinner from '../ui/LoadingSpinner';
 const DashboardLayout = ({ children, title = "" }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userData, setUserData] = useState({ name: 'Practitioner', specialization: 'General Physician' });
+    const [userRole, setUserRole] = useState('PATIENT');
     const [isClient, setIsClient] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const router = useRouter();
@@ -53,9 +54,10 @@ const DashboardLayout = ({ children, title = "" }) => {
 
         if (allowedRoles.includes(role)) {
             setIsAuthorized(true);
+            setUserRole(role);
             setUserData({
                 name: localStorage.getItem('user_name') || 'Practitioner',
-                specialization: localStorage.getItem('user_specialization') || 'General Physician'
+                specialization: localStorage.getItem('user_specialization') || (role === 'DOCTOR' ? 'General Physician' : 'Patient')
             });
             return;
         }
@@ -137,8 +139,12 @@ const DashboardLayout = ({ children, title = "" }) => {
 
                         <div className="flex items-center gap-3 group cursor-pointer">
                             <div className="text-right hidden sm:block">
-                                <p className="text-sm font-bold font-serif text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent-teal)] transition-colors">Dr. {userData.name}</p>
-                                <p className="text-[10px] font-medium text-[var(--text-muted)] mt-0.5">{userData.specialization}</p>
+                                <p className="text-sm font-bold font-serif text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent-teal)] transition-colors">
+                                    {userRole === 'DOCTOR' ? `Dr. ${userData.name}` : userRole === 'ADMIN' ? `Admin ${userData.name}` : userData.name}
+                                </p>
+                                <p className="text-[10px] font-medium text-[var(--text-muted)] mt-0.5">
+                                    {userRole === 'DOCTOR' ? userData.specialization : userRole === 'ADMIN' ? 'Administrator' : 'Patient'}
+                                </p>
                             </div>
                             <div className="w-10 h-10 rounded-full bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-center text-[var(--accent-teal)] relative group-hover:scale-105 transition-transform">
                                 <img 

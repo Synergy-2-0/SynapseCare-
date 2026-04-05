@@ -201,9 +201,10 @@ public class UserService {
             log.error("CRITICAL: Failed to publish verification event for userId: {}. " +
                      "Doctor verification status in auth-service will be out of sync with doctor-service!",
                      doctor.getId(), e);
-            // TODO: Implement transactional outbox pattern or store in dead letter queue
-            // For now, we log the error but don't fail the verification
-            // This means auth-service is still the source of truth but other services might be stale
+            throw new IllegalStateException(
+                    "Failed to publish doctor verification event. Verification update rolled back to prevent cross-service mismatch.",
+                    e
+            );
         }
     }
 

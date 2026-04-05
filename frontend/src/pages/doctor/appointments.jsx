@@ -345,16 +345,17 @@ const AppointmentsPage = () => {
                                                             {appt.fee ? ` · ₹${appt.fee}` : ''}
                                                         </span>
                                                         <div className="flex gap-4 items-center">
-                                                            {appt.meetingLink && appt.consultationType === 'TELEMEDICINE' && (
-                                                                <a
-                                                                    href={appt.meetingLink}
-                                                                    target="_blank"
-                                                                    rel="noreferrer"
+                                                            {appt.consultationType === 'TELEMEDICINE' && (
+                                                                <button
+                                                                    type="button"
                                                                     className="text-[10px] font-bold text-blue-500 hover:text-blue-600 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md"
-                                                                    onClick={e => e.stopPropagation()}
+                                                                    onClick={e => {
+                                                                        e.stopPropagation();
+                                                                        router.push(`/telemedicine?appointmentId=${appt.id}`);
+                                                                    }}
                                                                 >
                                                                     <Video size={10} /> Join Call
-                                                                </a>
+                                                                </button>
                                                             )}
                                                             {appt.status !== 'COMPLETED' && (
                                                                 <button 

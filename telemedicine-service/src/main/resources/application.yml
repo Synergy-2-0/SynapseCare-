@@ -22,6 +22,21 @@ spring:
     username: ${RABBITMQ_USERNAME:admin}
     password: ${RABBITMQ_PASSWORD:admin123}
 
+# RabbitMQ Configuration
+app:
+  rabbitmq:
+    exchange: ${RABBITMQ_EXCHANGE:healthcare.exchange}
+
+# Service URLs for inter-service communication
+services:
+  appointment:
+    url: ${APPOINTMENT_SERVICE_URL:http://localhost:8083}
+
+# Telemedicine Configuration
+telemedicine:
+  stub-mode: ${TELEMEDICINE_STUB_MODE:true}
+  jitsi-base-url: ${JITSI_BASE_URL:https://meet.jit.si}
+
 # Jitsi Meet Configuration
 # Using public meet.jit.si — no server setup required!
 # For self-hosted Jitsi, change the server-url and configure app-id/app-secret in Prosody.
