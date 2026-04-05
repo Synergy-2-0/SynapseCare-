@@ -12,6 +12,12 @@ const PatientProfilePage = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [clinicalId, setClinicalId] = useState(null);
+    const [form, setForm] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phoneNumber: ''
+    });
 
     useEffect(() => {
         const fetchProfile = async () => {

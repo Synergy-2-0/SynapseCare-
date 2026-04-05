@@ -6,7 +6,7 @@ const PatientMedicalRecordsRedirect = () => {
     const router = useRouter();
 
     useEffect(() => {
-        router.replace('/dashboard/patient');
+        router.replace('/dashboard/patient?tab=reports');
     }, [router]);
 
     return <LoadingSpinner size="fullscreen" message="Opening medical records..." />;
