@@ -11,13 +11,13 @@ import { doctorApi } from '../../lib/api';
 import { isDoctorApproved } from '../../lib/doctorVerification';
 
 const postSessionSchema = z.object({
-  notes: z.string().min(10, "Detailed notes to proceed"),
+    notes: z.string().min(10, "Detailed notes to proceed"),
 });
 
 export async function getServerSideProps() {
-  return {
-    props: {}
-  };
+    return {
+        props: {}
+    };
 }
 
 export default function TelemedicineCenter() {
@@ -25,7 +25,7 @@ export default function TelemedicineCenter() {
     const [activeTab, setActiveTab] = useState('Upcoming');
     const [inSession, setInSession] = useState(false);
     const [showPostSession, setShowPostSession] = useState(false);
-    
+
     const [elapsedTime, setElapsedTime] = useState(0);
 
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
@@ -112,7 +112,7 @@ export default function TelemedicineCenter() {
                             <button className="w-14 h-14 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors shadow-[0_0_15px_rgba(0,0,0,0.5)]">
                                 <MonitorUp size={24} />
                             </button>
-                            <button 
+                            <button
                                 onClick={handleEndSession}
                                 className="px-8 h-14 rounded-full bg-red-600 hover:bg-red-700 font-bold tracking-wide flex items-center justify-center transition-colors shadow-[0_0_15px_rgba(220,38,38,0.4)]"
                             >
@@ -129,7 +129,7 @@ export default function TelemedicineCenter() {
                             ))}
                         </div>
                         <div className="flex-1 p-4">
-                            <textarea 
+                            <textarea
                                 className="w-full h-full bg-transparent resize-none outline-none text-white/90 placeholder:text-white/30 text-sm font-medium"
                                 placeholder="Type your session notes here... Autosaves every 30s."
                             />
@@ -145,8 +145,8 @@ export default function TelemedicineCenter() {
             <Header title="Consultations" subtitle="Telemedicine & active virtual care hub" />
             <div className="flex gap-2 border-b border-[var(--border-color)] mt-8">
                 {['Live Now', 'Upcoming', 'Past Sessions'].map(tab => (
-                    <button 
-                        key={tab} 
+                    <button
+                        key={tab}
                         onClick={() => setActiveTab(tab)}
                         className={'px-4 py-3 text-sm font-bold transition-colors ' + (activeTab === tab ? 'text-teal-600 border-b-2 border-teal-500' : 'text-slate-400 hover:text-slate-600')}
                     >
@@ -171,7 +171,7 @@ export default function TelemedicineCenter() {
                             </div>
                         </div>
                         <div className="flex flex-col gap-3 justify-end sm:w-48 shrink-0">
-                            <button 
+                            <button
                                 onClick={() => setInSession(true)}
                                 className="w-full py-2.5 text-sm font-bold bg-[var(--accent-teal)] text-white rounded shadow hover:bg-teal-700 transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
@@ -185,13 +185,13 @@ export default function TelemedicineCenter() {
             <AnimatePresence>
                 {showPostSession && (
                     <div className="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ y: 20, scale: 0.95, opacity: 0 }} animate={{ y: 0, scale: 1, opacity: 1 }} exit={{ opacity: 0 }}
                             className="bg-[var(--bg-card)] rounded-[var(--radius-lg)] shadow-2xl p-6 w-full max-w-2xl border border-[var(--border-color)]"
                         >
                             <form onSubmit={handleSubmit(onSubmitSummary)}>
-                                <h2 className="text-xl font-bold font-serif mb-4 flex items-center justify-between">
-                                    Post-Session Summary 
+                                <h2 className="text-xl font-black tracking-tight mb-4 flex items-center justify-between">
+                                    Post-Session Summary
                                     <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded">Session Completed</span>
                                 </h2>
                                 <div className="space-y-4">

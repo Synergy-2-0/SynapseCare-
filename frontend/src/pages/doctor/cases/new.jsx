@@ -105,7 +105,7 @@ const NewConsultationPage = () => {
             id: 'soap',
             label: 'SOAP Notes',
             icon: FileText,
-            color: 'text-blue-600',
+            color: 'text-teal-600',
             description: 'Clinical documentation'
         },
         {
@@ -276,8 +276,8 @@ const NewConsultationPage = () => {
                 {/* Patient Info Card */}
                 <Card padding="md">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                            <User className="w-6 h-6 text-blue-600" />
+                        <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
+                            <User className="w-6 h-6 text-teal-600" />
                         </div>
                         <div className="flex-1">
                             <h3 className="font-semibold text-slate-900">
@@ -312,7 +312,7 @@ const NewConsultationPage = () => {
                                 className={`
                                     flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors
                                     ${activeTab === tab.id
-                                        ? 'border-blue-500 text-blue-600'
+                                        ? 'border-teal-500 text-teal-600'
                                         : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                                     }
                                 `}
@@ -375,12 +375,12 @@ const NewConsultationPage = () => {
                 {completedSections > 0 && (
                     <Card padding="md" className="bg-slate-50 border-slate-200">
                         <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                            <Stethoscope className="w-4 h-4 text-blue-600" />
+                            <Stethoscope className="w-4 h-4 text-teal-600" />
                             Consultation Summary
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                             <div className="flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-blue-600" />
+                                <FileText className="w-4 h-4 text-teal-600" />
                                 <span className={completionStatus.soap ? 'text-emerald-600 font-medium' : 'text-slate-500'}>
                                     SOAP Notes {completionStatus.soap ? '✓' : '○'}
                                 </span>

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { 
-    format, addDays, startOfWeek, addWeeks, subWeeks, subDays, 
-    setHours, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, 
+import {
+    format, addDays, startOfWeek, addWeeks, subWeeks, subDays,
+    setHours, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval,
     isSameMonth
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Video, User, List, Calendar as CalendarIcon, Grid, Settings } from 'lucide-react';
@@ -113,7 +113,7 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
         }
         return acc;
     }, {});
-    
+
     // Dates math
     const startDateWeek = startOfWeek(currentDate, { weekStarts: 1 });
     const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startDateWeek, i));
@@ -128,7 +128,7 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
         else if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
         else setCurrentDate(addDays(monthStart, 32)); // jump to next month safely
     };
-    
+
     const goPrev = () => {
         if (view === 'day') setCurrentDate(subDays(currentDate, 1));
         else if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
@@ -145,8 +145,8 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
         const label = isBlocked ? 'Blocked Slot' : `Pt #${appt.patientId}`;
 
         return (
-            <div 
-                key={appt.id} 
+            <div
+                key={appt.id}
                 onClick={() => onAppointmentClick && onAppointmentClick(appt)}
                 className={`w-full rounded-xl p-2.5 cursor-pointer shadow-sm border transition-all hover:scale-[1.02] hover:shadow-md mb-2 ${colorClasses}`}
             >
@@ -186,34 +186,34 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
             {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h3 className="text-3xl font-serif text-slate-900">Schedule & Availability</h3>
+                    <h3 className="text-3xl font-black tracking-tight text-slate-900">Schedule & Availability</h3>
                     <p className="text-slate-500 font-medium mt-1">Manage your clinic and telemedicine hours.</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4">
-                    <button 
-                        onClick={() => setIsSettingsOpen(true)} 
+                    <button
+                        onClick={() => setIsSettingsOpen(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl font-bold transition-all shadow-sm border border-indigo-100"
                     >
                         <Settings className="w-4 h-4" /> Manage Availability
                     </button>
-                    
+
                     {/* View Toggles */}
                     <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200/60 shadow-inner">
-                        <button 
-                            onClick={() => setView('day')} 
+                        <button
+                            onClick={() => setView('day')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${view === 'day' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             <List className="w-4 h-4" /> Day
                         </button>
-                        <button 
-                            onClick={() => setView('week')} 
+                        <button
+                            onClick={() => setView('week')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${view === 'week' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             <CalendarIcon className="w-4 h-4" /> Week
                         </button>
-                        <button 
-                            onClick={() => setView('month')} 
+                        <button
+                            onClick={() => setView('month')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${view === 'month' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             <Grid className="w-4 h-4" /> Month
@@ -239,7 +239,7 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
 
             {/* Calendar Stage */}
             <div className="flex-1 min-h-[600px] border border-slate-200/60 rounded-[2xl] bg-slate-50/30 shadow-inner overflow-hidden flex flex-col">
-                
+
                 {view === 'week' && (
                     <div className="flex-1 overflow-auto relative">
                         <div className="grid grid-cols-8 min-w-[900px]">
@@ -250,7 +250,7 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                                 return (
                                     <div key={day.toString()} className={`p-3 border-b border-slate-200/60 text-center sticky top-0 z-10 backdrop-blur-md ${isToday ? 'bg-teal-50 border-teal-100 ring-1 ring-teal-500/20' : 'bg-slate-50/95'}`}>
                                         <div className={`text-[11px] font-bold uppercase tracking-widest mb-1 ${isToday ? 'text-teal-600' : 'text-slate-400'}`}>{format(day, 'EEE')}</div>
-                                        <div className={`text-xl font-serif ${isToday ? 'text-teal-700 font-bold' : 'text-slate-700'}`}>{format(day, 'd')}</div>
+                                        <div className={`text-xl font-black ${isToday ? 'text-teal-700' : 'text-slate-700'}`}>{format(day, 'd')}</div>
                                         <div className="mt-1 flex justify-center">
                                             {isLeaveDay(day) ? (
                                                 <span className="px-2 py-0.5 rounded-full bg-slate-700 text-white text-[9px] font-black uppercase tracking-widest border border-slate-800">
@@ -280,9 +280,9 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                                         const dayAvailability = availabilityByDay[normalizeDayKey(format(day, 'EEE'))];
                                         const cellAvailable = isHourWithinAvailability(dayAvailability, hour);
                                         const slotAppts = appointments.filter(a => {
-                                            if(!a.date || !a.time) return false;
+                                            if (!a.date || !a.time) return false;
                                             const isSameD = isSameDay(day, new Date(a.date));
-                                            const hStr = hour > 12 ? (hour-12).toString() : hour.toString();
+                                            const hStr = hour > 12 ? (hour - 12).toString() : hour.toString();
                                             const isSameH = a.time.startsWith(hStr + ':');
                                             return isSameD && isSameH;
                                         });
@@ -290,7 +290,7 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                                         const dayBlocked = isLeaveDay(day);
 
                                         return (
-                                            <div key={day.toString()+hour} className={`border-b border-r border-slate-200/60 p-2 min-h-[100px] relative group ${dayBlocked ? 'bg-slate-100/90 hover:bg-slate-100' : cellAvailable ? 'bg-emerald-50/60 hover:bg-emerald-50' : 'bg-slate-50/80 hover:bg-slate-50'} ${isToday ? 'ring-1 ring-inset ring-teal-200' : ''}`}>
+                                            <div key={day.toString() + hour} className={`border-b border-r border-slate-200/60 p-2 min-h-[100px] relative group ${dayBlocked ? 'bg-slate-100/90 hover:bg-slate-100' : cellAvailable ? 'bg-emerald-50/60 hover:bg-emerald-50' : 'bg-slate-50/80 hover:bg-slate-50'} ${isToday ? 'ring-1 ring-inset ring-teal-200' : ''}`}>
                                                 {!slotAppts.length && !dayBlocked && cellAvailable && (
                                                     <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 text-[9px] font-black uppercase tracking-widest">
                                                         Open
@@ -306,7 +306,7 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                                                 )}
                                                 {!slotAppts.length && !dayBlocked && (
                                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button 
+                                                        <button
                                                             onClick={() => setSelectedEmptySlot({ day, timeStr: format(setHours(new Date(), hour), 'h a') })}
                                                             className={`w-6 h-6 rounded-full flex items-center justify-center font-bold ${cellAvailable ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
                                                         >+</button>
@@ -323,18 +323,18 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
 
                 {view === 'day' && (
                     <div className="flex-1 overflow-auto relative p-6">
-                        <h4 className="text-xl font-serif text-slate-800 mb-6">{format(currentDate, 'EEEE, MMMM d')}</h4>
-                                {isLeaveDay(currentDate) && (
-                                    <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-700 text-white text-[10px] font-black uppercase tracking-widest border border-slate-800">
-                                        Blocked (Leave)
-                                    </div>
-                                )}
+                        <h4 className="text-xl font-black tracking-tight text-slate-800 mb-6">{format(currentDate, 'EEEE, MMMM d')}</h4>
+                        {isLeaveDay(currentDate) && (
+                            <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-700 text-white text-[10px] font-black uppercase tracking-widest border border-slate-800">
+                                Blocked (Leave)
+                            </div>
+                        )}
                         <div className="flex flex-col gap-0 border-l-2 border-slate-100 ml-16">
                             {hours.map(hour => {
                                 const slotAppts = appointments.filter(a => {
-                                    if(!a.date || !a.time) return false;
+                                    if (!a.date || !a.time) return false;
                                     const isSameD = isSameDay(currentDate, new Date(a.date));
-                                    const hStr = hour > 12 ? (hour-12).toString() : hour.toString();
+                                    const hStr = hour > 12 ? (hour - 12).toString() : hour.toString();
                                     const isSameH = a.time.startsWith(hStr + ':');
                                     return isSameD && isSameH;
                                 });
@@ -349,7 +349,7 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {slotAppts.map(renderAppt)}
                                             {!slotAppts.length && (
-                                                <div 
+                                                <div
                                                     onClick={() => setSelectedEmptySlot({ day: currentDate, timeStr: format(setHours(new Date(), hour), 'h a') })}
                                                     className={`border border-dashed rounded-xl flex items-center justify-center p-4 text-sm italic cursor-pointer transition-colors hover:text-indigo-500 ${isHourWithinAvailability(availabilityByDay[normalizeDayKey(format(currentDate, 'EEE'))], hour) ? 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                                                 >
@@ -378,7 +378,7 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                                 const dayAppts = appointments.filter(a => a.date && isSameDay(new Date(a.date), day));
                                 const dayAvailability = availabilityByDay[normalizeDayKey(format(day, 'EEE'))];
                                 const dayBlocked = isLeaveDay(day);
-                                
+
                                 return (
                                     <div key={idx} className={`border-b border-r border-slate-200/60 p-2 relative group flex flex-col min-h-[120px] ${dayBlocked ? 'bg-slate-100/90 hover:bg-slate-100' : !isCurrentMonth ? 'bg-slate-50/50 opacity-60' : 'bg-white hover:bg-slate-50'} ${isToday ? 'ring-inset ring-2 ring-teal-400 bg-teal-50/10' : ''} ${dayBlocked ? 'before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-slate-700' : dayAvailability?.isWorking ? 'before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-emerald-400' : ''}`}>
                                         <div className="flex justify-between items-start mb-2">
@@ -425,7 +425,7 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                     </div>
                 )}
             </div>
-            
+
             {/* Legend */}
             <div className="mt-8 pt-6 border-t border-slate-200/60 flex flex-wrap gap-6 items-center justify-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 <div className="flex items-center gap-2">
@@ -448,8 +448,8 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                 </div>
             </div>
 
-                            <ManageScheduleModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} doctorId={doctorId} onSaved={() => { fetchAvailability(); fetchLeaves(); }} />
-                            <SlotQuickActionModal slot={selectedEmptySlot} doctorId={doctorId} onClose={() => setSelectedEmptySlot(null)} onSlotBlocked={() => { setSelectedEmptySlot(null); if (onRefresh) onRefresh(); }} />
+            <ManageScheduleModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} doctorId={doctorId} onSaved={() => { fetchAvailability(); fetchLeaves(); }} />
+            <SlotQuickActionModal slot={selectedEmptySlot} doctorId={doctorId} onClose={() => setSelectedEmptySlot(null)} onSlotBlocked={() => { setSelectedEmptySlot(null); if (onRefresh) onRefresh(); }} />
         </div>
     );
 };

@@ -20,7 +20,7 @@ const AppointmentRequestsTab = ({ appointments, onAction, onViewPatient }) => {
                 <div className="w-24 h-24 bg-slate-50 rounded-full flex flex-col items-center justify-center mb-6 border border-slate-100 shadow-sm">
                     <CheckCircle className="w-10 h-10 text-teal-300" />
                 </div>
-                <h3 className="text-2xl font-serif text-slate-800 mb-2">All Caught Up!</h3>
+                <h3 className="text-2xl font-black tracking-tight text-slate-800 mb-2">All Caught Up!</h3>
                 <p className="text-slate-500 font-medium">You have no pending appointment requests to review.</p>
             </div>
         );
@@ -30,7 +30,7 @@ const AppointmentRequestsTab = ({ appointments, onAction, onViewPatient }) => {
         <div className="surface-card bg-white min-h-[600px] flex flex-col border border-slate-200">
             <div className="p-8 border-b border-[var(--border-color)] bg-slate-50/50 flex justify-between items-center">
                 <div>
-                    <h3 className="text-2xl font-serif text-slate-900 flex items-center gap-3">
+                    <h3 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-3">
                         Appointment Requests
                         <span className="bg-rose-100 text-rose-700 text-xs font-bold px-2.5 py-1 rounded-full">{pendingAppts.length} Pending</span>
                     </h3>
@@ -42,7 +42,7 @@ const AppointmentRequestsTab = ({ appointments, onAction, onViewPatient }) => {
                 <div className="grid grid-cols-1 gap-6">
                     <AnimatePresence>
                         {pendingAppts.map(appt => (
-                            <motion.div 
+                            <motion.div
                                 key={appt.id}
                                 layout
                                 initial={{ opacity: 0, y: 20 }}
@@ -57,12 +57,12 @@ const AppointmentRequestsTab = ({ appointments, onAction, onViewPatient }) => {
                                     <div className="flex gap-6 items-center">
                                         <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center shadow-inner">
                                             <span className="text-xs font-bold text-slate-400 uppercase">{appt.date?.split('-')[1] || 'MON'}</span>
-                                            <span className="text-xl font-serif font-bold text-slate-800">{appt.date?.split('-')[2] || '12'}</span>
+                                            <span className="text-xl font-black tracking-tight text-slate-800">{appt.date?.split('-')[2] || '12'}</span>
                                         </div>
 
                                         <div className="space-y-1.5">
                                             <div className="flex items-center gap-3">
-                                                <h4 className="text-lg font-serif font-bold text-slate-900">Patient #{appt.patientId}</h4>
+                                                <h4 className="text-lg font-black tracking-tight text-slate-900">Patient #{appt.patientId}</h4>
                                                 <span className={`px-2 py-0.5 text-[10px] uppercase tracking-widest font-bold rounded-lg border ${appt.mode === 'TELEMEDICINE' || appt.type === 'TELEMEDICINE' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
                                                     {appt.mode === 'TELEMEDICINE' || appt.type === 'TELEMEDICINE' ? 'Video Consult' : 'In-Person Sync'}
                                                 </span>
@@ -78,9 +78,9 @@ const AppointmentRequestsTab = ({ appointments, onAction, onViewPatient }) => {
 
                                     {rejectingId === appt.id ? (
                                         <div className="flex-1 flex items-center gap-3 bg-rose-50 p-3 rounded-2xl border border-rose-100 w-full xl:w-auto xl:ml-8 animate-in fade-in slide-in-from-right-4">
-                                            <input 
-                                                type="text" 
-                                                placeholder="Reason for rejection (optional)..." 
+                                            <input
+                                                type="text"
+                                                placeholder="Reason for rejection (optional)..."
                                                 className="flex-1 bg-white border border-rose-200 outline-none px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700"
                                                 value={rejectReason}
                                                 onChange={e => setRejectReason(e.target.value)}
@@ -95,13 +95,13 @@ const AppointmentRequestsTab = ({ appointments, onAction, onViewPatient }) => {
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-3 w-full xl:w-auto">
-                                            <button 
+                                            <button
                                                 onClick={() => onAction(appt.id, 'accept', null)}
                                                 className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-xl font-bold transition-all shadow-sm group"
                                             >
                                                 <CheckCircle className="w-5 h-5 group-hover:scale-110 transition-transform" /> Approve
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={() => setRejectingId(appt.id)}
                                                 className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white text-slate-600 hover:text-rose-600 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 rounded-xl font-bold transition-all shadow-sm group"
                                             >

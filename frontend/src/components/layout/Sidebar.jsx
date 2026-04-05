@@ -30,7 +30,8 @@ const Sidebar = ({ onClose }) => {
     });
 
     const currentRole = storedRole || 'PATIENT';
-    
+    const isDoctorSidebar = currentRole === 'DOCTOR';
+
     // Navigation configurations for different roles
     const adminNav = [
         { id: 'admin-dashboard', icon: LayoutDashboard, label: 'Admin Dashboard', path: ADMIN_ROUTES.DASHBOARD },
@@ -103,9 +104,9 @@ const Sidebar = ({ onClose }) => {
                                 router.push(item.path);
                                 if (onClose) onClose();
                             }}
-                            className={`w-full flex items-center px-6 py-4 text-[15px] font-medium transition-all relative rounded-lg group
-                                ${active 
-                                    ? 'bg-teal-50/50 text-teal-600' 
+                            className={`w-full flex items-center px-6 py-4 text-[15px] ${isDoctorSidebar ? 'font-bold tracking-tight' : 'font-medium'} transition-all relative rounded-lg group
+                                ${active
+                                    ? 'bg-teal-50/50 text-teal-600'
                                     : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
                             `}
                         >
@@ -113,13 +114,13 @@ const Sidebar = ({ onClose }) => {
                             {active && (
                                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-teal-600 rounded-r-md" />
                             )}
-                            
+
                             <div className="flex items-center gap-4">
-                                <item.icon 
-                                    className={`w-5 h-5 ${active ? 'text-teal-600' : 'text-slate-400 group-hover:text-teal-600'} transition-colors`} 
-                                    strokeWidth={active ? 2.5 : 2} 
+                                <item.icon
+                                    className={`w-5 h-5 ${active ? 'text-teal-600' : 'text-slate-400 group-hover:text-teal-600'} transition-colors`}
+                                    strokeWidth={active ? 2.5 : 2}
                                 />
-                                <span className={active ? 'font-semibold' : ''}>{item.label}</span>
+                                <span className={active ? (isDoctorSidebar ? 'font-black tracking-tight' : 'font-semibold') : ''}>{item.label}</span>
                             </div>
                         </button>
                     );
@@ -130,7 +131,7 @@ const Sidebar = ({ onClose }) => {
             <div className="p-4 border-t border-slate-50 mt-auto">
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-4 px-6 py-4 text-[15px] font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all rounded-lg group"
+                    className={`w-full flex items-center gap-4 px-6 py-4 text-[15px] ${isDoctorSidebar ? 'font-bold tracking-tight' : 'font-medium'} text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all rounded-lg group`}
                 >
                     <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                     Logout

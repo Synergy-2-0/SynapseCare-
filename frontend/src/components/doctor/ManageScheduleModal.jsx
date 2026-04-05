@@ -49,9 +49,9 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
             if (res.data && res.data.length > 0) {
                 if (res.data[0].slotDuration) setSlotDuration(res.data[0].slotDuration.toString());
                 if (res.data[0].bufferTime) setBuffer(res.data[0].bufferTime.toString());
-                
+
                 const newSched = DAYS.map(dayName => {
-                    const dayData = res.data.find(d => d.dayOfWeek === dayName.substring(0,3).toUpperCase() || d.dayOfWeek === dayName.toUpperCase());
+                    const dayData = res.data.find(d => d.dayOfWeek === dayName.substring(0, 3).toUpperCase() || d.dayOfWeek === dayName.toUpperCase());
                     if (dayData) {
                         return {
                             day: dayName,
@@ -116,7 +116,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
             toast.error('Please fill in all leave details.');
             return;
         }
-        
+
         try {
             setLoading(true);
             // 1. Check for conflicts
@@ -127,7 +127,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
                 // Also fetch peers for reassign
                 try {
                     // Better approach: fetch peers from doctor-service
-                    const peersRes = await fetch(`${process.env.NEXT_PUBLIC_DOCTOR_SERVICE_URL || '/api/doctors'}/${doctorId}/peers?specialization=General`, { 
+                    const peersRes = await fetch(`${process.env.NEXT_PUBLIC_DOCTOR_SERVICE_URL || '/api/doctors'}/${doctorId}/peers?specialization=General`, {
                         headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
                     }).then(r => r.json());
                     if (Array.isArray(peersRes)) setPeers(peersRes);
@@ -143,11 +143,11 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
                 reason: newLeave.reason
             };
             const res = await appointmentApi.post(`/schedule/doctor/${doctorId}/leaves`, payload);
-            setLeaves([...leaves, { 
-                id: res.data.id || Date.now(), 
-                start: newLeave.start, 
-                end: newLeave.end, 
-                reason: newLeave.reason 
+            setLeaves([...leaves, {
+                id: res.data.id || Date.now(),
+                start: newLeave.start,
+                end: newLeave.end,
+                reason: newLeave.reason
             }]);
             setNewLeave({ start: '', end: '', reason: '' });
             toast.success('Time off added securely.');
@@ -218,7 +218,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
             setLoading(true);
             const payload = schedule.map(s => ({
                 doctorId,
-                dayOfWeek: s.day.substring(0,3).toUpperCase(),
+                dayOfWeek: s.day.substring(0, 3).toUpperCase(),
                 startTime: s.start + ':00',
                 endTime: s.end + ':00',
                 slotDuration: parseInt(slotDuration),
@@ -240,12 +240,12 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose}></div>
-            
+
             <div className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 {/* Header */}
                 <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                     <div>
-                        <h2 className="text-2xl font-serif text-slate-900">Manage Availability</h2>
+                        <h2 className="text-2xl font-black tracking-tight text-slate-900">Manage Availability</h2>
                         <p className="text-slate-500 text-sm mt-1">Configure your working hours and planned time off.</p>
                     </div>
                     <button onClick={onClose} className="p-2 bg-white hover:bg-slate-100 rounded-full text-slate-400 transition-colors shadow-sm">
@@ -255,13 +255,13 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
 
                 {/* Tabs */}
                 <div className="flex border-b border-slate-100 px-8 pt-4 gap-6 bg-slate-50/50">
-                    <button 
+                    <button
                         onClick={() => setActiveTab('weekly')}
                         className={`pb-4 px-2 font-bold text-sm transition-colors border-b-2 ${activeTab === 'weekly' ? 'border-indigo-500 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                     >
                         <div className="flex items-center gap-2"><Clock className="w-4 h-4" /> Weekly Template</div>
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('leaves')}
                         className={`pb-4 px-2 font-bold text-sm transition-colors border-b-2 ${activeTab === 'leaves' ? 'border-indigo-500 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                     >
@@ -277,7 +277,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
                             <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex flex-wrap gap-6 items-center">
                                 <div>
                                     <label className="block text-xs font-bold text-indigo-900 uppercase tracking-widest mb-2">Slot Duration</label>
-                                    <select 
+                                    <select
                                         value={slotDuration} onChange={(e) => setSlotDuration(e.target.value)}
                                         className="bg-white border border-indigo-200 text-indigo-800 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 outline-none font-semibold shadow-sm"
                                     >
@@ -290,7 +290,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-indigo-900 uppercase tracking-widest mb-2">Buffer Time</label>
-                                    <select 
+                                    <select
                                         value={buffer} onChange={(e) => setBuffer(e.target.value)}
                                         className="bg-white border border-indigo-200 text-indigo-800 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 outline-none font-semibold shadow-sm"
                                     >
@@ -314,7 +314,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
                                         <div key={dayObj.day} className={`flex items-center gap-4 p-3 rounded-xl border transition-all ${dayObj.active ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
                                             <div className="w-32 flex items-center gap-3">
                                                 {/* Custom Toggle Switch */}
-                                                <button 
+                                                <button
                                                     role="switch"
                                                     aria-checked={dayObj.active}
                                                     onClick={() => handleToggleDay(idx)}
@@ -327,15 +327,15 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
 
                                             {dayObj.active ? (
                                                 <div className="flex-1 flex items-center gap-3">
-                                                    <input 
-                                                        type="time" 
+                                                    <input
+                                                        type="time"
                                                         value={dayObj.start}
                                                         onChange={(e) => handleTimeChange(idx, 'start', e.target.value)}
                                                         className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none font-medium"
                                                     />
                                                     <span className="text-slate-400 font-medium">to</span>
-                                                    <input 
-                                                        type="time" 
+                                                    <input
+                                                        type="time"
                                                         value={dayObj.end}
                                                         onChange={(e) => handleTimeChange(idx, 'end', e.target.value)}
                                                         className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none font-medium"
@@ -380,8 +380,8 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="p-6 bg-white rounded-3xl border border-amber-200 shadow-sm">
                                             <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">Option A: Reassign</h4>
-                                            <select 
-                                                value={selectedPeer} 
+                                            <select
+                                                value={selectedPeer}
                                                 onChange={(e) => setSelectedPeer(e.target.value)}
                                                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none mb-4 focus:ring-2 focus:ring-amber-500"
                                             >
@@ -390,7 +390,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
                                                     <option key={p.id} value={p.id}>Dr. {p.lastName} ({p.specialization})</option>
                                                 ))}
                                             </select>
-                                            <button 
+                                            <button
                                                 disabled={!selectedPeer || loading}
                                                 onClick={handleBulkReassign}
                                                 className="w-full py-3 bg-teal-600 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] hover:bg-teal-700 disabled:opacity-50 transition-all"
@@ -403,7 +403,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
                                                 <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-2">Option B: Cancel</h4>
                                                 <p className="text-[11px] text-slate-500 font-medium mb-4 italic">Refunds will be processed automatically.</p>
                                             </div>
-                                            <button 
+                                            <button
                                                 disabled={loading}
                                                 onClick={handleBulkCancel}
                                                 className="w-full py-3 bg-rose-600 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] hover:bg-rose-700 transition-all"
@@ -413,7 +413,7 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
                                         </div>
                                     </div>
 
-                                    <button 
+                                    <button
                                         onClick={() => setIsConflictView(false)}
                                         className="w-full mt-6 py-2 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-all"
                                     >
@@ -423,60 +423,60 @@ const ManageScheduleModal = ({ isOpen, onClose, doctorId, onSaved }) => {
                             ) : (
                                 <>
                                     <div className="p-6 bg-rose-50/50 border border-rose-100 rounded-2xl">
-                                <h3 className="text-sm font-bold text-rose-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <CalendarDays className="w-4 h-4" /> Block Dates / Holiday
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-rose-800 mb-1.5">Start Date</label>
-                                        <input type="date" value={newLeave.start} onChange={(e) => setNewLeave({...newLeave, start: e.target.value})} className="w-full border border-rose-200 rounded-xl p-2.5 text-sm bg-white text-rose-900 outline-none focus:border-rose-400" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-rose-800 mb-1.5">End Date</label>
-                                        <input type="date" value={newLeave.end} onChange={(e) => setNewLeave({...newLeave, end: e.target.value})} className="w-full border border-rose-200 rounded-xl p-2.5 text-sm bg-white text-rose-900 outline-none focus:border-rose-400" />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-xs font-bold text-rose-800 mb-1.5">Reason (Internal Only)</label>
-                                        <input type="text" placeholder="e.g. Annual Leave, Medical Conference" value={newLeave.reason} onChange={(e) => setNewLeave({...newLeave, reason: e.target.value})} className="w-full border border-rose-200 rounded-xl p-2.5 text-sm bg-white text-rose-900 outline-none focus:border-rose-400 placeholder:text-rose-300" />
-                                    </div>
-                                </div>
-                                <div className="flex justify-end">
-                                    <button onClick={handleAddLeave} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm">
-                                        <Plus className="w-4 h-4" /> Add Block
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Leaves List */}
-                            <div>
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4">Upcoming Blocked Periods</h3>
-                                {leaves.length === 0 ? (
-                                    <div className="text-center py-8 text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-2xl">
-                                        No time-offs currently scheduled.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {leaves.map(l => (
-                                            <div key={l.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                                                <div>
-                                                    <div className="font-bold text-slate-800 text-sm">{l.reason}</div>
-                                                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-1 font-medium">
-                                                        <CalendarDays className="w-3 h-3" /> {l.start} to {l.end}
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => handleRemoveLeave(l.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                        <h3 className="text-sm font-bold text-rose-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <CalendarDays className="w-4 h-4" /> Block Dates / Holiday
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-rose-800 mb-1.5">Start Date</label>
+                                                <input type="date" value={newLeave.start} onChange={(e) => setNewLeave({ ...newLeave, start: e.target.value })} className="w-full border border-rose-200 rounded-xl p-2.5 text-sm bg-white text-rose-900 outline-none focus:border-rose-400" />
                                             </div>
-                                        ))}
+                                            <div>
+                                                <label className="block text-xs font-bold text-rose-800 mb-1.5">End Date</label>
+                                                <input type="date" value={newLeave.end} onChange={(e) => setNewLeave({ ...newLeave, end: e.target.value })} className="w-full border border-rose-200 rounded-xl p-2.5 text-sm bg-white text-rose-900 outline-none focus:border-rose-400" />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-xs font-bold text-rose-800 mb-1.5">Reason (Internal Only)</label>
+                                                <input type="text" placeholder="e.g. Annual Leave, Medical Conference" value={newLeave.reason} onChange={(e) => setNewLeave({ ...newLeave, reason: e.target.value })} className="w-full border border-rose-200 rounded-xl p-2.5 text-sm bg-white text-rose-900 outline-none focus:border-rose-400 placeholder:text-rose-300" />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end">
+                                            <button onClick={handleAddLeave} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm">
+                                                <Plus className="w-4 h-4" /> Add Block
+                                            </button>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        </>
+
+                                    {/* Leaves List */}
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4">Upcoming Blocked Periods</h3>
+                                        {leaves.length === 0 ? (
+                                            <div className="text-center py-8 text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-2xl">
+                                                No time-offs currently scheduled.
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {leaves.map(l => (
+                                                    <div key={l.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                                                        <div>
+                                                            <div className="font-bold text-slate-800 text-sm">{l.reason}</div>
+                                                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1 font-medium">
+                                                                <CalendarDays className="w-3 h-3" /> {l.start} to {l.end}
+                                                            </div>
+                                                        </div>
+                                                        <button onClick={() => handleRemoveLeave(l.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     )}
                 </div>
-            )}
-        </div>
 
                 {/* Footer Footer */}
                 <div className="p-6 border-t border-slate-100 bg-slate-50/80 flex justify-end gap-3">

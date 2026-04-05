@@ -78,7 +78,7 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
                                 <ShieldCheck className="w-5 h-5" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-serif text-slate-900 font-semibold tracking-tight">Post-Session Context & e-Rx</h2>
+                                <h2 className="text-xl font-black text-slate-900 tracking-tight">Post-Session Context & e-Rx</h2>
                                 <p className="text-xs text-slate-500 font-medium tracking-wider uppercase mt-0.5">Patient #{session.patientId} • Visit #{session.id}</p>
                             </div>
                         </div>
@@ -92,7 +92,7 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
                         <div className="w-1/2 border-r border-slate-100 bg-slate-50/30 overflow-y-auto p-8 custom-scrollbar">
                             <div className="flex items-center gap-2 mb-6 text-indigo-700">
                                 <FileText className="w-5 h-5" />
-                                <h3 className="text-lg font-serif font-medium">Session Consultation Notes</h3>
+                                <h3 className="text-lg font-black tracking-tight">Session Consultation Notes</h3>
                             </div>
                             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-1 pointer-events-none">
                                 <SOAPNotes appointmentId={session.id} initialNotes={session.inheritedNotes} readOnly />
@@ -110,7 +110,7 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
                             <div className="flex justify-between items-center mb-8">
                                 <div className="flex items-center gap-2 text-teal-700">
                                     <Pill className="w-5 h-5" />
-                                    <h3 className="text-lg font-serif font-medium">Treatment Plan</h3>
+                                    <h3 className="text-lg font-black tracking-tight">Treatment Plan</h3>
                                 </div>
                                 <button onClick={addMedication} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors">
                                     + Add Medication
@@ -120,7 +120,7 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
                             <form id="rx-form" onSubmit={handleSubmit} className="space-y-6 pb-24">
                                 {medications.map((med, i) => (
                                     <motion.div key={i} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-slate-50/50 border border-slate-200 rounded-[1.5rem] relative group">
-                                        <div className="absolute -left-3 -top-3 w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-400 shadow-sm">{i+1}</div>
+                                        <div className="absolute -left-3 -top-3 w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-400 shadow-sm">{i + 1}</div>
                                         <div className="grid grid-cols-2 gap-5 mb-5">
                                             <div>
                                                 <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-1.5 block">Drug Name</label>

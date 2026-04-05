@@ -160,7 +160,7 @@ export default function DoctorSetupPage() {
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         setFieldErrors({});
-        
+
         let errors = {};
         if (!formData.licenseNumber?.trim()) errors.licenseNumber = "Medical License Number is required.";
         if (!formData.specialization) errors.specialization = "Specialization is required.";
@@ -170,7 +170,7 @@ export default function DoctorSetupPage() {
         if (formData.experience && parseInt(formData.experience) < 0) {
             errors.experience = "Experience cannot be negative.";
         }
-        
+
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
             return;
@@ -189,7 +189,7 @@ export default function DoctorSetupPage() {
                 formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'synapcare_preset');
                 // Using cloud name provided
                 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dao7fkewx';
-                
+
                 const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
                     method: 'POST',
                     body: formData
@@ -329,7 +329,7 @@ export default function DoctorSetupPage() {
 
                         <div className="relative z-10 flex items-center gap-4 mb-2">
                             <AlertCircle className="w-8 h-8 text-teal-100" />
-                            <h2 className="text-3xl font-serif font-bold">Complete Your Profile</h2>
+                            <h2 className="text-3xl font-black tracking-tight">Complete Your Profile</h2>
                         </div>
                         <p className="text-teal-50 text-lg relative z-10">
                             Provide your professional details to establish your doctor account for review.
@@ -414,21 +414,21 @@ export default function DoctorSetupPage() {
 
                                         <div>
                                             <label className="block text-sm font-semibold text-slate-700 mb-1">Specialization *</label>
-                                             <select 
-                                                 required 
-                                                 name="specialization" 
-                                                 value={formData.specialization} 
-                                                 onChange={handleInputChange} 
-                                                 className={`w-full bg-slate-50 border ${fieldErrors.specialization ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all appearance-none cursor-pointer`}
-                                             >
-                                                 <option value="" disabled>Select Specialization</option>
-                                                 {SPECIALIZATIONS.map(spec => (
-                                                     <option key={spec} value={spec}>
-                                                         {SPECIALIZATION_LABELS[spec]}
-                                                     </option>
-                                                 ))}
-                                             </select>
-                                             {fieldErrors.specialization && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.specialization}</p>}
+                                            <select
+                                                required
+                                                name="specialization"
+                                                value={formData.specialization}
+                                                onChange={handleInputChange}
+                                                className={`w-full bg-slate-50 border ${fieldErrors.specialization ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all appearance-none cursor-pointer`}
+                                            >
+                                                <option value="" disabled>Select Specialization</option>
+                                                {SPECIALIZATIONS.map(spec => (
+                                                    <option key={spec} value={spec}>
+                                                        {SPECIALIZATION_LABELS[spec]}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {fieldErrors.specialization && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.specialization}</p>}
                                         </div>
 
                                         <div>

@@ -26,7 +26,7 @@ const PatientRosterTab = ({ userData, onViewPatient }) => {
     }, [userData]);
 
     const filteredPatients = patients.filter(p => {
-        if(!p) return false;
+        if (!p) return false;
         const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || p.id?.toString().includes(searchTerm);
         return matchesSearch;
     });
@@ -44,16 +44,16 @@ const PatientRosterTab = ({ userData, onViewPatient }) => {
             {/* Header & Controls */}
             <div className="p-8 border-b border-[var(--border-color)] bg-slate-50/50 flex flex-col xl:flex-row gap-6 justify-between items-start xl:items-center">
                 <div>
-                    <h3 className="text-2xl font-serif text-slate-900">Patient Directory</h3>
+                    <h3 className="text-2xl font-black tracking-tight text-slate-900">Patient Directory</h3>
                     <p className="text-slate-500 font-medium mt-1">Manage and review your complete clinical patient base.</p>
                 </div>
-                
+
                 <div className="flex items-center gap-4 w-full xl:w-auto">
                     <div className="relative w-full sm:w-72">
                         <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input 
-                            type="text" 
-                            placeholder="Search by ID or Patient Name..." 
+                        <input
+                            type="text"
+                            placeholder="Search by ID or Patient Name..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-11 pr-4 text-sm font-medium outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all shadow-sm text-slate-700"
@@ -67,7 +67,7 @@ const PatientRosterTab = ({ userData, onViewPatient }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     <AnimatePresence>
                         {filteredPatients.map((p, i) => (
-                            <motion.div 
+                            <motion.div
                                 layout
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -83,7 +83,7 @@ const PatientRosterTab = ({ userData, onViewPatient }) => {
                                             {p.name?.charAt(0) || 'U'}
                                         </div>
                                         <div>
-                                            <h4 className="font-serif font-bold text-slate-900 text-lg">{p.name}</h4>
+                                            <h4 className="font-black tracking-tight text-slate-900 text-lg">{p.name}</h4>
                                             <p className="text-xs font-medium text-slate-400">ID: #{p.id} • {p.gender || 'Unknown'}</p>
                                         </div>
                                     </div>
@@ -116,7 +116,7 @@ const PatientRosterTab = ({ userData, onViewPatient }) => {
                     {filteredPatients.length === 0 && (
                         <div className="col-span-full py-16 flex flex-col items-center justify-center text-slate-400">
                             <Users className="w-10 h-10 mb-4 opacity-50" />
-                            <p className="text-lg font-serif">No patients found</p>
+                            <p className="text-lg font-black tracking-tight">No patients found</p>
                             <p className="text-sm font-medium">Your roster is currently empty.</p>
                         </div>
                     )}

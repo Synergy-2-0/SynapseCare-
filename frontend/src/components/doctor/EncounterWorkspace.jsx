@@ -44,8 +44,8 @@ const EncounterWorkspace = ({ session, onClose }) => {
     return (
         <AnimatePresence>
             <motion.div
-                initial={{ opacity: 0, scale: 0.98 }} 
-                animate={{ opacity: 1, scale: 1 }} 
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 className="fixed inset-0 z-[100] bg-slate-50 flex flex-col"
             >
@@ -58,19 +58,19 @@ const EncounterWorkspace = ({ session, onClose }) => {
                             </div>
                             <div>
                                 <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none mb-1">Clinical Session</h1>
-                                <p className="text-xl font-serif font-bold text-slate-900 leading-none">{session.name || `Patient #${session.patientId}`}</p>
+                                <p className="text-xl font-black tracking-tight text-slate-900 leading-none">{session.name || `Patient #${session.patientId}`}</p>
                             </div>
                         </div>
                         <div className="h-10 w-px bg-slate-100" />
                         <div className="flex gap-6">
-                           <div>
-                               <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Appt ID</span>
-                               <span className="text-xs font-bold text-slate-600 font-mono">#{session.id}</span>
-                           </div>
-                           <div>
-                               <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Session Timer</span>
-                               <span className="text-xs font-bold text-amber-600 flex items-center gap-1.5"><Clock size={12}/> 00:15:30</span>
-                           </div>
+                            <div>
+                                <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Appt ID</span>
+                                <span className="text-xs font-bold text-slate-600 font-mono">#{session.id}</span>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Session Timer</span>
+                                <span className="text-xs font-bold text-amber-600 flex items-center gap-1.5"><Clock size={12} /> 00:15:30</span>
+                            </div>
                         </div>
                     </div>
 
@@ -81,14 +81,14 @@ const EncounterWorkspace = ({ session, onClose }) => {
 
                 {/* Main Content Areas */}
                 <main className="flex-1 flex overflow-hidden">
-                    
+
                     {/* LEFT PANEL: Chart Review & Vitals (300px) */}
                     <div className="w-[320px] bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
                         <div className="p-8">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-6 flex items-center gap-2">
                                 <ClipboardList size={14} /> Patient Summary
                             </h3>
-                            
+
                             <div className="space-y-4 mb-10">
                                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                                     <span className="text-[10px] font-black uppercase text-slate-400 block mb-2">Primary Vitals</span>
@@ -135,7 +135,7 @@ const EncounterWorkspace = ({ session, onClose }) => {
                             <header className="space-y-2">
                                 <div className="flex items-center gap-3 text-slate-900 mb-2">
                                     <FileText size={28} />
-                                    <h2 className="text-3xl font-serif font-black tracking-tight underline decoration-slate-100 decoration-8 underline-offset-4">Clinical Encounter Record</h2>
+                                    <h2 className="text-3xl font-black tracking-tight underline decoration-slate-100 decoration-8 underline-offset-4">Clinical Encounter Record</h2>
                                 </div>
                                 <p className="text-sm text-slate-500 max-w-xl">Capture essential session details. Digital prescriptions and billing are managed separately after signing this record.</p>
                             </header>
@@ -143,20 +143,20 @@ const EncounterWorkspace = ({ session, onClose }) => {
                             <div className="space-y-10">
                                 <div className="group">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block group-focus-within:text-indigo-500 transition-colors">Assessment & Primary Diagnosis</label>
-                                    <input 
-                                        value={diagnosis} 
-                                        onChange={e => setDiagnosis(e.target.value)} 
-                                        placeholder="Enter the medical condition... (e.g. Acute Rhinitis, Stable Angina)" 
-                                        className="w-full bg-transparent border-b-2 border-slate-100 rounded-none px-0 py-4 text-2xl font-serif font-bold focus:border-indigo-500 outline-none transition-all placeholder:text-slate-200 text-slate-900"
+                                    <input
+                                        value={diagnosis}
+                                        onChange={e => setDiagnosis(e.target.value)}
+                                        placeholder="Enter the medical condition... (e.g. Acute Rhinitis, Stable Angina)"
+                                        className="w-full bg-transparent border-b-2 border-slate-100 rounded-none px-0 py-4 text-2xl font-black tracking-tight focus:border-indigo-500 outline-none transition-all placeholder:text-slate-200 text-slate-900"
                                     />
                                 </div>
 
                                 <div className="group">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block group-focus-within:text-indigo-500 transition-colors">Clinical Observations & Subjective Notes</label>
-                                    <textarea 
-                                        value={clinicalNote} 
-                                        onChange={e => setClinicalNote(e.target.value)} 
-                                        placeholder="Capture the patient's narrative, examination findings, and follow-up plan. This note is your permanent legal record." 
+                                    <textarea
+                                        value={clinicalNote}
+                                        onChange={e => setClinicalNote(e.target.value)}
+                                        placeholder="Capture the patient's narrative, examination findings, and follow-up plan. This note is your permanent legal record."
                                         className="w-full min-h-[400px] bg-slate-50/50 border border-transparent rounded-[2rem] p-8 text-lg font-medium focus:border-slate-100 focus:bg-white outline-none transition-all resize-none text-slate-700 leading-relaxed shadow-inner"
                                     />
                                 </div>
@@ -171,14 +171,14 @@ const EncounterWorkspace = ({ session, onClose }) => {
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         Authenticated Charting Mode Active
                     </div>
-                    
+
                     <div className="flex items-center gap-8">
                         <button onClick={onClose} className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all">
                             Save as Draft
                         </button>
-                        <button 
-                            onClick={handleCompleteEncounter} 
-                            disabled={submitting} 
+                        <button
+                            onClick={handleCompleteEncounter}
+                            disabled={submitting}
                             className="px-10 py-5 bg-slate-900 hover:bg-black text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center gap-4 disabled:opacity-50"
                         >
                             {submitting ? 'Finalizing Record...' : 'Sign & Complete Session'}

@@ -46,7 +46,7 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         const validMeds = medications.filter(m => m.name && m.name.trim() !== '');
         if (validMeds.length === 0) {
             toast.error("Please add at least one medication to the bill.");
@@ -86,15 +86,15 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
     return (
         <AnimatePresence>
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
                     className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
                 />
-                
-                <motion.div 
+
+                <motion.div
                     initial={{ scale: 0.95, opacity: 0, y: 10 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.95, opacity: 0, y: 10 }}
@@ -110,15 +110,15 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                 <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight leading-none mb-2">Prescription Invoice</h2>
                                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-slate-200 pl-3">Reference: APPT-{session.id}</p>
                                 <div className="mt-4 flex items-center gap-6">
-                                   <div>
-                                       <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Patient Reference</span>
-                                       <span className="text-sm font-bold text-slate-800">#{session.patientId || 'Unlinked'}</span>
-                                   </div>
-                                   <div className="w-px h-6 bg-slate-100" />
-                                   <div>
-                                       <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Billing Date</span>
-                                       <span className="text-sm font-bold text-slate-800">{new Date().toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
-                                   </div>
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Patient Reference</span>
+                                        <span className="text-sm font-bold text-slate-800">#{session.patientId || 'Unlinked'}</span>
+                                    </div>
+                                    <div className="w-px h-6 bg-slate-100" />
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Billing Date</span>
+                                        <span className="text-sm font-bold text-slate-800">{new Date().toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -145,20 +145,20 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                         <tr key={i} className="group border-b border-slate-50 last:border-none">
                                             <td className="p-6">
                                                 <div className="space-y-2 relative">
-                                                    <input 
+                                                    <input
                                                         value={med.name}
                                                         onChange={e => updateMedication(i, 'name', e.target.value)}
                                                         placeholder="Medication Name"
                                                         className="w-full bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all"
                                                     />
-                                                    <input 
+                                                    <input
                                                         value={med.instructions}
                                                         onChange={e => updateMedication(i, 'instructions', e.target.value)}
                                                         placeholder="E.g., 500mg - 1 tab BID"
                                                         className="w-full bg-transparent text-[10px] text-slate-500 italic px-4 focus:outline-none"
                                                     />
                                                     {medications.length > 1 && (
-                                                        <button 
+                                                        <button
                                                             onClick={() => removeMedication(i)}
                                                             className="absolute -left-8 top-3 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
@@ -170,7 +170,7 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                             <td className="p-6">
                                                 <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 group-focus-within:bg-white border border-transparent focus-within:border-indigo-200 transition-all">
                                                     <span className="text-slate-400 text-xs">$</span>
-                                                    <input 
+                                                    <input
                                                         type="number"
                                                         value={med.unitPrice}
                                                         onChange={e => updateMedication(i, 'unitPrice', e.target.value)}
@@ -179,7 +179,7 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                                 </div>
                                             </td>
                                             <td className="p-6">
-                                                <input 
+                                                <input
                                                     type="number"
                                                     value={med.quantity}
                                                     onChange={e => updateMedication(i, 'quantity', e.target.value)}
@@ -189,7 +189,7 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                             <td className="p-6">
                                                 <div className="flex items-center gap-2 bg-rose-50 rounded-xl px-3 border border-transparent focus-within:border-rose-200 transition-all">
                                                     <span className="text-rose-400 text-xs">-</span>
-                                                    <input 
+                                                    <input
                                                         type="number"
                                                         value={med.unitDiscount}
                                                         onChange={e => updateMedication(i, 'unitDiscount', e.target.value)}
@@ -207,8 +207,8 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                 </tbody>
                             </table>
                             <div className="p-6 bg-slate-50/30 flex justify-start">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={addMedication}
                                     className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hovber:border-slate-300 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"
                                 >
@@ -245,7 +245,7 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                     <div className="h-px bg-white/10 my-4" />
                                     <div className="flex justify-between items-center">
                                         <span className="text-lg font-black uppercase tracking-widest text-slate-400">Net Payable</span>
-                                        <span className="text-4xl font-serif">LKR {totals.net.toLocaleString()}</span>
+                                        <span className="text-4xl font-black tracking-tight">LKR {totals.net.toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
@@ -257,13 +257,13 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-4">
                             Values are automatically calculated per line item.
                         </p>
-                        <button 
+                        <button
                             onClick={onClose}
                             className="px-8 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
                         >
                             Discard Bill
                         </button>
-                        <button 
+                        <button
                             onClick={handleSubmit}
                             disabled={submitting}
                             className="bg-teal-600 text-white px-12 py-5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-900 shadow-2xl shadow-teal-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-3"

@@ -10,18 +10,18 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
             {isOpen && (
                 <>
                     {/* Dark Glass Backdrop */}
-                    <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
                         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40"
                     />
 
                     {/* Right-Side Drawer */}
-                    <motion.div 
-                        initial={{ x: '100%', opacity: 0.5 }} 
-                        animate={{ x: 0, opacity: 1, transition: { type: 'spring', damping: 25, stiffness: 200 } }} 
+                    <motion.div
+                        initial={{ x: '100%', opacity: 0.5 }}
+                        animate={{ x: 0, opacity: 1, transition: { type: 'spring', damping: 25, stiffness: 200 } }}
                         exit={{ x: '100%', opacity: 0 }}
                         className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] bg-white border-l border-slate-200 z-50 shadow-2xl flex flex-col"
                     >
@@ -31,7 +31,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                 <div className="flex items-center gap-3 text-xs font-bold text-teal-600 uppercase tracking-widest mb-2">
                                     <Activity className="w-4 h-4" /> Clinical Context
                                 </div>
-                                <h2 className="text-3xl font-serif text-slate-900">
+                                <h2 className="text-3xl font-black tracking-tight text-slate-900">
                                     {appointment.name || `Patient #${appointment.patientId || appointment.id}`}
                                 </h2>
                             </div>
@@ -61,19 +61,19 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
                                         <div className="text-[11px] font-bold text-slate-400 uppercase">Blood Pressure</div>
-                                        <div className="text-xl font-serif font-medium text-slate-900 mt-1">120/80</div>
+                                        <div className="text-xl font-black tracking-tight text-slate-900 mt-1">120/80</div>
                                     </div>
                                     <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
                                         <div className="text-[11px] font-bold text-slate-400 uppercase">Heart Rate</div>
-                                        <div className="text-xl font-serif font-medium text-slate-900 mt-1">72 bpm</div>
+                                        <div className="text-xl font-black tracking-tight text-slate-900 mt-1">72 bpm</div>
                                     </div>
                                     <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
                                         <div className="text-[11px] font-bold text-slate-400 uppercase">Temperature</div>
-                                        <div className="text-xl font-serif font-medium text-slate-900 mt-1">98.6°F</div>
+                                        <div className="text-xl font-black tracking-tight text-slate-900 mt-1">98.6°F</div>
                                     </div>
                                     <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
                                         <div className="text-[11px] font-bold text-slate-400 uppercase">Weight</div>
-                                        <div className="text-xl font-serif font-medium text-slate-900 mt-1">165 lbs</div>
+                                        <div className="text-xl font-black tracking-tight text-slate-900 mt-1">165 lbs</div>
                                     </div>
                                 </div>
                             </div>
