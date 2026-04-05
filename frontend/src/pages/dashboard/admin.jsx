@@ -7,7 +7,6 @@ import {
     ShieldCheck,
     Users,
     ArrowUpRight,
-    MagnifyingGlass,
     Stethoscope,
     CaretRight,
     CurrencyCircleDollar
@@ -17,7 +16,7 @@ import AdminLayout from '../../components/layout/AdminLayout';
 
 // Premium Admin Components
 import AdminStatCard from '../../components/admin/AdminStatCard';
-import { PatientTrendsChart, DepartmentDoughnutChart, MiniSparkline } from '../../components/admin/AdminCharts';
+import { DepartmentDoughnutChart, MiniSparkline } from '../../components/admin/AdminCharts';
 import AdminMiniCalendar from '../../components/admin/AdminCalendar';
 import VerificationDrawer from '../../components/admin/VerificationDrawer';
 import AdminUserDrawer from '../../components/admin/AdminUserDrawer';
@@ -49,25 +48,7 @@ const extractObjectData = (response) => {
     return {};
 };
 
-// MOCK DATA GENERATORS
-const generatePatientGrowthData = () => [
-    { name: 'Jan', male: 400, female: 240 },
-    { name: 'Feb', male: 300, female: 139 },
-    { name: 'Mar', male: 200, female: 980 },
-    { name: 'Apr', male: 278, female: 390 },
-    { name: 'May', male: 189, female: 480 },
-    { name: 'Jun', male: 239, female: 380 },
-    { name: 'Jul', male: 349, female: 430 },
-];
 
-const generateDeptData = () => [
-    { name: 'Cardiology', value: 40 },
-    { name: 'Neurology', value: 20 },
-    { name: 'Dermatology', value: 30 },
-    { name: 'Orthopedic', value: 10 },
-];
-
-const generateSparklineData = () => Array.from({ length: 10 }, () => ({ value: Math.floor(Math.random() * 50) + 20 }));
 
 const AdminDashboard = () => {
     const router = useRouter();
@@ -85,7 +66,6 @@ const AdminDashboard = () => {
     });
     
     const [activeTab, setActiveTab] = useState('overview');
-    const [searchTerm, setSearchTerm] = useState('');
     const [processingId, setProcessingId] = useState(null);
     const [isVerificationOpen, setIsVerificationOpen] = useState(false);
     const [selectedReviewDoctor, setSelectedReviewDoctor] = useState(null);
@@ -174,17 +154,10 @@ const AdminDashboard = () => {
     }, [users, pendingDoctors, paymentSummary, doctorDirectory, patients]);
 
     const filteredDoctorsList = useMemo(() => {
-        const query = searchTerm.toLowerCase();
-        return doctorDirectory.filter(d => {
-            const user = users.find(u => u.id === d.userId) || d.user;
-            const name = user ? `${user.firstName} ${user.lastName}` : 'Anonymous Faculty';
-            return name.toLowerCase().includes(query) || d.specialization?.toLowerCase().includes(query);
-        });
-    }, [doctorDirectory, users, searchTerm]);
+        return doctorDirectory;
+    }, [doctorDirectory]);
 
     const filteredPatientsList = useMemo(() => {
-        const query = searchTerm.toLowerCase();
-        // Start from users who are definitely patients
         const patientUsers = users.filter(u => u.role === 'PATIENT');
         
         return patientUsers.map(user => {
@@ -196,11 +169,8 @@ const AdminDashboard = () => {
                 phone: profile.phone || user.phone,
                 address: profile.address
             };
-        }).filter(p => 
-            `${p.firstName} ${p.lastName}`.toLowerCase().includes(query) || 
-            p.email?.toLowerCase().includes(query)
-        );
-    }, [patients, users, searchTerm]);
+        });
+    }, [patients, users]);
 
     const mergedPending = useMemo(() => {
         return pendingDoctors.map(doctorUser => {
@@ -344,17 +314,24 @@ const AdminDashboard = () => {
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <AdminMiniCalendar />
                                         <div className="grid grid-cols-1 gap-4">
-                                            <MiniSparkline title="Patient Growth" value={stats.totalPatients} percentage="16" color="#0D9488" data={generateSparklineData()} />
-                                            <MiniSparkline title="Available Clinicians" value={stats.totalDoctors} percentage="4" color="#10B981" data={generateSparklineData()} />
-                                            <MiniSparkline title="Active Appointments" value="163" percentage="21" color="#8B5CF6" data={generateSparklineData()} />
+                                            <MiniSparkline title="Patient Growth" value={stats.totalPatients} percentage="16" color="#0D9488" data={[]} />
+                                            <MiniSparkline title="Available Clinicians" value={stats.totalDoctors} percentage="4" color="#10B981" data={[]} />
+                                            <MiniSparkline title="Active Appointments" value="163" percentage="21" color="#8B5CF6" data={[]} />
                                         </div>
                                     </div>
-                                    <div className="bg-white rounded-2xl p-6 border border-slate-50 shadow-sm">
-                                        <PatientTrendsChart data={generatePatientGrowthData()} title="Clinic Admission Trends" />
+                                    <div className="bg-white rounded-2xl p-6 border border-slate-50 shadow-sm flex items-center justify-center min-h-[300px]">
+                                        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">Admission Trends Shard Empty | Live Sync Pending</p>
                                     </div>
                                 </div>
                                 <div className="xl:col-span-4 space-y-6">
-                                    <DepartmentDoughnutChart data={generateDeptData()} title="Specialization Spread" />
+                                    <DepartmentDoughnutChart 
+                                        data={Object.entries(doctorDirectory.reduce((acc, d) => {
+                                            const spec = d.specialization || 'General';
+                                            acc[spec] = (acc[spec] || 0) + 1;
+                                            return acc;
+                                        }, {})).map(([name, value]) => ({ name, value }))} 
+                                        title="Clinical Domain Spread" 
+                                    />
                                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-50 group">
                                         <div className="flex items-center justify-between mb-4">
                                             <div>
@@ -390,9 +367,9 @@ const AdminDashboard = () => {
                                         <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Awaiting Clinical Authentication</p>
                                     </div>
                                     <div className="flex gap-2">
-                                        <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                                            <MagnifyingGlass size={12} className="text-slate-300" weight="light" />
-                                            <input type="text" placeholder="Audit Pipeline..." className="bg-transparent border-none outline-none text-[10px] font-bold w-32" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                        <div className="bg-white px-5 py-2 rounded-xl border border-slate-100 flex items-center gap-2 shadow-sm">
+                                            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{mergedPending.length} Actions Required</span>
                                         </div>
                                     </div>
                                 </div>
@@ -444,9 +421,9 @@ const AdminDashboard = () => {
                                         <h2 className="text-sm font-bold text-slate-900 uppercase">Medical Faculty Registry</h2>
                                         <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Administrative Audit of {doctorDirectory.length} Clinicians</p>
                                     </div>
-                                    <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                                            <MagnifyingGlass size={12} className="text-slate-300" weight="light" />
-                                        <input type="text" placeholder="Filter Faculty..." className="bg-transparent border-none outline-none text-[10px] font-bold w-32" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                    <div className="bg-white px-5 py-2 rounded-xl border border-slate-100 flex items-center gap-2 shadow-sm">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{doctorDirectory.length} Active Faculty</span>
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
@@ -519,9 +496,9 @@ const AdminDashboard = () => {
                                         <h2 className="text-sm font-bold text-slate-900 uppercase">Clinical Patient Registry</h2>
                                         <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Oversight for {filteredPatientsList.length} Case Files</p>
                                     </div>
-                                    <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                                            <MagnifyingGlass size={12} className="text-slate-300" weight="light" />
-                                        <input type="text" placeholder="Identify Patient..." className="bg-transparent border-none outline-none text-[10px] font-bold w-32" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                    <div className="bg-white px-5 py-2 rounded-xl border border-slate-100 flex items-center gap-2 shadow-sm">
+                                        <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{filteredPatientsList.length} Active Patients</span>
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
@@ -625,9 +602,9 @@ const AdminDashboard = () => {
                                             <h2 className="text-sm font-bold text-slate-900 uppercase">Global Settlement Ledger</h2>
                                             <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Tracking {transactions.length} Financial Events</p>
                                         </div>
-                                        <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2 shadow-sm">
-                                            <MagnifyingGlass size={12} className="text-slate-300" weight="light" />
-                                            <input type="text" placeholder="Identify Shard..." className="bg-transparent border-none outline-none text-[10px] font-bold w-32" />
+                                        <div className="bg-white px-5 py-2 rounded-xl border border-slate-100 flex items-center gap-2 shadow-sm">
+                                            <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Master Ledger Active</span>
                                         </div>
                                     </div>
                                     <div className="overflow-x-auto">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { MagnifyingGlass, Bell, SignOut } from '@phosphor-icons/react';
+import { Bell, SignOut } from '@phosphor-icons/react';
 import Head from 'next/head';
 import Image from 'next/image';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -16,6 +16,10 @@ const AdminLayout = ({ children, title = "" }) => {
 
     useEffect(() => {
         setIsClient(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isClient) return;
         
         const role = localStorage.getItem('user_role');
         if (!role || role !== 'ADMIN') {
@@ -28,7 +32,7 @@ const AdminLayout = ({ children, title = "" }) => {
             name: localStorage.getItem('user_name') || 'Administrator',
             role: 'ADMIN'
         });
-    }, [router]);
+    }, [isClient, router]);
 
 
 
@@ -62,16 +66,6 @@ const AdminLayout = ({ children, title = "" }) => {
                                 Synapse<span className="text-teal-600">Admin</span>
                             </span>
                         </div>
-
-                        {/* Search Hub */}
-                        <div className="hidden md:flex items-center bg-slate-50 rounded-xl px-5 py-2.5 w-full max-w-sm border border-slate-100 focus-within:border-teal-500/30 focus-within:bg-white transition-all group">
-                            <MagnifyingGlass size={18} weight="light" className="text-slate-400 group-focus-within:text-teal-600 transition-colors" />
-                            <input 
-                                type="text" 
-                                placeholder="Universal Search..." 
-                                className="bg-transparent border-none outline-none text-sm font-medium px-4 w-full text-slate-700 placeholder:text-slate-400" 
-                            />
-                        </div>
                     </div>
 
                     <div className="flex items-center gap-8">
@@ -99,10 +93,13 @@ const AdminLayout = ({ children, title = "" }) => {
                             </div>
                             <div className="relative">
                                 <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm group-hover:border-teal-500 transition-all flex items-center justify-center">
-                                    <img 
+                                    <Image 
                                         src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=150&auto=format&fit=crop" 
                                         alt="Admin"
+                                        width={40}
+                                        height={40}
                                         className="w-full h-full object-cover"
+                                        unoptimized
                                     />
                                 </div>
                                 <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm z-10" />
