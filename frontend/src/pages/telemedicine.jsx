@@ -165,23 +165,10 @@ const TelemedicinePage = () => {
     const handleEndCall = async () => {
         if (jitsiApiRef.current) jitsiApiRef.current.dispose();
 
-        try {
-            const role = localStorage.getItem('user_role');
-            const userId = localStorage.getItem('user_id');
-
-            if (role === 'DOCTOR' && session) {
-                await telemedicineApi.post(`/sessions/${session.sessionId}/end`, null, {
-                    params: {
-                        doctorId: userId,
-                        notes: 'Session ended by doctor'
-                    }
-                });
-            }
-        } catch (e) {
-            console.error('Session end signal failed', e);
-        }
-
         const role = localStorage.getItem('user_role');
+        // Intentionally skip backend end-call signal to avoid blocking user exit
+        // when legacy telemedicine backends return intermittent 5xx responses.
+
         router.push(role === 'DOCTOR' ? '/doctor/dashboard' : '/dashboard/patient');
     };
 
