@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
+// Clinical High-Fidelity Sync: Admin User Audit Core
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { 
     X, 
     Shield,
-    Activity, 
-    Trash2, 
+    Pulse, 
+    Trash, 
     Power, 
     Phone, 
     MapPin, 
     Stethoscope,
     Pill,
-    History,
-    Download
-} from 'lucide-react';
+    ClockCounterClockwise,
+    DownloadSimple
+} from '@phosphor-icons/react';
 import { medicalHistoryApi, prescriptionApi } from '../../lib/api';
 
 const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDelete, processingId }) => {
@@ -81,7 +83,7 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                     </p>
                                 </div>
                                 <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 shadow-sm transition-all">
-                                    <X size={20} strokeWidth={1.5} />
+                                    <X size={20} weight="light" />
                                 </button>
                             </div>
 
@@ -107,10 +109,13 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                     <div className="flex items-start gap-6">
                                         <div className={`w-20 h-20 rounded-3xl flex items-center justify-center font-bold text-2xl shadow-xl shadow-opacity-10 
                                             ${isDoctor ? 'bg-emerald-50 text-emerald-600 shadow-emerald-100' : 'bg-indigo-50 text-indigo-600 shadow-indigo-100'}`}>
-                                            <img 
+                                            <Image 
                                                 src={user?.profilePic || profile?.profilePic || `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=${isDoctor ? '0ea5e9' : '6366f1'}&color=fff&bold=true`} 
                                                 className="w-full h-full rounded-3xl object-cover" 
                                                 alt="avatar" 
+                                                width={80}
+                                                height={80}
+                                                unoptimized
                                             />
                                         </div>
                                         <div className="space-y-1">
@@ -128,11 +133,11 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                     {/* Contact Stats */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/30 flex items-center gap-3">
-                                            <Phone size={14} className="text-slate-300" />
+                                            <Phone size={14} weight="light" className="text-slate-300" />
                                             <p className="text-[11px] font-bold text-slate-600">{user.phone || profile?.phone || 'NO LINK'}</p>
                                         </div>
                                         <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/30 flex items-center gap-3">
-                                            <MapPin size={14} className="text-slate-300" />
+                                            <MapPin size={14} weight="light" className="text-slate-300" />
                                             <p className="text-[11px] font-bold text-slate-600 truncate">{profile?.address || 'UNSYNC ADDRESS'}</p>
                                         </div>
                                     </div>
@@ -143,11 +148,11 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                         <div className="grid grid-cols-2 gap-4">
                                             {isDoctor ? (
                                                 <>
-                                                    <div className="p-4 rounded-2xl bg-teal-50/50 border border-teal-100">
-                                                        <Stethoscope size={16} className="text-teal-600 mb-2" />
-                                                        <p className="text-[10px] font-bold text-teal-600/60 uppercase">Specialization</p>
-                                                        <p className="text-sm font-bold text-teal-900">{profile?.specialization || 'General Consultation'}</p>
-                                                    </div>
+                                            <div className="p-4 rounded-2xl bg-teal-50/50 border border-teal-100">
+                                                <Stethoscope size={14} weight="light" className="text-teal-600 mb-2" />
+                                                <p className="text-[10px] font-bold text-teal-600/60 uppercase">Specialization</p>
+                                                <p className="text-sm font-bold text-teal-900">{profile?.specialization || 'General Consultation'}</p>
+                                            </div>
                                                     <div className="p-4 rounded-2xl bg-slate-900 p-4 text-white">
                                                         <p className="text-[9px] font-bold text-white/40 uppercase">License Matrix</p>
                                                         <p className="text-md font-bold mt-1 font-mono">{profile?.licenseNumber || 'LIC-4892-0X'}</p>
@@ -155,11 +160,11 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                                 </>
                                             ) : (
                                                 <>
-                                                    <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100">
-                                                        <Activity size={16} className="text-indigo-600 mb-2" />
-                                                        <p className="text-[10px] font-bold text-indigo-600/60 uppercase">Gender Identity</p>
-                                                        <p className="text-sm font-bold text-indigo-900">{profile?.gender || 'NOT_DECLARED'}</p>
-                                                    </div>
+                                            <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100">
+                                                <Pulse size={14} weight="light" className="text-indigo-600 mb-2" />
+                                                <p className="text-[10px] font-bold text-indigo-600/60 uppercase">Gender Identity</p>
+                                                <p className="text-sm font-bold text-indigo-900">{profile?.gender || 'NOT_DECLARED'}</p>
+                                            </div>
                                                     <div className="p-4 rounded-2xl bg-slate-900 p-4 text-white">
                                                         <p className="text-[9px] font-bold text-white/40 uppercase">E-Patient Code</p>
                                                         <p className="text-md font-bold mt-1 font-mono">PAT-{profile?.id || 'UNSYNC'}</p>
@@ -175,7 +180,7 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                 <div className="p-8 space-y-6">
                                     <div className="flex justify-between items-center">
                                         <h4 className="text-sm font-bold text-slate-900 uppercase">Longitudinal Medical History</h4>
-                                        <History size={16} className="text-slate-300" />
+                                        <ClockCounterClockwise size={14} weight="light" className="text-slate-300" />
                                     </div>
                                     {loading ? (
                                         <div className="h-32 flex items-center justify-center"><p className="text-[10px] font-bold uppercase text-slate-400 animate-pulse">Syncing Longitudinal Records...</p></div>
@@ -202,7 +207,7 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                 <div className="p-8 space-y-6">
                                     <div className="flex justify-between items-center">
                                         <h4 className="text-sm font-bold text-slate-900 uppercase">Pharmaceutical Audit Ledger</h4>
-                                        <Pill size={16} className="text-slate-300" />
+                                        <Pill size={14} weight="light" className="text-slate-300" />
                                     </div>
                                     {loading ? (
                                         <div className="h-32 flex items-center justify-center"><p className="text-[10px] font-bold uppercase text-slate-400 animate-pulse">Scanning Global Pharmacy Pipeline...</p></div>
@@ -217,7 +222,7 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                             <p className="text-[11px] font-bold text-slate-900">Rx ID #{px.id}</p>
                                                         </div>
-                                                        <button className="text-emerald-600 hover:text-emerald-700 transition-all"><Download size={14} /></button>
+                                                        <button className="text-emerald-600 hover:text-emerald-700 transition-all"><DownloadSimple size={14} weight="light" /></button>
                                                     </div>
                                                     <div className="space-y-2 mb-4">
                                                         {px.medications?.map((med, i) => (
@@ -241,7 +246,7 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                 <div className="p-8 space-y-8">
                                     <div className="flex justify-between items-center">
                                         <h4 className="text-sm font-bold text-slate-900 uppercase">Clinical Credentials Matrix</h4>
-                                        <Shield size={16} className="text-emerald-600" />
+                                        <Shield size={16} weight="light" className="text-emerald-600" />
                                     </div>
                                     <div className="space-y-6">
                                         <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 space-y-4">
@@ -282,7 +287,7 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                         ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' 
                                         : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
                             >
-                                <Power size={14} />
+                                <Power size={14} weight="light" />
                                 {processingId === user.id ? 'Processing...' : (isActive ? 'Disable Record Access' : 'Restore System Access')}
                             </button>
 
@@ -291,7 +296,7 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                 disabled={processingId === user.id}
                                 className="w-full py-4 rounded-2xl bg-white border border-slate-200 text-slate-300 hover:text-rose-600 transition-all flex items-center justify-center gap-3 font-bold text-[10px] uppercase tracking-widest"
                             >
-                                <Trash2 size={14} />
+                                <Trash size={14} weight="light" />
                                 Erase Account Metadata
                             </button>
                         </div>

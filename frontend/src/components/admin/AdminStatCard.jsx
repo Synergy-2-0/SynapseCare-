@@ -15,7 +15,7 @@ const AdminStatCard = ({ label, value, icon: Icon, trend, colorClass, bgColorCla
                 <div>
                     <div className="flex items-center gap-2 mb-3">
                         <div className={`p-2 rounded-xl scale-95 ${bgColorClass || 'bg-slate-50'} ${colorClass || 'text-teal-600'} transition-all shadow-sm`}>
-                            <Icon size={18} strokeWidth={1.2} />
+                            <Icon size={18} weight="light" />
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 font-sans">{label}</span>
                     </div>

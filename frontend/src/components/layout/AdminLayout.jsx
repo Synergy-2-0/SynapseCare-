@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { Search, Bell, LogOut } from 'lucide-react';
+import { MagnifyingGlass, Bell, SignOut } from '@phosphor-icons/react';
 import Head from 'next/head';
 import Image from 'next/image';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -16,27 +16,21 @@ const AdminLayout = ({ children, title = "" }) => {
 
     useEffect(() => {
         setIsClient(true);
-    }, []);
-
-    useEffect(() => {
-        const role = localStorage.getItem('user_role');
         
-        if (!role) {
+        const role = localStorage.getItem('user_role');
+        if (!role || role !== 'ADMIN') {
             router.push('/login');
             return;
         }
 
-        if (role === 'ADMIN') {
-            setIsAuthorized(true);
-            setUserData({
-                name: localStorage.getItem('user_name') || 'Administrator',
-                role: 'ADMIN'
-            });
-            return;
-        }
+        setIsAuthorized(true);
+        setUserData({
+            name: localStorage.getItem('user_name') || 'Administrator',
+            role: 'ADMIN'
+        });
+    }, [router]);
 
-        router.push('/login');
-    }, []);
+
 
     const handleLogout = () => {
         localStorage.clear();
@@ -71,7 +65,7 @@ const AdminLayout = ({ children, title = "" }) => {
 
                         {/* Search Hub */}
                         <div className="hidden md:flex items-center bg-slate-50 rounded-xl px-5 py-2.5 w-full max-w-sm border border-slate-100 focus-within:border-teal-500/30 focus-within:bg-white transition-all group">
-                            <Search size={18} className="text-slate-400 group-focus-within:text-teal-600 transition-colors" />
+                            <MagnifyingGlass size={18} weight="light" className="text-slate-400 group-focus-within:text-teal-600 transition-colors" />
                             <input 
                                 type="text" 
                                 placeholder="Universal Search..." 
@@ -83,7 +77,7 @@ const AdminLayout = ({ children, title = "" }) => {
                     <div className="flex items-center gap-8">
                         <div className="flex items-center gap-2">
                             <button className="relative w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-teal-600 transition-all">
-                                <Bell size={20} strokeWidth={2} />
+                                <Bell size={20} weight="light" />
                                 <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white shadow-sm" />
                             </button>
                             
@@ -91,7 +85,7 @@ const AdminLayout = ({ children, title = "" }) => {
                                 onClick={handleLogout}
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all font-semibold text-xs uppercase tracking-wider"
                             >
-                                <LogOut size={16} strokeWidth={2.5} />
+                                <SignOut size={16} weight="light" />
                                 <span>Logout</span>
                             </button>
                         </div>

@@ -1,16 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    AlertCircle,
+    WarningCircle,
     ShieldCheck,
     Users,
     ArrowUpRight,
-    Search,
+    MagnifyingGlass,
     Stethoscope,
-    ChevronRight,
-    DollarSign
-} from 'lucide-react';
+    CaretRight,
+    CurrencyCircleDollar
+} from '@phosphor-icons/react';
 import { adminApi, paymentApi, doctorApi, patientApi } from '../../lib/api';
 import AdminLayout from '../../components/layout/AdminLayout';
 
@@ -289,7 +290,7 @@ const AdminDashboard = () => {
                 {error && (
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-rose-50 border border-rose-100 rounded-3xl p-6 flex items-center gap-6">
                         <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-rose-600 shadow-sm">
-                            <AlertCircle size={24} strokeWidth={1.5} />
+                            <WarningCircle size={18} weight="light" />
                         </div>
                         <div>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-rose-400 mb-1">Sync Error</p>
@@ -303,7 +304,7 @@ const AdminDashboard = () => {
                     <AdminStatCard label="Patients Registered" value={stats.totalPatients} icon={Users} trend={{ value: '16%', isPositive: true }} colorClass="text-teal-600" bgColorClass="bg-teal-50" delay={0} />
                     <AdminStatCard label="Doctor Verification" value={stats.pendingVerifications} icon={ShieldCheck} trend={{ value: stats.pendingVerifications === 0 ? 'Clear' : 'Pending', isPositive: stats.pendingVerifications === 0 }} colorClass="text-indigo-600" bgColorClass="bg-indigo-50" delay={0.1} />
                     <AdminStatCard label="Certified Doctors" value={stats.totalDoctors} icon={Stethoscope} trend={{ value: 'Stable', isPositive: true }} colorClass="text-emerald-600" bgColorClass="bg-emerald-50" delay={0.2} />
-                    <AdminStatCard label="Total Revenue" value={formatMoney(stats.revenue)} icon={DollarSign} trend={{ value: '14%', isPositive: true }} colorClass="text-amber-600" bgColorClass="bg-amber-50" delay={0.3} />
+                    <AdminStatCard label="Total Revenue" value={formatMoney(stats.revenue)} icon={CurrencyCircleDollar} trend={{ value: '14%', isPositive: true }} colorClass="text-amber-600" bgColorClass="bg-amber-50" delay={0.3} />
                 </div>
 
                 {/* Master Tab Hub */}
@@ -360,7 +361,7 @@ const AdminDashboard = () => {
                                                 <h3 className="text-sm font-bold text-slate-900">Access Log</h3>
                                                 <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Live Feed</p>
                                             </div>
-                                            <ArrowUpRight size={16} strokeWidth={1.2} className="text-slate-300" />
+                                            <ArrowUpRight size={16} weight="light" className="text-slate-300" />
                                         </div>
                                         <div className="space-y-4">
                                             {users.slice(0, 5).map(user => (
@@ -390,7 +391,7 @@ const AdminDashboard = () => {
                                     </div>
                                     <div className="flex gap-2">
                                         <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                                            <Search size={12} className="text-slate-300" strokeWidth={1.5} />
+                                            <MagnifyingGlass size={12} className="text-slate-300" weight="light" />
                                             <input type="text" placeholder="Audit Pipeline..." className="bg-transparent border-none outline-none text-[10px] font-bold w-32" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                         </div>
                                     </div>
@@ -444,7 +445,7 @@ const AdminDashboard = () => {
                                         <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Administrative Audit of {doctorDirectory.length} Clinicians</p>
                                     </div>
                                     <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                                        <Search size={12} className="text-slate-300" strokeWidth={1.5} />
+                                            <MagnifyingGlass size={12} className="text-slate-300" weight="light" />
                                         <input type="text" placeholder="Filter Faculty..." className="bg-transparent border-none outline-none text-[10px] font-bold w-32" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                     </div>
                                 </div>
@@ -467,10 +468,13 @@ const AdminDashboard = () => {
                                                         <td className="px-8 py-5">
                                                             <div className="flex items-center gap-4">
                                                                 <div className="relative">
-                                                                    <img 
+                                                                    <Image 
                                                                         src={user?.profilePic || doctor.profilePic || `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=0ea5e9&color=fff&bold=true`} 
                                                                         className="w-10 h-10 rounded-xl shadow-sm object-cover" 
                                                                         alt="dr" 
+                                                                        width={40}
+                                                                        height={40}
+                                                                        unoptimized
                                                                     />
                                                                     <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                                                 </div>
@@ -496,7 +500,7 @@ const AdminDashboard = () => {
                                                                 onClick={() => handleAuditClick(user, 'DOCTOR')}
                                                                 className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:bg-white hover:text-teal-600 hover:shadow-md hover:border hover:border-slate-100 transition-all ml-auto"
                                                             >
-                                                                <ArrowUpRight size={16} strokeWidth={2} />
+                                                                <ArrowUpRight size={14} weight="light" />
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -516,7 +520,7 @@ const AdminDashboard = () => {
                                         <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Oversight for {filteredPatientsList.length} Case Files</p>
                                     </div>
                                     <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                                        <Search size={12} className="text-slate-300" strokeWidth={1.5} />
+                                            <MagnifyingGlass size={12} className="text-slate-300" weight="light" />
                                         <input type="text" placeholder="Identify Patient..." className="bg-transparent border-none outline-none text-[10px] font-bold w-32" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                     </div>
                                 </div>
@@ -538,10 +542,13 @@ const AdminDashboard = () => {
                                                         <td className="px-8 py-5">
                                                             <div className="flex items-center gap-4">
                                                                 <div className="relative">
-                                                                    <img 
+                                                                    <Image 
                                                                         src={p?.profilePic || `https://ui-avatars.com/api/?name=${p.firstName}+${p.lastName}&background=6366f1&color=fff&bold=true`} 
                                                                         className="w-10 h-10 rounded-xl shadow-sm object-cover" 
                                                                         alt="px" 
+                                                                        width={40}
+                                                                        height={40}
+                                                                        unoptimized
                                                                     />
                                                                     <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                                                 </div>
@@ -570,7 +577,7 @@ const AdminDashboard = () => {
                                                                 onClick={() => handleAuditClick(p, 'PATIENT')}
                                                                 className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:bg-white hover:text-indigo-600 hover:shadow-md hover:border hover:border-slate-100 transition-all ml-auto"
                                                             >
-                                                                <ChevronRight size={16} />
+                                                                <CaretRight size={16} weight="light" />
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -587,7 +594,7 @@ const AdminDashboard = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="bg-white rounded-2xl p-6 border border-slate-50 shadow-sm relative group overflow-hidden">
                                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                            <DollarSign size={48} className="text-slate-900" />
+                                            <CurrencyCircleDollar size={48} className="text-slate-900" weight="light" />
                                         </div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Revenue Hub</p>
                                         <h2 className="text-2xl font-bold text-slate-900 mt-2">{formatMoney(paymentSummary.totalRevenue)}</h2>
@@ -597,7 +604,7 @@ const AdminDashboard = () => {
                                     </div>
                                     <div className="bg-teal-600 rounded-2xl p-6 text-white shadow-lg shadow-teal-600/20 relative overflow-hidden">
                                         <div className="absolute top-0 right-0 p-4 opacity-15">
-                                            <ShieldCheck size={48} />
+                                            <ShieldCheck size={48} weight="light" />
                                         </div>
                                         <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Settled Shards</p>
                                         <h2 className="text-2xl font-bold mt-2">{paymentSummary.success}</h2>
@@ -607,7 +614,7 @@ const AdminDashboard = () => {
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Manual Audit Required</p>
                                         <h2 className="text-2xl font-bold text-slate-900 mt-2">{paymentSummary.failed || 0}</h2>
                                         <p className="text-[9px] text-rose-500 font-bold uppercase mt-2 inline-flex items-center gap-1">
-                                            Handover to Finance Team <AlertCircle size={10} />
+                                            Handover to Finance Team <WarningCircle size={10} weight="light" />
                                         </p>
                                     </div>
                                 </div>
@@ -619,7 +626,7 @@ const AdminDashboard = () => {
                                             <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Tracking {transactions.length} Financial Events</p>
                                         </div>
                                         <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2 shadow-sm">
-                                            <Search size={12} className="text-slate-300" strokeWidth={1.5} />
+                                            <MagnifyingGlass size={12} className="text-slate-300" weight="light" />
                                             <input type="text" placeholder="Identify Shard..." className="bg-transparent border-none outline-none text-[10px] font-bold w-32" />
                                         </div>
                                     </div>
@@ -680,7 +687,7 @@ const AdminDashboard = () => {
                                                                 onClick={() => handlePaymentAuditClick(tx)}
                                                                 className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:bg-white hover:text-slate-900 hover:shadow-sm hover:border hover:border-slate-100 transition-all ml-auto mt-1"
                                                             >
-                                                                <ArrowUpRight size={14} />
+                                                                <ArrowUpRight size={14} weight="light" />
                                                             </button>
                                                         </td>
                                                     </tr>

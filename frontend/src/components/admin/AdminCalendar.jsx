@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 
 const AdminMiniCalendar = () => {
@@ -13,14 +13,14 @@ const AdminMiniCalendar = () => {
         return (
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50 text-slate-900">
                 <button onClick={prevMonth} className="p-1.5 rounded-lg bg-white border border-slate-100 hover:bg-slate-50 transition-all text-slate-400 hover:text-teal-600 shadow-sm">
-                    <ChevronLeft size={14} strokeWidth={2.5} />
+                    <CaretLeft size={14} weight="light" />
                 </button>
                 <div className="text-center">
                     <h2 className="text-sm font-bold text-slate-900 tracking-tight">{format(currentMonth, 'MMMM yyyy')}</h2>
                     <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mt-0.5 whitespace-nowrap">Platform Schedule</p>
                 </div>
                 <button onClick={nextMonth} className="p-1.5 rounded-lg bg-white border border-slate-100 hover:bg-slate-50 transition-all text-slate-400 hover:text-teal-600 shadow-sm">
-                    <ChevronRight size={14} strokeWidth={2.5} />
+                    <CaretRight size={14} weight="light" />
                 </button>
             </div>
         );

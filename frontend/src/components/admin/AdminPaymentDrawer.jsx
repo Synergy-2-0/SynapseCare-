@@ -6,9 +6,9 @@ import {
     Stethoscope, 
     Receipt, 
     ShieldCheck,
-    AlertCircle,
-    Download
-} from 'lucide-react';
+    WarningCircle,
+    DownloadSimple
+} from '@phosphor-icons/react';
 
 const AdminPaymentDrawer = ({ isOpen, onClose, transaction }) => {
     if (!transaction) return null;
@@ -47,7 +47,7 @@ const AdminPaymentDrawer = ({ isOpen, onClose, transaction }) => {
                                     </p>
                                 </div>
                                 <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 shadow-sm transition-all">
-                                    <X size={20} strokeWidth={1.5} />
+                                    <X size={20} weight="light" />
                                 </button>
                             </div>
 
@@ -57,7 +57,7 @@ const AdminPaymentDrawer = ({ isOpen, onClose, transaction }) => {
                                 'bg-rose-50 border-rose-100 text-rose-700'
                             }`}>
                                 <div className="flex items-center gap-3">
-                                    {isSuccess ? <ShieldCheck size={18} /> : <AlertCircle size={18} />}
+                                    {isSuccess ? <ShieldCheck size={18} weight="light" /> : <WarningCircle size={18} weight="light" />}
                                     <span className="text-[10px] font-bold uppercase tracking-[0.2em]">{transaction.status}</span>
                                 </div>
                                 <span className="text-[14px] font-bold tabular-nums">{formatMoney(transaction.amount)}</span>
@@ -72,7 +72,7 @@ const AdminPaymentDrawer = ({ isOpen, onClose, transaction }) => {
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 bg-white">
                                         <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                                            <User size={18} />
+                                            <User size={14} weight="light" />
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-slate-400 uppercase">Patient Entity</p>
@@ -82,7 +82,7 @@ const AdminPaymentDrawer = ({ isOpen, onClose, transaction }) => {
                                     </div>
                                     <div className="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 bg-white">
                                         <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
-                                            <Stethoscope size={18} />
+                                            <Stethoscope size={14} weight="light" />
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-slate-400 uppercase">Provider Shard</p>
@@ -132,7 +132,7 @@ const AdminPaymentDrawer = ({ isOpen, onClose, transaction }) => {
                                 <div className="flex justify-between items-center">
                                     <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global Settlement Verification</h4>
                                     <span className="flex items-center gap-1 text-[8px] font-bold text-slate-400 uppercase border border-slate-200 px-2 py-0.5 rounded-full bg-slate-50">
-                                        <ShieldCheck size={10} className="text-emerald-500" />
+                                        <ShieldCheck size={10} weight="light" className="text-emerald-500" />
                                         Restricted Audit Shard
                                     </span>
                                 </div>
@@ -173,12 +173,12 @@ const AdminPaymentDrawer = ({ isOpen, onClose, transaction }) => {
                                     rel="noreferrer"
                                     className="w-full py-4 rounded-2xl bg-white border border-slate-100 flex items-center justify-center gap-3 font-bold text-[10px] uppercase tracking-widest text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-all shadow-sm shadow-slate-100"
                                 >
-                                    <Receipt size={14} />
+                                    <Receipt size={14} weight="light" />
                                     View Digital Receipt
                                 </a>
                             )}
                             <button className="w-full py-4 rounded-2xl bg-slate-900 text-white flex items-center justify-center gap-3 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all">
-                                <Download size={14} />
+                                <DownloadSimple size={14} weight="light" />
                                 Export Audit Report
                             </button>
                         </div>

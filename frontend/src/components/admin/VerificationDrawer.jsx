@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShieldCheck, FileText, Mail, CheckCircle2, AlertCircle, ExternalLink, Download, UserCheck } from 'lucide-react';
+import { X, ShieldCheck, FileText, Envelope, CheckCircle, WarningCircle, ArrowSquareOut, DownloadSimple, UserFocus } from '@phosphor-icons/react';
 
 const VerificationDrawer = ({ isOpen, onClose, doctor, onApprove, onReject, processingId }) => {
     if (!doctor) return null;
@@ -41,7 +41,7 @@ const VerificationDrawer = ({ isOpen, onClose, doctor, onApprove, onReject, proc
                         <div className="h-20 border-b border-slate-50 px-8 flex items-center justify-between bg-white shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-teal-50 text-teal-600 rounded-lg">
-                                    <ShieldCheck size={20} strokeWidth={1.5} />
+                                    <ShieldCheck size={20} weight="light" />
                                 </div>
                                 <div>
                                     <h2 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Credential Verification</h2>
@@ -49,7 +49,7 @@ const VerificationDrawer = ({ isOpen, onClose, doctor, onApprove, onReject, proc
                                 </div>
                             </div>
                             <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-50 text-slate-300 hover:text-slate-900 transition-all">
-                                <X size={20} strokeWidth={1.5} />
+                                <X size={20} weight="light" />
                             </button>
                         </div>
 
@@ -73,11 +73,11 @@ const VerificationDrawer = ({ isOpen, onClose, doctor, onApprove, onReject, proc
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2 text-slate-400">
-                                            <Mail size={12} strokeWidth={1.5} />
+                                            <Envelope size={12} weight="light" />
                                             <span className="text-[11px] font-medium lowercase font-mono">{doctor.email}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-teal-600">
-                                            <UserCheck size={12} strokeWidth={1.5} />
+                                            <UserFocus size={12} weight="light" />
                                             <span className="text-[11px] font-bold uppercase tracking-widest">Specialist: {profile?.specialization || 'Clinical'}</span>
                                         </div>
                                     </div>
@@ -116,24 +116,24 @@ const VerificationDrawer = ({ isOpen, onClose, doctor, onApprove, onReject, proc
                                         <div key={idx} className="bg-white rounded-xl overflow-hidden border border-slate-100 group transition-all hover:bg-slate-50/30">
                                             <div className="p-3 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
                                                 <div className="flex items-center gap-2">
-                                                    <FileText size={14} strokeWidth={1.5} className="text-teal-400" />
+                                                    <FileText size={14} weight="light" className="text-teal-400" />
                                                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{doc.label}</span>
                                                 </div>
                                                 <a href={doc.url} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg text-slate-300 hover:text-teal-600 hover:bg-white transition-all">
-                                                    <Download size={14} strokeWidth={1.5} />
+                                                    <DownloadSimple size={14} weight="light" />
                                                 </a>
                                             </div>
                                             <div className="aspect-video bg-slate-100 relative group overflow-hidden flex items-center justify-center">
                                                 {doc.url.toLowerCase().endsWith('.pdf') ? (
                                                      <div className="flex flex-col items-center gap-2 text-slate-300 p-4 text-center">
-                                                         <FileText size={24} strokeWidth={1.2} />
+                                                         <FileText size={24} weight="light" />
                                                          <p className="text-[9px] font-bold uppercase tracking-widest">PDF Artifact</p>
                                                      </div>
                                                 ) : (
                                                     <img src={doc.url} alt={doc.label} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700" />
                                                 )}
                                                 <div className="absolute inset-0 bg-slate-900/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                                     <ExternalLink className="text-white drop-shadow-md" size={20} strokeWidth={1.5} />
+                                                     <ArrowSquareOut className="text-white drop-shadow-md" size={20} weight="light" />
                                                 </div>
                                             </div>
                                         </div>
@@ -149,7 +149,7 @@ const VerificationDrawer = ({ isOpen, onClose, doctor, onApprove, onReject, proc
                                 disabled={processingId === doctor.id}
                                 className="h-11 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all border border-slate-100 flex items-center justify-center gap-2 group disabled:opacity-50"
                             >
-                                <AlertCircle size={14} strokeWidth={1.5} className="group-hover:scale-110 transition-transform" />
+                                <WarningCircle size={14} weight="light" className="group-hover:scale-110 transition-transform" />
                                 <span>Decline Access</span>
                             </button>
                             <button
@@ -157,7 +157,7 @@ const VerificationDrawer = ({ isOpen, onClose, doctor, onApprove, onReject, proc
                                 disabled={processingId === doctor.id}
                                 className="h-11 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-teal-600 text-white shadow-lg shadow-teal-600/20 hover:bg-teal-700 hover:shadow-xl transition-all border-none flex items-center justify-center gap-2 group disabled:opacity-50"
                             >
-                                <CheckCircle2 size={14} strokeWidth={1.5} className="group-hover:scale-110 transition-transform" />
+                                <CheckCircle size={14} weight="light" className="group-hover:scale-110 transition-transform" />
                                 <span>Authorize Profile</span>
                             </button>
                         </div>
