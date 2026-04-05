@@ -17,8 +17,7 @@ import {
     Clock,
     Activity,
     AlertCircle,
-    ClipboardList,
-    ChevronRight,
+    Sparkles,
     Wallet,
     CheckCircle2,
     Search,
@@ -32,12 +31,15 @@ import { patientApi, appointmentApi, medicalHistoryApi, paymentApi, prescription
 import { PATIENT_ROUTES } from '../../constants/routes';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import FileUpload from '../../components/ui/FileUpload';
+import { supabaseStorage } from '../../lib/supabase';
+import Image from 'next/image';
+import toast, { Toaster } from 'react-hot-toast';
 
 const PatientDashboard = () => {
     const [userData, setUserData] = useState(null);
     const [stats, setStats] = useState({ appointments: 0, reports: 0, prescriptions: 0 });
     const [upcoming, setUpcoming] = useState([]);
-    const [history, setHistory] = useState([]);
+    const [clinicalHistory, setClinicalHistory] = useState([]);
     const [reports, setReports] = useState([]);
     const [payments, setPayments] = useState([]);
     const [prescriptions, setPrescriptions] = useState([]);
@@ -46,14 +48,27 @@ const PatientDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [uploadDescription, setUploadDescription] = useState('');
+    const [selectedAppointmentIdForUpload, setSelectedAppointmentIdForUpload] = useState(null);
     const [uploadReportType, setUploadReportType] = useState('LAB_RESULT');
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [profileForm, setProfileForm] = useState({
+        name: '',
+        bloodGroup: '',
+        height: '',
+        weight: '',
+        allergies: '',
+        chronicIllnesses: '',
+        emergencyContact: '',
+        gender: '',
+        dob: '',
+        profileImageUrl: ''
+    });
     const router = useRouter();
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const role = localStorage.getItem('user_role');
-            const name = localStorage.getItem('user_name');
-            const id = localStorage.getItem('user_id');
 
             if (role !== 'PATIENT') {
                 router.push('/login');
@@ -73,18 +88,27 @@ const PatientDashboard = () => {
                                 const patientInfo = patientRes.data?.data || patientRes.data || {};
                                 clinicalId = patientInfo.id;
                                 if (clinicalId) localStorage.setItem('patient_id', String(clinicalId));
-                                setUserData({ ...patientInfo, name: patientInfo.name || name, id, clinicalId });
-                            } catch (err) {
-                                console.warn("Clinical Identity Registry Miss - using placeholder for session:", id);
-                                setUserData({ name: name || 'Authorized Patient', id, clinicalId: null });
+                                const sanitizedInfo = {
+                                    ...patientInfo,
+                                    name: patientInfo.name || name || '',
+                                    bloodGroup: patientInfo.bloodGroup || 'A+',
+                                    height: patientInfo.height || '',
+                                    weight: patientInfo.weight || '',
+                                    allergies: patientInfo.allergies || '',
+                                    chronicIllnesses: patientInfo.chronicIllnesses || ''
+                                };
+                                setUserData(sanitizedInfo);
+                                setProfileForm(sanitizedInfo);
+                            } catch (clinicalError) {
+                                console.warn("Clinical Identity Registry Miss - using placeholder for session:", id, clinicalError);
+                                setUserData({ name: name || 'Authorized Patient' });
                             }
 
                             // Step 2: Fetch clinical records (with individual safety nets)
                             if (clinicalId) {
-                                const [apptRes, historyRes, reportRes, paymentRes, prescRes] = await Promise.all([
+                                const [apptRes, reportRes, paymentRes, prescRes] = await Promise.all([
                                     appointmentApi.get(`/patient/${clinicalId}`).catch(() => ({ data: [] })),
-                                    medicalHistoryApi.get(`/patient/${clinicalId}`).catch(() => ({ data: [] })),
-                                    patientApi.get(`/${clinicalId}/reports`).catch(() => ({ data: [] })),
+                                    medicalHistoryApi.get(`/reports/patient/${clinicalId}`).catch(() => ({ data: [] })),
                                     paymentApi.get(`/patient/${clinicalId}/history`).catch(() => ({ data: [] })),
                                     prescriptionApi.get(`/patient/${clinicalId}`).catch(() => ({ data: [] }))
                                 ]);
@@ -97,18 +121,18 @@ const PatientDashboard = () => {
                                 };
 
                                 const safeAppts = safeData(apptRes);
-                                const safeHistory = safeData(historyRes);
                                 const safeReports = safeData(reportRes);
                                 const safePayments = safeData(paymentRes);
                                 const safePrescriptions = safeData(prescRes);
                                 const safeNotifications = safeData(notifRes);
 
                                 setUpcoming(safeAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)));
-                                setHistory(safeHistory);
+                                setClinicalHistory(safeAppts.filter(a => a.status === 'COMPLETED'));
                                 setReports(safeReports);
                                 setPayments(safePayments);
                                 setPrescriptions(safePrescriptions);
                                 setNotifications(safeNotifications);
+                                
                                 setStats({
                                     appointments: safeAppts.length,
                                     reports: safeReports.length,
@@ -124,7 +148,7 @@ const PatientDashboard = () => {
 
             fetchData();
         }
-    }, [router.pathname]);
+    }, [router.pathname, router]);
 
     // Handle Payment Success Redirect
     useEffect(() => {
@@ -153,7 +177,7 @@ const PatientDashboard = () => {
             };
             syncData();
         }
-    }, [router.query.payment, router.query.appointmentId]);
+    }, [router.query.payment, router.query.appointmentId, router]);
 
     const logout = () => {
         localStorage.clear();
@@ -162,30 +186,89 @@ const PatientDashboard = () => {
 
     const handleFileUpload = async (file) => {
         const patientId = localStorage.getItem('patient_id') || userData?.clinicalId;
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('description', uploadDescription);
-        formData.append('reportType', uploadReportType);
+        const userName = localStorage.getItem('user_name')?.replace(/\s+/g, '_').toLowerCase() || 'patient';
+        const fileExt = file.name.split('.').pop();
+        const fileName = `patient-reports/${patientId}/${userName}_${Date.now()}.${fileExt}`;
 
-        const response = await fileUploadApi.post(`/${patientId}/reports`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+        // 1. Upload to Supabase clinical-media registry
+        const { error } = await supabaseStorage.upload(file, fileName);
+        if (error) throw new Error(error.message || 'Registry upload failed');
+
+        const fileUrl = supabaseStorage.getPublicUrl(fileName);
+
+        // 2. Link to clinical backend
+        const reportData = {
+            fileName: file.name,
+            fileUrl: fileUrl,
+            fileType: file.type || 'application/octet-stream',
+            fileSize: file.size,
+            description: uploadDescription,
+            reportType: uploadReportType
+        };
+
+        await medicalHistoryApi.post(`/reports/link`, {
+            patientId,
+            appointmentId: selectedAppointmentIdForUpload,
+            ...reportData
         });
 
         // Refresh reports list
-        const reportRes = await patientApi.get(`/${userData.clinicalId}/reports`).catch(() => ({ data: { data: [] } }));
+        const reportRes = await medicalHistoryApi.get(`/reports/patient/${patientId}`).catch(() => ({ data: { data: [] } }));
         setReports(reportRes.data?.data || []);
         setShowUploadModal(false);
         setUploadDescription('');
         setUploadReportType('LAB_RESULT');
+        setSelectedAppointmentIdForUpload(null);
     };
 
-    const handleDownloadReport = async (report) => {
+    const handleDownloadReport = (report) => {
+        if (report?.fileUrl) {
+            window.open(report.fileUrl, '_blank');
+        } else {
+            toast.error("Clinical artifact URL not found in registry.");
+        }
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('userId', localStorage.getItem('user_id'));
+
         try {
-            if (report.fileUrl) {
-                window.open(report.fileUrl, '_blank');
-            }
+            const res = await fileUploadApi.post('/profile/upload', formData);
+            const imageUrl = res.data.url;
+            setProfileForm(prev => ({ ...prev, profileImageUrl: imageUrl }));
+            setUserData(prev => ({ ...prev, profileImageUrl: imageUrl }));
+            toast.success('Identity artifact uploaded to vault.');
         } catch (err) {
-            console.error('Download failed', err);
+            console.error("Artifact upload failed:", err);
+            toast.error('Identity artifact synchronization failed.');
+        }
+    };
+
+    const handleUpdateProfile = async (e) => {
+        if (e) e.preventDefault();
+        
+        // Frontend Validation Shard
+        if (!profileForm.name?.trim()) return toast.error("Identity name cannot be empty.");
+        if (profileForm.height < 0 || profileForm.weight < 0) return toast.error("Clinical metrics must be positive integers.");
+
+        try {
+            setLoading(true);
+            const res = await patientApi.put(`/${userData.id}`, profileForm);
+            const updatedData = res.data?.data || res.data;
+            setUserData(updatedData);
+            setProfileForm(updatedData);
+            setIsEditingProfile(false);
+            toast.success("Clinical Identity re-indexed!");
+        } catch (error) {
+            console.error("Clinical shard update failure:", error);
+            toast.error("Cloud registry update failed.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -213,7 +296,6 @@ const PatientDashboard = () => {
         { id: 'overview', icon: LayoutDashboard, label: 'Health Center' },
         { id: 'appointments', icon: Calendar, label: 'Visits & Tokens' },
         { id: 'prescriptions', icon: Shield, label: 'My Prescriptions' },
-        { id: 'reports', icon: FileText, label: 'Records Vault' },
         { id: 'payments', icon: CreditCard, label: 'Billing Nest' },
         { id: 'telemedicine', icon: Video, label: 'Virtual Clinic' },
         { id: 'chat', icon: MessageSquare, label: 'AI Diagnostic' },
@@ -228,19 +310,20 @@ const PatientDashboard = () => {
                 <title>{userData?.name ? `${userData.name} | Patient Health Vault` : 'Patient Dashboard'} | SynapsCare</title>
                 <meta name="description" content="Securely manage your medical records, appointments, and prescriptions" />
             </Head>
-            <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 selection:bg-teal-100 selection:text-teal-900 overflow-hidden">
+            <Toaster position="top-right" />
+            <div className="min-h-screen bg-slate-50 flex font-['Open_Sans',sans-serif] text-slate-700 selection:bg-teal-100 selection:text-teal-900 overflow-hidden">
                 {/* Professional Responsive Sidebar */}
-                <aside className="hidden lg:flex flex-col w-[260px] border-r border-slate-200 bg-white sticky top-0 h-screen px-6 py-6 transition-all duration-500 overflow-hidden z-50">
-                    <div className="flex items-center gap-3 mb-8 group cursor-pointer transition-transform hover:scale-105 active:scale-95" onClick={() => router.push('/')}>
-                        <img src="/logo.png" alt="SynapseCare" className="w-9 h-9 drop-shadow-sm transition-transform group-hover:rotate-12" />
-                        <span className="text-xl font-black tracking-tight text-slate-800">Synapse<span className="text-teal-600">Care</span></span>
+                <aside className="hidden lg:flex flex-col w-[280px] border-r border-slate-200 bg-white sticky top-0 h-screen px-7 py-8 transition-all duration-500 overflow-hidden z-50">
+                    <div className="flex items-center gap-3 mb-10 group cursor-pointer transition-transform hover:scale-[1.02] active:scale-95" onClick={() => router.push('/dashboard/patient')}>
+                        <Image src="/logo.png" alt="SynapseCare" width={34} height={34} className="w-8.5 h-8.5 transition-transform group-hover:rotate-6" />
+                        <span className="text-xl font-bold tracking-tight text-slate-800">Synapse<span className="text-teal-600 font-semibold">Care</span></span>
                     </div>
 
                     <div className="mb-4 px-2">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Main Care Console</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Main Console</p>
                     </div>
 
-                    <nav className="flex-1 space-y-1.5">
+                    <nav className="flex-1 space-y-2">
                         {navItems.map((item) => (
                             <button
                                 key={item.id}
@@ -251,31 +334,28 @@ const PatientDashboard = () => {
                                         setActiveTab(item.id);
                                     }
                                 }}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold tracking-tight transition-all duration-300 relative group overflow-hidden ${activeTab === item.id
-                                    ? 'bg-teal-600 text-white shadow-xl shadow-teal-200'
+                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[13px] font-semibold tracking-tight transition-all duration-300 relative group ${activeTab === item.id
+                                    ? 'bg-teal-600 text-white shadow-lg shadow-teal-200'
                                     : 'text-slate-500 hover:bg-slate-50 hover:text-teal-600'
                                     }`}
                             >
-                                <item.icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${activeTab === item.id ? 'text-white' : ''}`} />
+                                <item.icon className={`w-4.5 h-4.5 transition-transform group-hover:scale-110 ${activeTab === item.id ? 'text-white' : ''}`} />
                                 {item.label}
-                                {activeTab === item.id && (
-                                    <motion.div layoutId="nav-bg" className="absolute left-0 w-1.5 h-6 bg-white/40 rounded-full" />
-                                )}
                             </button>
                         ))}
                     </nav>
 
                     <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col gap-2.5">
-                        <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:bg-amber-50 hover:text-amber-700 transition-all group">
-                            <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                        <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all group">
+                            <LogOut className="w-5 h-5 transition-transform" />
                             Log Out
                         </button>
-                        <div className="p-4 bg-teal-600 rounded-[1.5rem] text-white overflow-hidden relative group cursor-pointer shadow-lg shadow-teal-100">
+                        <div className="p-5 bg-teal-50 rounded-3xl text-teal-700 overflow-hidden relative group cursor-pointer border border-teal-100">
                             <div className="relative z-10">
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Support</p>
-                                <p className="font-bold text-sm mt-1">24/7 Concierge</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Support</p>
+                                <p className="font-semibold text-sm mt-1">24/7 Concierge</p>
                             </div>
-                            <Activity className="absolute -bottom-2 -right-2 w-16 h-16 opacity-10 group-hover:scale-110 transition-transform" />
+                            <Activity className="absolute -bottom-2 -right-2 w-16 h-16 opacity-10" />
                         </div>
                     </div>
                 </aside>
@@ -283,28 +363,71 @@ const PatientDashboard = () => {
                 {/* Main Workspace Area */}
                 <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
                     {/* Modern Topbar */}
-                    <header className="h-20 lg:h-24 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 flex items-center justify-between px-6 lg:px-12 shrink-0 z-40">
-                        <div className="flex items-center gap-8 flex-1">
+                    <header className="h-20 lg:h-22 bg-white border-b border-slate-200 flex items-center justify-between px-8 lg:px-12 shrink-0 z-40">
+                        <div className="flex items-center gap-6 flex-1">
                             <div className="lg:hidden flex items-center gap-2">
-                                <img src="/logo.png" alt="Logo" className="w-8 h-8" />
+                                <Image src="/logo.png" alt="Logo" width={32} height={32} className="w-8 h-8" />
                             </div>
-                            <div className="hidden sm:flex items-center bg-slate-100 rounded-2xl px-4 py-2.5 w-full max-w-md border border-transparent focus-within:border-teal-400 focus-within:bg-white transition-all shadow-inner">
-                                <Search size={18} className="text-slate-400" />
-                                <input type="text" placeholder="Search records, doctors, or results..." className="bg-transparent border-none outline-none text-sm font-medium px-3 w-full" />
+                            <div className="hidden sm:flex items-center bg-slate-50 rounded-2xl px-4 py-2.5 w-full max-w-sm border border-slate-200 focus-within:border-teal-300 focus-within:bg-white transition-all">
+                                <Search size={16} className="text-slate-400" />
+                                <input type="text" placeholder="Search records, doctors..." className="bg-transparent border-none outline-none text-[13px] font-medium px-3 w-full placeholder:text-slate-400" />
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3 lg:gap-6 ml-4">
-                            <button className="relative w-11 h-11 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:border-teal-400 hover:text-teal-600 transition-all shadow-sm group">
-                                <Bell size={20} className="group-hover:rotate-12 transition-transform" />
-                                {notifications.length > 0 && <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white" />}
+                            <button 
+                                onClick={() => setShowNotifications(!showNotifications)}
+                                className="relative p-2 text-slate-400 hover:text-teal-600 transition-all group"
+                            >
+                                <Bell size={22} className="group-hover:rotate-12 transition-transform" />
+                                {notifications.length > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-white shadow-sm" />}
                             </button>
+
+                            <AnimatePresence>
+                                {showNotifications && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute top-20 right-0 w-96 bg-white rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-slate-100 z-50 overflow-hidden"
+                                    >
+                                        <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+                                            <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">Care Updates</h4>
+                                            <Badge variant="teal">{notifications.length} New</Badge>
+                                        </div>
+                                        <div className="max-h-[32rem] overflow-y-auto">
+                                            {notifications.length > 0 ? notifications.map((n, i) => (
+                                                <div key={i} className="p-6 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 group cursor-pointer">
+                                                    <div className="flex gap-4">
+                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${n.type === 'SUCCESS' ? 'bg-emerald-50 text-emerald-600' : 'bg-teal-50 text-teal-600'}`}>
+                                                            {n.type === 'SUCCESS' ? <CheckCircle2 size={18} /> : <Bell size={18} />}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-slate-900 leading-tight">{n.title}</p>
+                                                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">{n.context || n.message}</p>
+                                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-2">{n.time || 'JUST NOW'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )) : (
+                                                <div className="p-12 text-center">
+                                                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-200">
+                                                        <Shield size={32} />
+                                                    </div>
+                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No New Alerts</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <button className="w-full py-4 bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-teal-600 transition-colors">Clear All Vaulted Notifications</button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             <div className="h-8 w-px bg-slate-200 hidden sm:block" />
 
                             <div className="flex items-center gap-3">
                                 <div className="text-right hidden sm:block mr-1">
-                                    <p className="text-xs font-black text-slate-900 leading-none mb-1">{userData?.name || 'Authorized Patient'}</p>
+                                    <p className="text-xs font-bold text-slate-900 leading-none mb-1">{userData?.name || 'Authorized Patient'}</p>
                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Patient Workspace</p>
                                 </div>
                                 <div className="w-11 h-11 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shadow-sm">
@@ -319,7 +442,7 @@ const PatientDashboard = () => {
                         <div className="max-w-6xl mx-auto space-y-8 pb-16">
                             <AnimatePresence mode="wait">
                                 {activeTab === 'overview' && (
-                                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="space-y-8">
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
                                         {/* Care Snapshot */}
                                         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
                                             <div className="xl:col-span-7 p-8 bg-gradient-to-br from-teal-600 via-teal-600 to-emerald-600 rounded-[3rem] text-white shadow-2xl shadow-teal-200 relative overflow-hidden group">
@@ -327,7 +450,7 @@ const PatientDashboard = () => {
                                                 <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
                                                 <div className="relative z-10 max-w-2xl">
                                                     <Badge variant="teal">TODAY&apos;S CARE SUMMARY</Badge>
-                                                    <h2 className="text-4xl font-black mt-6 tracking-tighter leading-tight">Welcome back, {userData?.name || 'Patient'}.<br />Your care is ready at a glance.</h2>
+                                                    <h2 className="text-4xl font-bold mt-6 tracking-tighter leading-tight">Welcome back, {userData?.name || 'Patient'}.<br />Your care is ready at a glance.</h2>
                                                     <p className="text-teal-100/90 font-medium mt-4 max-w-xl leading-relaxed">See what matters now, open your next visit, and keep records, prescriptions, and bills in one calm place.</p>
 
                                                     <div className="mt-8 flex flex-wrap gap-3">
@@ -347,8 +470,8 @@ const PatientDashboard = () => {
                                                         <button onClick={() => setActiveTab('appointments')} className="px-6 py-3 bg-white text-teal-700 font-bold rounded-2xl hover:scale-105 transition-transform flex items-center gap-2 shadow-lg shadow-teal-900/10">
                                                             Book Appointment <Plus size={16} />
                                                         </button>
-                                                        <button onClick={() => setActiveTab('reports')} className="px-6 py-3 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-2xl hover:bg-white/20 transition-all">
-                                                            View Records
+                                                        <button onClick={() => setActiveTab('profile')} className="px-6 py-3 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-2xl hover:bg-white/20 transition-all">
+                                                            View Identity Timeline
                                                         </button>
                                                     </div>
                                                 </div>
@@ -365,8 +488,8 @@ const PatientDashboard = () => {
                                                             <s.icon size={24} />
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <div className="text-3xl font-black text-slate-900 leading-none">{s.value}</div>
-                                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{s.label}</div>
+                                                            <div className="text-3xl font-bold text-slate-900 leading-none">{s.value}</div>
+                                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{s.label}</div>
                                                             <p className="text-xs text-slate-500 mt-1">{s.note}</p>
                                                         </div>
                                                     </div>
@@ -381,15 +504,15 @@ const PatientDashboard = () => {
                                                 <section className="surface-card p-8 bg-linear-to-b from-white to-slate-50 relative overflow-hidden">
                                                     <div className="flex items-center justify-between mb-12">
                                                         <div>
-                                                            <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Clinical Timeline</h2>
+                                                            <h2 className="text-3xl font-bold text-slate-900 tracking-tighter">Clinical Timeline</h2>
                                                             <p className="text-sm text-slate-500 font-medium">Visualization of your past care activities</p>
                                                         </div>
-                                                        <Link href="/doctors" className="h-10 px-4 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center text-[10px] font-black tracking-widest border border-teal-100 hover:bg-teal-100 transition-colors uppercase">All Records</Link>
+                                                        <Link href="/doctors" className="h-10 px-4 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center text-[10px] font-bold tracking-widest border border-teal-100 hover:bg-teal-100 transition-colors uppercase">All Records</Link>
                                                     </div>
 
-                                                    {history.length > 0 ? (
+                                                    {clinicalHistory.length > 0 ? (
                                                         <div className="relative space-y-16 pl-10 before:absolute before:left-[11px] before:top-4 before:bottom-4 before:w-1 before:bg-slate-100 before:rounded-full">
-                                                            {history.slice(0, 3).map((item, idx) => (
+                                                            {clinicalHistory.slice(0, 3).map((item, idx) => (
                                                                 <div key={idx} className="relative group">
                                                                     <div className="absolute -left-[3.1rem] top-1 w-10 h-10 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center group-hover:border-teal-400 group-hover:bg-teal-50 transition-all duration-500 z-10 shadow-sm overflow-hidden">
                                                                         <div className="bg-slate-200/50 w-full h-full flex items-center justify-center group-hover:text-teal-600 text-slate-400 transition-colors">
@@ -399,14 +522,14 @@ const PatientDashboard = () => {
                                                                     <div className="flex flex-col gap-6 p-8 rounded-[2.5rem] bg-white border border-slate-100 group-hover:border-teal-100 shadow-sm hover:shadow-premium transition-all duration-500">
                                                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-50 pb-5">
                                                                             <div className="flex items-center gap-3">
-                                                                                <span className="px-3 py-1 rounded-full bg-teal-600 font-black text-[9px] text-white uppercase tracking-widest">{new Date(item.date).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}</span>
+                                                                                <span className="px-3 py-1 rounded-full bg-teal-600 font-bold text-[9px] text-white uppercase tracking-widest">{new Date(item.date).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}</span>
                                                                                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">DR. {item.doctorName || 'Senior Specialist'}</span>
                                                                             </div>
                                                                             <Badge variant={item.status === 'COMPLETED' ? 'success' : 'primary'}>{item.status}</Badge>
                                                                         </div>
                                                                         <div className="space-y-4">
-                                                                            <h4 className="text-2xl font-black text-slate-900 tracking-tight">{item.condition || 'General Assessment'}</h4>
-                                                                            <p className="text-slate-500 font-medium leading-relaxed italic line-clamp-2">"{item.description || 'Comprehensive assessment conducted for reported health markers.'}"</p>
+                                                                            <h4 className="text-2xl font-bold text-slate-900 tracking-tight">{item.condition || 'General Assessment'}</h4>
+                                                                            <p className="text-slate-500 font-medium leading-relaxed italic line-clamp-2">&ldquo;{item.description || 'Comprehensive assessment conducted for reported health markers.'}&rdquo;</p>
                                                                             <div className="flex flex-wrap gap-2">
                                                                                 {['Consultation', 'Labs', 'Diagnosis'].map(tag => (
                                                                                     <span key={tag} className="px-3 py-1 bg-slate-50 rounded-xl text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-slate-100">{tag}</span>
@@ -420,7 +543,7 @@ const PatientDashboard = () => {
                                                     ) : (
                                                         <div className="py-20 text-center bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
                                                             <Activity className="w-12 h-12 mx-auto text-slate-300 mb-4" />
-                                                            <p className="text-slate-400 font-bold tracking-tight">Timeline history is currently empty.</p>
+                                                            <p className="text-slate-400 font-bold tracking-tight">Care history is currently empty.</p>
                                                         </div>
                                                     )}
                                                 </section>
@@ -430,7 +553,7 @@ const PatientDashboard = () => {
                                                 {/* Upcoming Quick Card */}
                                                 <section className="surface-card p-8 space-y-6 bg-white border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50">
                                                     <div className="absolute top-0 right-0 w-32 h-32 bg-teal-50 rounded-full blur-3xl pointer-events-none" />
-                                                    <h3 className="text-2xl font-black tracking-tight flex items-center gap-3 text-slate-900">
+                                                    <h3 className="text-2xl font-bold tracking-tight flex items-center gap-3 text-slate-900">
                                                         <Clock size={24} className="text-teal-600" /> Appointments
                                                     </h3>
 
@@ -438,16 +561,16 @@ const PatientDashboard = () => {
                                                         {upcoming.length > 0 ? upcoming.slice(0, 2).map((u, i) => (
                                                             <div key={i} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl hover:bg-white hover:border-teal-100 transition-all shadow-sm">
                                                                 <div className="flex justify-between items-start mb-4">
-                                                                    <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center text-white font-black text-xs">#{u.id}</div>
-                                                                    <span className="text-[9px] font-black uppercase tracking-widest text-teal-500">Token #{u.tokenNumber || 'TBD'}</span>
+                                                                    <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-xs">#{u.id}</div>
+                                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-teal-500">Token #{u.tokenNumber || 'TBD'}</span>
                                                                 </div>
                                                                 <div className="text-sm font-bold text-slate-700">{u.appointmentDate}</div>
-                                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Confirmed Specialist</div>
+                                                                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Confirmed Specialist</div>
                                                             </div>
                                                         )) : (
                                                             <div className="p-8 text-center bg-slate-50 rounded-3xl border border-slate-100 border-dashed">
                                                                 <p className="text-slate-400 text-xs font-bold leading-relaxed">No sessions scheduled for this cycle.</p>
-                                                                <button onClick={() => router.push('/doctors')} className="mt-4 text-xs font-black text-teal-600 uppercase tracking-widest hover:text-teal-700 transition-colors">Book Now</button>
+                                                                <button onClick={() => router.push('/doctors')} className="mt-4 text-xs font-bold text-teal-600 uppercase tracking-widest hover:text-teal-700 transition-colors">Book Now</button>
                                                             </div>
                                                         )}
                                                     </div>
@@ -461,7 +584,7 @@ const PatientDashboard = () => {
                                                             <Activity size={24} />
                                                         </div>
                                                         <div>
-                                                            <h4 className="text-xl font-black tracking-tight">Need Medical Clarity?</h4>
+                                                            <h4 className="text-xl font-bold tracking-tight">Need Medical Clarity?</h4>
                                                             <p className="text-emerald-100/70 font-medium text-xs mt-2 leading-relaxed">Ask our Digital Triage for structured diagnostic insights before your visit.</p>
                                                         </div>
                                                     </div>
@@ -476,7 +599,7 @@ const PatientDashboard = () => {
                                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
                                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                                             <div>
-                                                <h2 className="text-4xl leading-tight tracking-tighter text-slate-900 font-black">My <span className="text-teal-600">Prescriptions.</span></h2>
+                                                <h2 className="text-4xl leading-tight tracking-tighter text-slate-900 font-bold">My <span className="text-teal-600">Prescriptions.</span></h2>
                                                 <p className="text-lg text-slate-500 font-medium mt-2">View prescriptions issued by your care team in one place.</p>
                                             </div>
                                             <button className="btn-secondary flex items-center gap-3">
@@ -497,7 +620,7 @@ const PatientDashboard = () => {
                                                         </div>
                                                         <div>
                                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-2 leading-none">Prescription ID #{px.id}</p>
-                                                            <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{px.medicineName}</h3>
+                                                            <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-tight">{px.medicineName}</h3>
                                                             <p className="text-sm font-bold text-teal-500 mt-1 uppercase tracking-widest">DR. {px.doctorName || 'Authorized Specialist'}</p>
                                                         </div>
                                                     </div>
@@ -510,7 +633,7 @@ const PatientDashboard = () => {
                                                             { l: 'Issued', v: px.issuedDate, i: User }
                                                         ].map((it, idx) => (
                                                             <div key={idx}>
-                                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><it.i size={10} className="text-teal-600" /> {it.l}</p>
+                                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><it.i size={10} className="text-teal-600" /> {it.l}</p>
                                                                 <p className="text-xs font-bold text-slate-700">{it.v || 'Contact Pharmacist'}</p>
                                                             </div>
                                                         ))}
@@ -519,7 +642,7 @@ const PatientDashboard = () => {
                                                     <div className="mt-8 flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><CheckCircle2 size={16} /></div>
-                                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Digital Authentication Signature</p>
+                                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Digital Authentication Signature</p>
                                                         </div>
                                                         <button onClick={() => downloadPrescriptionPdf(px.id)} className="h-12 px-6 bg-teal-600 text-white rounded-2xl font-bold text-xs hover:bg-teal-700 transition-all flex items-center gap-3 shadow-lg shadow-teal-100">
                                                             <Download size={16} /> Download PDF
@@ -538,291 +661,295 @@ const PatientDashboard = () => {
                                 )}
 
                                 {activeTab === 'appointments' && (
-                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-12 text-slate-900 font-sans">
-                                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="space-y-10">
+                                        {/* Dynamic Header Shard */}
+                                        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-4 border-b border-white/5">
                                             <div>
-                                                <h2 className="text-4xl leading-tight tracking-tighter font-black">Upcoming <span className="text-teal-600">Visits.</span></h2>
-                                                <p className="text-lg text-slate-500 font-medium mt-2">Check confirmed visits, access your token, and join virtual care when it is ready.</p>
+                                                <div className="flex items-center gap-3 text-xs font-black uppercase tracking-[0.3em] text-teal-500 mb-4">
+                                                    <div className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-ping" />
+                                                    Active Clinical Rotation
+                                                </div>
+                                                <h2 className="text-5xl leading-tight tracking-tighter text-white font-bold">Visits <span className="text-teal-600">& Tokens.</span></h2>
+                                                <p className="text-slate-500 font-medium mt-3 text-lg">Manage your digital tokens, clinical sessions, and diagnostic assessments.</p>
                                             </div>
-                                            <button onClick={() => router.push('/doctors')} className="px-8 py-4 bg-teal-600 text-white font-bold rounded-2xl shadow-xl shadow-teal-100 hover:scale-105 transition-all text-sm flex items-center gap-3">
-                                                Schedule New Appointment <ArrowRight size={18} />
+                                            <button 
+                                                onClick={() => router.push('/doctors')} 
+                                                className="h-16 px-10 bg-gradient-to-r from-teal-600 to-teal-500 text-white font-black text-xs uppercase tracking-[0.2em] rounded-3xl shadow-2xl shadow-teal-500/20 hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-4 group"
+                                            >
+                                                Schedule New Domain <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                             </button>
                                         </div>
 
-                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                            <div className="lg:col-span-8 space-y-8">
-                                                {upcoming.length > 0 ? upcoming.map((u, i) => (
-                                                    <div key={i} className="p-8 rounded-[3rem] border border-slate-100 bg-white hover:border-teal-100 hover:shadow-premium transition-all duration-500 group relative overflow-hidden shadow-sm">
-                                                        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-600/5 rotate-45 translate-x-16 -translate-y-16 pointer-events-none" />
-
-                                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10">
-                                                            <div className="flex items-center gap-6">
-                                                                <div className="w-20 h-20 rounded-[2rem] bg-teal-50 text-teal-600 flex items-center justify-center shadow-inner border border-teal-100 flex-shrink-0">
-                                                                    <Calendar size={32} />
+                                        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+                                            {/* Priority Shard: The Next Session */}
+                                            <div className="xl:col-span-8 space-y-10">
+                                                {upcoming.length > 0 ? (
+                                                    <>
+                                                        {/* Next Immediate Session Highlight */}
+                                                        <div className="relative group">
+                                                            <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 to-indigo-500/20 rounded-[3.5rem] blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                                                            <div className="relative p-10 rounded-[3rem] bg-slate-900 border border-white/10 overflow-hidden">
+                                                                <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+                                                                    <Activity size={240} strokeWidth={1} className="text-teal-500" />
                                                                 </div>
-                                                                <div>
-                                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                                                        <Clock size={12} className="text-teal-600" /> Confirmed {u.appointmentDate || u.date} at {u.appointmentTime || u.time || '14:00'}
-                                                                    </p>
-                                                                    <h4 className="text-2xl font-black tracking-tight leading-tight uppercase italic">{u.doctorName || 'Senior Specialist'}</h4>
-                                                                    <div className="flex gap-2 mt-3">
-                                                                        <Badge variant={['CONFIRMED', 'PAID'].includes(u.status) ? 'success' : 'primary'}>{u.status}</Badge>
-                                                                        <span className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-400">ID #{u.id}</span>
+                                                                
+                                                                <div className="flex flex-col lg:flex-row gap-10 items-start lg:items-center relative z-10">
+                                                                    <div className="flex-1 space-y-6">
+                                                                        <div className="inline-flex items-center gap-3 px-4 py-2 bg-teal-500/10 border border-teal-500/20 rounded-2xl">
+                                                                            <span className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
+                                                                            <span className="text-[10px] font-black uppercase tracking-widest text-teal-400">Next Priority Session</span>
+                                                                        </div>
+                                                                        
+                                                                        <div className="space-y-2">
+                                                                            <h3 className="text-4xl font-bold text-white tracking-tight uppercase leading-none">Dr. {upcoming[0].doctorName || 'Clinical Lead'}</h3>
+                                                                            <p className="text-slate-400 font-bold uppercase text-[11px] tracking-widest">Specialization: Diagnostic Medicine</p>
+                                                                        </div>
+
+                                                                        <div className="flex flex-wrap gap-6 pt-4">
+                                                                            <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                                                <Calendar className="text-teal-500" size={20} />
+                                                                                <div>
+                                                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Session Date</p>
+                                                                                    <p className="text-sm font-bold text-white">{upcoming[0].appointmentDate || upcoming[0].date}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                                                <Clock className="text-teal-500" size={20} />
+                                                                                <div>
+                                                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Queue Time</p>
+                                                                                    <p className="text-sm font-bold text-white">{upcoming[0].appointmentTime || upcoming[0].time || 'TBD'}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="w-full lg:w-56 p-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col items-center justify-center text-center group-hover:scale-105 transition-transform duration-500">
+                                                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 mb-2">Active Token</p>
+                                                                        <p className="text-7xl font-bold text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">{upcoming[0].tokenNumber || '00'}</p>
+                                                                        <div className="mt-6 w-full h-px bg-white/10" />
+                                                                        <p className="mt-4 text-[9px] font-bold text-white/50 uppercase tracking-widest">Session ID: #{upcoming[0].id}</p>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                            <div className="text-center md:text-right p-6 bg-slate-50 rounded-3xl border border-slate-100 min-w-[140px]">
-                                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Your Token</p>
-                                                                <p className="text-4xl font-black text-teal-600 drop-shadow-sm leading-none mt-2">{u.tokenNumber || 'TBD'}</p>
+
+                                                                <div className="mt-10 flex flex-wrap gap-4 relative z-10 pt-10 border-t border-white/10">
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            localStorage.setItem('active_consultation_id', upcoming[0].id);
+                                                                            router.push('/telemedicine');
+                                                                        }}
+                                                                        className="h-16 px-10 bg-white text-slate-900 rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-teal-500 hover:text-white transition-all shadow-xl shadow-white/5"
+                                                                    >
+                                                                        <Video size={18} /> Join Clinical Entry
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            setSelectedAppointmentIdForUpload(upcoming[0].id);
+                                                                            setUploadDescription(`Clinical artifacts for Dr. ${upcoming[0].doctorName}`);
+                                                                            setShowUploadModal(true);
+                                                                        }}
+                                                                        className="h-16 px-10 bg-white/5 border border-white/10 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-white/10 transition-all"
+                                                                    >
+                                                                        <Plus size={18} /> Sync Artifacts
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
 
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-10 border-b border-slate-50 mb-10">
-                                                            <div className="p-6 bg-teal-50/30 rounded-3xl border border-teal-100/50">
-                                                                <p className="text-[10px] font-black uppercase tracking-widest text-teal-500 mb-2">Visit Type</p>
-                                                                <p className="text-sm font-bold flex items-center gap-2">{u.consultationType || 'Virtual Video Call'} <Video size={14} className="text-teal-600" /></p>
-                                                            </div>
-                                                            <div className="p-6 bg-emerald-50/30 rounded-3xl border border-emerald-100/50">
-                                                                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-2">Financial Node</p>
-                                                                <p className="text-sm font-bold">LKR {u.fee?.toLocaleString() || '1,500'} Settlement</p>
-                                                            </div>
-                                                        </div>
+                                                        {/* Remaining Registry */}
+                                                        {upcoming.length > 1 && (
+                                                            <div className="space-y-6 pt-10">
+                                                                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 ml-2 mb-8">Clinical Queue Registry</h4>
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                                    {upcoming.slice(1).map((u, i) => (
+                                                                        <div key={i} className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] hover:bg-white/[0.08] transition-all group/item">
+                                                                            <div className="flex justify-between items-start mb-8">
+                                                                                <div className="w-12 h-12 rounded-[1.2rem] bg-teal-500/10 text-teal-400 flex items-center justify-center border border-teal-500/20">
+                                                                                    <Calendar size={24} />
+                                                                                </div>
+                                                                                <div className="px-4 py-6 bg-slate-900 border border-white/5 rounded-2xl text-center min-w-[70px]">
+                                                                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-none">Token</p>
+                                                                                    <p className="text-xl font-black text-white leading-none">{u.tokenNumber || '00'}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            
+                                                                            <div className="space-y-2 mb-8">
+                                                                                <h5 className="text-xl font-bold text-white tracking-tight uppercase leading-none">Dr. {u.doctorName || 'Specialist'}</h5>
+                                                                                <p className="text-slate-500 font-bold text-[9px] uppercase tracking-widest">{u.appointmentDate || u.date} • {u.appointmentTime || u.time}</p>
+                                                                            </div>
 
-                                                        <div className="flex flex-wrap gap-4">
-                                                            {(u.status === 'PAID' || u.status === 'CONFIRMED') ? (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        localStorage.setItem('active_consultation_id', u.id);
-                                                                        router.push('/telemedicine');
-                                                                    }}
-                                                                    className="flex-1 py-4 bg-teal-600 text-white font-black text-sm rounded-2xl shadow-xl shadow-teal-100 border border-teal-500 hover:bg-teal-700 hover:scale-[1.02] transition-all flex items-center justify-center gap-3 uppercase tracking-widest"
-                                                                >
-                                                                    <Video size={18} /> Join Clinical Session
-                                                                </button>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={() => router.push(`/payment?appointmentId=${u.id}&amount=${u.fee || 1500}&patientId=${userData.id}&doctorId=${u.doctorId}`)}
-                                                                    className="flex-1 py-4 bg-white text-teal-600 border-2 border-teal-600 font-black text-sm rounded-2xl hover:bg-teal-50 transition-all uppercase tracking-widest"
-                                                                >
-                                                                    Settle Clinical Fee
-                                                                </button>
-                                                            )}
-                                                            <button className="w-16 h-14 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center text-slate-400 hover:border-teal-400 hover:text-teal-600 transition-all"><Settings size={20} /></button>
-                                                        </div>
-                                                    </div>
-                                                )) : (
-                                                    <div className="py-40 text-center surface-card border-dashed bg-slate-50 max-w-2xl mx-auto rounded-[3rem]">
-                                                        <Calendar size={64} className="mx-auto text-slate-200 mb-8" strokeWidth={1} />
-                                                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Clinical Agenda Clear.</h3>
-                                                        <p className="text-slate-500 mt-3 font-medium px-10">No upcoming visits yet. When you book one, it will appear here with your token and time.</p>
+                                                                            <div className="flex gap-4">
+                                                                                {u.status !== 'PAID' ? (
+                                                                                    <button 
+                                                                                        onClick={() => router.push(`/payment?appointmentId=${u.id}&amount=${u.fee || 1500}&patientId=${userData.id}&doctorId=${u.doctorId}`)}
+                                                                                        className="flex-1 h-12 bg-teal-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all"
+                                                                                    >
+                                                                                        Settle Fee
+                                                                                    </button>
+                                                                                ) : (
+                                                                                    <button className="flex-1 h-12 bg-white/5 border border-white/10 text-white/50 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-default">
+                                                                                        Settled
+                                                                                    </button>
+                                                                                )}
+                                                                                <button className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-slate-500 hover:text-white transition-all">
+                                                                                    <Settings size={18} />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <div className="py-40 text-center bg-white/5 rounded-[4rem] border border-dashed border-white/10">
+                                                        <Calendar size={80} className="mx-auto text-slate-800 mb-8 opacity-20" strokeWidth={1} />
+                                                        <h3 className="text-2xl font-black text-white italic uppercase tracking-widest mb-4">No Sessions Vaulted.</h3>
+                                                        <p className="text-slate-500 font-medium px-20 text-lg leading-relaxed">Your clinical agenda is currently empty. Book a diagnostic node to activate your session stream.</p>
+                                                        <button onClick={() => router.push('/doctors')} className="mt-12 h-14 px-10 bg-teal-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-teal-700 transition-all shadow-xl shadow-teal-500/20">Explore Specialized Domains</button>
                                                     </div>
                                                 )}
                                             </div>
 
-                                            <div className="lg:col-span-4 space-y-8">
-                                                <div className="p-8 rounded-[3rem] bg-slate-900 text-white shadow-2xl relative overflow-hidden group">
-                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-teal-600/20 blur-3xl" />
-                                                    <h3 className="text-xl font-black italic tracking-widest uppercase mb-6 leading-none">Billing</h3>
-                                                    <div className="space-y-5">
-                                                        {payments.slice(0, 3).map((p, i) => (
-                                                            <div key={i} className="flex justify-between items-center group cursor-pointer border-b border-white/10 pb-4 last:border-0 last:pb-0">
+                                            {/* Specialized Quick Actions Sidebar */}
+                                            <div className="xl:col-span-4 space-y-10">
+                                                <div className="p-10 rounded-[3rem] bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 shadow-2xl relative overflow-hidden group">
+                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 blur-[60px]" />
+                                                    <h3 className="text-lg font-black italic tracking-widest uppercase text-white mb-8">Clinical Statistics</h3>
+                                                    
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5">
+                                                                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">Total Visits</div>
+                                                                <div className="text-2xl font-bold text-white tracking-tighter">{stats.appointments}</div>
+                                                            </div>
+                                                            <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5">
+                                                                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">Pending ID</div>
+                                                                <div className="text-2xl font-bold text-teal-400 tracking-tighter">{upcoming.length}</div>
+                                                            </div>
+                                                        </div>
+
+                                                    <div className="mt-10 p-8 bg-teal-500/5 rounded-[2.5rem] border border-teal-500/10">
+                                                        <p className="text-xs font-medium text-slate-400 leading-relaxed italic">
+                                                        &quot;Regular clinical rotations ensure predictive health management and diagnostic accuracy.&quot;
+                                                        </p>
+                                                        <div className="mt-6 flex items-center gap-3">
+                                                            <div className="w-8 h-px bg-teal-500" />
+                                                            <span className="text-[10px] font-black uppercase text-teal-500 tracking-widest">Medical Directive</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-10 rounded-[3rem] bg-teal-600 text-white shadow-2xl relative overflow-hidden group">
+                                                    <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:rotate-12 transition-transform duration-700">
+                                                        <Shield size={120} strokeWidth={1} />
+                                                    </div>
+                                                    <h3 className="text-xl font-black italic tracking-widest uppercase mb-6 relative z-10 leading-none">Quick Billing</h3>
+                                                    <div className="space-y-4 relative z-10">
+                                                        {payments.slice(0, 2).map((p, i) => (
+                                                            <div key={i} className="flex justify-between items-center pb-4 border-b border-white/10 last:border-0 last:pb-0">
                                                                 <div>
-                                                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-teal-400">Node #{p.id}</p>
-                                                                    <p className="text-xs font-bold mt-1">Receipt Verified</p>
+                                                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60">REF-#{p.id}</p>
+                                                                    <p className="text-sm font-bold">Settled</p>
                                                                 </div>
-                                                                <div className="text-right">
-                                                                    <p className="text-sm font-black tracking-tight">{p.amount?.toLocaleString()}</p>
-                                                                </div>
+                                                                <p className="text-lg font-black tracking-tighter">LKR {p.amount?.toLocaleString()}</p>
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <button onClick={() => setActiveTab('payments')} className="w-full mt-10 py-4 bg-white/10 border border-white/20 rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase hover:bg-white/20 transition-all">View Full History</button>
+                                                    <button onClick={() => setActiveTab('payments')} className="w-full mt-10 py-5 bg-white text-slate-900 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-teal-700/50 hover:bg-slate-50 transition-all">Full Vault Registry</button>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </motion.div>
-                                )}                             {activeTab === 'payments' && (
-
-                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-                                        <div>
-                                            <h2 className="text-4xl leading-tight tracking-tighter text-slate-900 font-black">Payments <span className="text-teal-600">& History.</span></h2>
-                                            <p className="text-lg text-slate-500 font-medium mt-2">Review your payment history, settlements, and receipts.</p>
-                                        </div>
-
-                                        <div className="surface-card p-8 bg-white overflow-hidden relative">
-                                            <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none -mr-16 -mt-16">
-                                                <Wallet size={300} strokeWidth={1} />
-                                            </div>
-                                            <table className="w-full text-left">
-                                                <thead className="border-b border-slate-100">
-                                                    <tr>
-                                                        <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none">Reference Node</th>
-                                                        <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none">Clinical Event</th>
-                                                        <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none text-right">Settled Amount</th>
-                                                        <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none text-center">Security Status</th>
-                                                        <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none text-right">Archived</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-50">
-                                                    {payments.length > 0 ? payments.map((p, i) => (
-                                                        <tr key={i} className="hover:bg-slate-50/50 transition-all group">
-                                                            <td className="px-6 py-8">
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-xs font-black text-slate-900">#PY-{String(p.id).padStart(5, '0')}</span>
-                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{p.paidDate || 'Pending Cycle'}</span>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-8">
-                                                                <div className="flex items-center gap-4">
-                                                                    <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-[10px] shadow-inner">TR</div>
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-sm font-bold text-slate-900 leading-none">Authorized Consultation Fee</span>
-                                                                        <span className="text-[9px] font-black text-teal-500 uppercase tracking-widest mt-2">{p.method || 'Standard Wire'}</span>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-8 text-right">
-                                                                <span className="text-base font-black text-slate-900 leading-none">LKR {p.amount?.toLocaleString()}</span>
-                                                            </td>
-                                                            <td className="px-6 py-8">
-                                                                <div className="flex justify-center">
-                                                                    <div className={`px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 ${p.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
-                                                                        <div className={`w-1.5 h-1.5 rounded-full ${p.status === 'SUCCESS' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-                                                                        {p.status}
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-8 text-right">
-                                                                <button className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-teal-600 hover:border-teal-400 transition-all opacity-0 group-hover:opacity-100 shadow-sm"><Download size={16} /></button>
-                                                            </td>
-                                                        </tr>
-                                                    )) : (
-                                                        <tr>
-                                                            <td colSpan={5} className="py-32 text-center opacity-40">
-                                                                <Wallet size={48} className="mx-auto mb-4" />
-                                                                <p className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">No payment history yet</p>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
                                         </div>
                                     </motion.div>
                                 )}
 
-                                {activeTab === 'reports' && (
+                                {activeTab === 'payments' && (
                                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-                                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                                            <div>
-                                                <h2 className="text-4xl leading-tight tracking-tighter text-slate-900 font-black">Medical <span className="text-teal-600">Records.</span></h2>
-                                                <p className="text-lg text-slate-500 font-medium mt-2">Keep reports, lab results, and history organized and easy to find.</p>
-                                            </div>
-                                            <button onClick={() => setShowUploadModal(true)} className="px-6 py-3 bg-teal-600 text-white font-bold rounded-2xl shadow-lg shadow-teal-100 flex items-center gap-2">
-                                                <Plus size={18} /> Upload New Record
-                                            </button>
+                                        <div>
+                                            <h2 className="text-4xl leading-tight tracking-tighter text-white font-bold">Payments <span className="text-teal-600">& History.</span></h2>
+                                            <p className="text-lg text-slate-500 font-medium mt-2">Review your payment history, settlements, and receipts stored in the clinical vault.</p>
                                         </div>
 
-                                        {/* Upload Modal */}
-                                        {showUploadModal && (
-                                            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                                                <div className="bg-white rounded-2xl p-8 max-w-lg w-full space-y-6">
-                                                    <div className="flex justify-between items-center">
-                                                        <h3 className="text-2xl font-bold text-slate-900">Upload a Medical Report</h3>
-                                                        <button onClick={() => setShowUploadModal(false)} className="text-slate-400 hover:text-slate-600">
-                                                            <Plus size={24} className="rotate-45" />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="space-y-4">
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-slate-700 mb-2">Report Type</label>
-                                                            <select
-                                                                value={uploadReportType}
-                                                                onChange={(e) => setUploadReportType(e.target.value)}
-                                                                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                                                            >
-                                                                <option value="LAB_RESULT">Lab Result</option>
-                                                                <option value="IMAGING">Imaging / X-Ray</option>
-                                                                <option value="PRESCRIPTION">Prescription</option>
-                                                                <option value="OTHER">Other</option>
-                                                            </select>
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-                                                            <input
-                                                                type="text"
-                                                                value={uploadDescription}
-                                                                onChange={(e) => setUploadDescription(e.target.value)}
-                                                                placeholder="e.g., Blood test results from City Hospital"
-                                                                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                                                            />
-                                                        </div>
-
-                                                        <FileUpload
-                                                            onUpload={handleFileUpload}
-                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                            maxSize={10}
-                                                            label="Drop your file here"
-                                                            description="PDF, JPG, or PNG up to 10MB"
-                                                        />
-                                                    </div>
-                                                </div>
+                                        <div className="surface-card p-10 bg-slate-900 border border-white/5 overflow-hidden relative">
+                                            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none -mr-16 -mt-16">
+                                                <Wallet size={320} strokeWidth={1} className="text-teal-500" />
                                             </div>
-                                        )}
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                            {reports.length > 0 ? reports.map((r, i) => (
-                                                <div key={i} className="surface-card p-8 surface-card-hover group border border-slate-100">
-                                                    <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-6">
-                                                        <FileText size={24} />
-                                                    </div>
-                                                    <h4 className="text-lg font-black text-slate-900 tracking-tight">{r.fileName || r.description || 'Medical Report'}</h4>
-                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">
-                                                        {r.uploadedAt ? new Date(r.uploadedAt).toLocaleDateString() : r.date}
-                                                    </p>
-                                                    <p className="text-sm text-slate-500 mt-2 line-clamp-2">{r.description}</p>
-                                                    <div className="mt-8 flex justify-between items-center">
-                                                        <Badge variant="primary">{r.reportType || r.type || 'OTHER'}</Badge>
-                                                        <button
-                                                            onClick={() => handleDownloadReport(r)}
-                                                            className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
-                                                        >
-                                                            <Download size={20} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )) : (
-                                                <div className="col-span-full py-32 text-center surface-card border-dashed">
-                                                    <FileText size={48} className="mx-auto text-slate-200 mb-6" />
-                                                    <p className="text-slate-400 font-bold tracking-tight">No records uploaded yet.</p>
-                                                    <button onClick={() => setShowUploadModal(true)} className="mt-4 text-teal-600 font-medium hover:underline">
-                                                        Add your first report
-                                                    </button>
-                                                </div>
-                                            )}
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left">
+                                                    <thead className="border-b border-white/5">
+                                                        <tr>
+                                                            <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 leading-none text-center">Protocol Node</th>
+                                                            <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 leading-none">Clinical Sequence</th>
+                                                            <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 leading-none text-right">Settled Registry</th>
+                                                            <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 leading-none text-center">Security Hash</th>
+                                                            <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 leading-none text-right">Vault</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-white/5">
+                                                        {payments.length > 0 ? payments.map((p, i) => (
+                                                            <tr key={i} className="hover:bg-white/[0.02] transition-colors group">
+                                                                <td className="px-6 py-10 text-center">
+                                                                    <div className="inline-flex flex-col">
+                                                                        <span className="text-xs font-bold text-white">#PY-{String(p.id).padStart(5, '0')}</span>
+                                                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">{p.paidDate || 'Pending'}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-10">
+                                                                    <div className="flex items-center gap-5">
+                                                                        <div className="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-400 flex items-center justify-center font-black text-[10px] border border-teal-500/20 shadow-lg">TR</div>
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-sm font-bold text-white leading-none">High-Precision Consultation</span>
+                                                                            <span className="text-[9px] font-black text-teal-500 uppercase tracking-[0.2em] mt-2.5">Method: {p.method || 'Digital Sequence'}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-10 text-right">
+                                                                    <span className="text-xl font-black text-white tracking-tighter leading-none">LKR {p.amount?.toLocaleString()}</span>
+                                                                </td>
+                                                                <td className="px-6 py-10">
+                                                                    <div className="flex justify-center">
+                                                                        <div className={`px-4 py-2 rounded-2xl font-black text-[9px] uppercase tracking-[0.2em] flex items-center gap-2.5 border ${p.status === 'SUCCESS' ? 'bg-teal-500/10 text-teal-400 border-teal-500/20' : 'bg-white/5 text-slate-500 border-white/5'}`}>
+                                                                            <div className={`w-1.5 h-1.5 rounded-full ${p.status === 'SUCCESS' ? 'bg-teal-400 animate-pulse' : 'bg-slate-600'}`} />
+                                                                            {p.status}
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-10 text-right">
+                                                                    <button className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-slate-500 hover:text-white hover:border-white transition-all opacity-0 group-hover:opacity-100 shadow-xl"><Download size={18} /></button>
+                                                                </td>
+                                                            </tr>
+                                                        )) : (
+                                                            <tr>
+                                                                <td colSpan={5} className="py-40 text-center opacity-40">
+                                                                    <Wallet size={64} className="mx-auto mb-6 text-slate-800" strokeWidth={1} />
+                                                                    <p className="font-black text-slate-600 uppercase tracking-[0.4em] text-[10px]">No settlement nodes found</p>
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </motion.div>
                                 )}
 
                                 {activeTab === 'telemedicine' && (
-                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 text-center py-20">
-                                        <div className="max-w-xl mx-auto space-y-8 surface-card p-8 bg-white">
-                                            <div className="w-24 h-24 bg-teal-50 rounded-[2rem] text-teal-600 flex items-center justify-center mx-auto shadow-inner">
-                                                <Video size={48} />
+                                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="space-y-8 text-center py-20">
+                                        <div className="max-w-2xl mx-auto space-y-10 p-12 bg-slate-900 rounded-[4rem] border border-white/5 shadow-2xl relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 blur-[100px]" />
+                                            <div className="w-28 h-28 bg-teal-500/10 rounded-[2.5rem] border border-teal-500/20 text-teal-400 flex items-center justify-center mx-auto shadow-inner relative z-10">
+                                                <Video size={56} />
                                             </div>
-                                            <div>
-                                                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Virtual Clinic Access</h2>
-                                                <p className="text-slate-500 font-medium mt-4">Connect with your specialist through a secure video link.</p>
+                                            <div className="relative z-10 space-y-4">
+                                                <h2 className="text-4xl font-black text-white italic tracking-widest uppercase">Clinical Bridge</h2>
+                                                <p className="text-slate-500 font-medium text-lg leading-relaxed px-10">Initialize a high-bandwidth clinical connection with your specialized diagnostic lead.</p>
                                             </div>
-                                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-left">
-                                                <div className="flex items-center gap-3 mb-2">
+                                            <div className="bg-white/5 p-8 rounded-[2rem] border border-white/5 text-left relative z-10">
+                                                <div className="flex items-center gap-3 mb-4">
                                                     <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Queue Status</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-teal-500">Telemetry Status</span>
                                                 </div>
-                                                <p className="text-sm font-bold text-slate-700">Your join button will activate shortly before the session starts.</p>
+                                                <p className="text-sm font-bold text-slate-400 italic">Your secure interactive uplink will activate as per the clinical schedule registry.</p>
                                             </div>
-                                            <button onClick={() => router.push('/telemedicine')} className="btn-primary w-full py-4 text-center">Enter Command Center</button>
+                                            <button onClick={() => router.push('/telemedicine')} className="h-16 px-12 bg-white text-slate-900 rounded-3xl font-black text-xs uppercase tracking-[0.3em] hover:bg-teal-500 hover:text-white transition-all shadow-2xl shadow-white/5 relative z-10">Enter Telemetry Node</button>
                                         </div>
                                     </motion.div>
                                 )}
@@ -831,15 +958,15 @@ const PatientDashboard = () => {
                                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
                                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                                             <div>
-                                                <h2 className="text-4xl leading-tight tracking-tighter text-slate-900 font-black">AI <span className="text-teal-600">Symptom Check.</span></h2>
+                                                <h2 className="text-4xl leading-tight tracking-tighter text-slate-900 font-bold">AI <span className="text-teal-600">Symptom Check.</span></h2>
                                                 <p className="text-lg text-slate-500 font-medium mt-2">Get a quick, structured check before your visit.</p>
                                             </div>
                                         </div>
                                         <div className="surface-card p-8 bg-teal-600 text-white flex items-center justify-between group overflow-hidden relative">
                                             <div className="relative z-10 space-y-6 max-w-lg">
-                                                <h3 className="text-3xl font-black leading-tight italic tracking-widest uppercase">Start a Quick Check</h3>
+                                                <h3 className="text-3xl font-bold leading-tight italic tracking-widest uppercase">Start a Quick Check</h3>
                                                 <p className="text-teal-100/80 font-medium">Get quick guidance on symptoms before your appointment.</p>
-                                                <button onClick={() => router.push('/chat')} className="px-8 py-4 bg-white text-teal-600 font-black rounded-2xl hover:scale-105 transition-transform uppercase tracking-widest text-xs">Start Check</button>
+                                                <button onClick={() => router.push('/chat')} className="px-8 py-4 bg-white text-teal-600 font-bold rounded-2xl hover:scale-105 transition-transform uppercase tracking-widest text-xs">Start Check</button>
                                             </div>
                                             <Activity size={300} className="absolute -right-20 -bottom-20 opacity-10 group-hover:scale-110 transition-transform duration-1000" />
                                         </div>
@@ -847,56 +974,360 @@ const PatientDashboard = () => {
                                 )}
 
                                 {activeTab === 'profile' && (
-                                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="max-w-4xl space-y-8">
-                                        <div className="surface-card p-8 bg-white flex flex-col md:flex-row items-center gap-8">
-                                            <div className="w-40 h-40 rounded-[3rem] bg-slate-900 flex items-center justify-center text-teal-400 text-6xl shadow-2xl relative group overflow-hidden">
-                                                <User size={64} className="group-hover:scale-110 transition-transform" />
-                                                <div className="absolute inset-0 bg-teal-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                                                    <Plus size={32} className="text-white" />
+                                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="max-w-4xl space-y-8 pb-20">
+                                        <div className="surface-card p-10 bg-white shadow-premium relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 w-64 h-64 bg-teal-50 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none" />
+                                            
+                                            <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
+                                                <div className="w-44 h-44 rounded-[3.5rem] bg-slate-900 flex items-center justify-center text-teal-400 text-6xl shadow-2xl relative group overflow-hidden border-4 border-white">
+                                                    {userData?.profileImageUrl || profileForm.profileImageUrl ? (
+                                                        <Image src={profileForm.profileImageUrl || userData.profileImageUrl} alt="Identity" fill className="object-cover group-hover:scale-110 transition-transform" unoptimized />
+                                                    ) : (
+                                                        <User size={72} className="group-hover:scale-110 transition-transform" />
+                                                    )}
+                                                    <div className="absolute inset-0 bg-teal-600/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-sm" onClick={() => document.getElementById('profile-image-input').click()}>
+                                                        <Plus size={32} className="text-white" />
+                                                    </div>
+                                                    <input 
+                                                        type="file" 
+                                                        id="profile-image-input" 
+                                                        className="hidden" 
+                                                        accept="image/*" 
+                                                        onChange={handleImageUpload}
+                                                    />
                                                 </div>
-                                            </div>
-                                            <div className="flex-1 text-center md:text-left space-y-4">
-                                                <Badge variant="teal">VERIFIED PATIENT IDENTITY</Badge>
-                                                <h2 className="text-4xl font-black text-slate-900 tracking-tighter leading-tight">{userData?.name}</h2>
-                                                <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                                                    <span className="text-sm font-bold text-slate-500 flex items-center gap-2"><LayoutDashboard size={14} className="text-teal-600" /> Patient UUID: #{userData?.id}</span>
-                                                    <span className="text-sm font-bold text-slate-500 flex items-center gap-2"><Activity size={14} className="text-emerald-500" /> Blood Group: {userData?.bloodGroup || 'O+'}</span>
+                                                <div className="flex-1 text-center md:text-left space-y-5">
+                                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-100 text-teal-600 text-[10px] font-black uppercase tracking-widest">
+                                                        <ShieldCheck size={12} /> Verified Identity Shard
+                                                    </div>
+                                                    <h2 className="text-5xl font-bold text-slate-900 tracking-tighter leading-none">{userData?.name}</h2>
+                                                    <div className="flex flex-wrap gap-6 justify-center md:justify-start">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Terminal #</span>
+                                                            <span className="text-sm font-bold text-slate-600 mt-1">PX-SY-{userData?.id}</span>
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-teal-600">Secure Email</span>
+                                                            <span className="text-sm font-bold text-slate-600 mt-1">{userData?.email}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="surface-card p-8 bg-white">
-                                                <h3 className="text-xl font-black text-slate-900 tracking-tight mb-8">Health Details</h3>
-                                                <div className="space-y-6">
-                                                    {[
-                                                        { label: 'Date of Birth', value: userData?.dob || '1995-10-12', icon: Calendar },
-                                                        { label: 'Allergies', value: userData?.allergies || 'No known allergies', icon: AlertCircle },
-                                                        { label: 'Chronic Diseases', value: userData?.chronicDiseases || 'None reported', icon: Activity }
-                                                    ].map((d, i) => (
-                                                        <div key={i} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
-                                                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><d.icon size={12} className="text-teal-600" /> {d.label}</span>
-                                                            <span className="text-sm font-bold text-slate-700">{d.value}</span>
+                                        {!isEditingProfile ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                                                <div className="md:col-span-8 space-y-8">
+                                                    <div className="surface-card p-10 bg-white shadow-premium">
+                                                        <div className="flex items-center justify-between mb-10">
+                                                            <div>
+                                                                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Health Profile</h3>
+                                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Core Clinical Data Shards</p>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => setIsEditingProfile(true)}
+                                                                className="h-12 px-6 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-600 transition-all flex items-center gap-2 shadow-xl shadow-slate-200"
+                                                            >
+                                                                <LayoutDashboard size={14} /> Edit Identity
+                                                            </button>
                                                         </div>
-                                                    ))}
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
+                                                            {[
+                                                                { label: 'Date of Birth', value: userData?.dob, icon: Calendar },
+                                                                { label: 'Gender Shard', value: userData?.gender || '--', icon: User },
+                                                                { label: 'Body Metrics', value: `${userData?.height || '--'} cm / ${userData?.weight || '--'} kg`, icon: Activity },
+                                                                { label: 'Clinical Group', value: userData?.bloodGroup || '--', icon: Shield },
+                                                                { label: 'Allergies', value: userData?.allergies || 'NONE REPORTED', icon: AlertCircle },
+                                                                { label: 'Chronic Shards', value: userData?.chronicIllnesses || 'NONE REPORTED', icon: LayoutDashboard },
+                                                                { label: 'Emerg. Contact', value: userData?.emergencyContact || '--', icon: Calendar }
+                                                            ].map((d, i) => (
+                                                                <div key={i} className="space-y-2 group p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-teal-100 hover:bg-teal-50/30 transition-all">
+                                                                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest transition-colors group-hover:text-teal-600">
+                                                                        <d.icon size={12} /> {d.label}
+                                                                    </div>
+                                                                    <p className="text-sm font-bold text-slate-900">{d.value || 'NOT_ARCHIVED'}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="md:col-span-4 space-y-8">
+                                                    <div className="p-10 rounded-[3rem] bg-slate-900 text-white relative overflow-hidden group border border-white/5 shadow-2xl">
+                                                        <div className="absolute top-0 right-0 w-40 h-40 bg-teal-500/10 blur-3xl pointer-events-none" />
+                                                        <div className="relative z-10 space-y-6">
+                                                            <Shield size={40} className="text-teal-500 mb-4" strokeWidth={1.5} />
+                                                            <h3 className="text-2xl font-black italic tracking-widest uppercase leading-none text-white">Trust Registry</h3>
+                                                            <p className="text-xs font-medium text-slate-400 leading-relaxed">Your medical identity is encrypted at the storage shard level. Only authorized specialists can view vital markers during active clinical sessions.</p>
+                                                            <div className="pt-6 border-t border-white/10 flex items-center gap-3">
+                                                                <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 font-sans">End-to-End Encryption Enabled</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="surface-card p-8 bg-white">
-                                                <h3 className="text-xl font-black text-slate-900 tracking-tight mb-8">Account Settings</h3>
-                                                <div className="space-y-4">
-                                                    <button className="w-full py-4 px-6 bg-slate-50 rounded-2xl flex items-center justify-between text-sm font-bold text-slate-600 hover:bg-teal-50 hover:text-teal-600 transition-all group">
-                                                        Update Medical Dossier <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                                                    </button>
-                                                    <button className="w-full py-4 px-6 bg-slate-50 rounded-2xl flex items-center justify-between text-sm font-bold text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition-all group">
-                                                        Infrastructure Security <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                                                    </button>
+                                        ) : (
+                                            <div className="surface-card p-10 bg-white shadow-premium">
+                                                <div className="flex items-center justify-between mb-12 border-b border-slate-50 pb-8">
+                                                    <div>
+                                                        <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Modify Identity</h3>
+                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-4 underline decoration-teal-500/30 decoration-2 underline-offset-8">Synchronizing secure clinical registry</p>
+                                                    </div>
+                                                    <div className="flex gap-4">
+                                                        <button 
+                                                            onClick={() => setIsEditingProfile(false)}
+                                                            className="h-14 px-8 border-2 border-slate-100 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all"
+                                                        >
+                                                            Discard Shards
+                                                        </button>
+                                                        <button 
+                                                            onClick={handleUpdateProfile}
+                                                            className="h-14 px-10 bg-teal-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-teal-100 hover:bg-teal-700 transition-all flex items-center gap-3"
+                                                        >
+                                                            <Sparkles size={16} /> Commit to Ledger
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Identity Display Name</label>
+                                                        <input 
+                                                            value={profileForm.name} 
+                                                            onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
+                                                            className="input-field h-14 bg-slate-50/50" 
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Blood Registry Group</label>
+                                                        <select 
+                                                            value={profileForm.bloodGroup} 
+                                                            onChange={(e) => setProfileForm({...profileForm, bloodGroup: e.target.value})}
+                                                            className="input-field h-14 bg-slate-50/50"
+                                                        >
+                                                            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => (
+                                                                <option key={bg} value={bg}>{bg}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Height Metric (cm)</label>
+                                                        <input 
+                                                            type="number"
+                                                            value={profileForm.height} 
+                                                            onChange={(e) => setProfileForm({...profileForm, height: e.target.value})}
+                                                            className="input-field h-14 bg-slate-50/50" 
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Weight Metric (kg)</label>
+                                                        <input 
+                                                            type="number"
+                                                            value={profileForm.weight} 
+                                                            onChange={(e) => setProfileForm({...profileForm, weight: e.target.value})}
+                                                            className="input-field h-14 bg-slate-50/50" 
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Gender Identity</label>
+                                                        <select 
+                                                            value={profileForm.gender} 
+                                                            onChange={(e) => setProfileForm({...profileForm, gender: e.target.value})}
+                                                            className="input-field h-14 bg-slate-50/50"
+                                                        >
+                                                            <option value="">Select Gender</option>
+                                                            <option value="MALE">Male</option>
+                                                            <option value="FEMALE">Female</option>
+                                                            <option value="OTHER">Other</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Emergency Contact Node</label>
+                                                        <input 
+                                                            value={profileForm.emergencyContact} 
+                                                            onChange={(e) => setProfileForm({...profileForm, emergencyContact: e.target.value})}
+                                                            className="input-field h-14 bg-slate-50/50" 
+                                                            placeholder="+15550000000"
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-2 space-y-3">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Critical Allergy Shards</label>
+                                                        <textarea 
+                                                            value={profileForm.allergies} 
+                                                            onChange={(e) => setProfileForm({...profileForm, allergies: e.target.value})}
+                                                            className="input-field min-h-32 resize-none bg-slate-50/50" 
+                                                            placeholder="List known clinical allergies..."
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-2 space-y-3">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Chronic Clinical Illnesses</label>
+                                                        <textarea 
+                                                            value={profileForm.chronicIllnesses} 
+                                                            onChange={(e) => setProfileForm({...profileForm, chronicIllnesses: e.target.value})}
+                                                            className="input-field min-h-32 resize-none bg-slate-50/50" 
+                                                            placeholder="List known chronic conditions..."
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
+                                        
+                                        <div className="surface-card p-12 bg-slate-900 text-white col-span-1 md:col-span-2 relative overflow-hidden group border border-white/5">
+                                                <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-teal-500/5 blur-[120px] pointer-events-none" />
+                                                <div className="relative z-10">
+                                                    <div className="flex items-center justify-between mb-16">
+                                                        <div>
+                                                            <h3 className="text-3xl font-bold italic tracking-widest uppercase text-teal-400 leading-none">Clinical Dossier</h3>
+                                                            <p className="text-sm font-medium text-slate-500 mt-2">Visit-grouped artifact registry.</p>
+                                                        </div>
+                                                        <Activity size={32} className="text-teal-500/20" />
+                                                    </div>
+
+                                                    <div className="space-y-16">
+                                                        {[...upcoming, ...clinicalHistory].filter(app => reports.some(r => r.appointmentId === app.id)).length > 0 ? (
+                                                            [...upcoming, ...clinicalHistory].filter(app => reports.some(r => r.appointmentId === app.id)).map((app, appIdx) => (
+                                                                <div key={appIdx} className="relative pl-12 before:absolute before:left-5 before:top-10 before:bottom-[-2rem] before:w-px before:bg-white/5 last:before:hidden">
+                                                                    <div className="absolute left-0 top-0 w-10 h-10 rounded-2xl bg-teal-600 flex items-center justify-center shadow-lg shadow-teal-900/20 z-10 border border-teal-400/50">
+                                                                        <Calendar size={18} className="text-white" />
+                                                                    </div>
+                                                                    <div className="mb-6">
+                                                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-teal-500 mb-1">{app.appointmentDate || app.date}</p>
+                                                                        <h4 className="text-xl font-bold text-white tracking-tight">Visit with Dr. {app.doctorName || 'Senior Specialist'}</h4>
+                                                                        <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">Clinical Token: #{app.tokenNumber || 'TBD'}</p>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                        {reports.filter(r => r.appointmentId === app.id).map((r, rIdx) => (
+                                                                            <div key={rIdx} className="p-6 bg-white/5 border border-white/10 rounded-3xl group/item hover:bg-white/10 transition-all cursor-pointer" onClick={() => handleDownloadReport(r)}>
+                                                                                <div className="flex items-center justify-between mb-4">
+                                                                                    <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center border border-teal-500/20 group-hover/item:scale-110 transition-transform">
+                                                                                        <FileText size={18} />
+                                                                                    </div>
+                                                                                    <Badge variant="teal">{r.reportType || 'OTHER'}</Badge>
+                                                                                </div>
+                                                                                <p className="text-sm font-bold text-white leading-tight mb-2 line-clamp-1">{r.fileName}</p>
+                                                                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Security Signature: Shard-{r.id}</p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <div className="py-20 text-center bg-white/5 rounded-[3rem] border border-dashed border-white/10">
+                                                                <Shield size={48} className="mx-auto text-slate-700 mb-6 opacity-20" />
+                                                                <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">Registry Empty</p>
+                                                                <p className="text-slate-400 text-sm font-medium mt-3 px-10">Upload records during your next appointment session to see them grouped here.</p>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Independent Artifacts Shard */}
+                                                        {reports.filter(r => !r.appointmentId).length > 0 && (
+                                                            <div className="pt-10 border-t border-white/5">
+                                                                <h5 className="text-[10px] font-bold uppercase tracking-[0.34em] text-slate-500 mb-8 px-2">Detached Clinical Artifacts</h5>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                                    {reports.filter(r => !r.appointmentId).map((r, i) => (
+                                                                        <div key={i} className="p-6 bg-slate-800/50 border border-white/5 rounded-3xl flex items-center gap-5 hover:bg-slate-800 transition-all cursor-pointer group/detached" onClick={() => handleDownloadReport(r)}>
+                                                                            <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-teal-400 group-hover/detached:text-teal-300 transition-colors">
+                                                                                <FileText size={24} />
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-xs font-bold text-white mb-1 line-clamp-1">{r.fileName}</p>
+                                                                                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">{r.reportType || 'GENERAL'}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
                         </div>
+
+                        {/* Global High-Fidelity Upload Modal Shard */}
+                        <AnimatePresence>
+                            {showUploadModal && (
+                                <motion.div 
+                                    initial={{ opacity: 0 }} 
+                                    animate={{ opacity: 1 }} 
+                                    exit={{ opacity: 0 }} 
+                                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 lg:p-12"
+                                >
+                                    <motion.div 
+                                        initial={{ scale: 0.95, y: 20 }} 
+                                        animate={{ scale: 1, y: 0 }} 
+                                        exit={{ scale: 0.95, y: 20 }} 
+                                        className="bg-white rounded-[3rem] p-10 max-w-xl w-full space-y-8 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] relative overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+                                        
+                                        <div className="flex justify-between items-center relative z-10">
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 mb-2">Clinical Registry</p>
+                                                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Upload Assessment</h3>
+                                            </div>
+                                            <button onClick={() => { setShowUploadModal(false); setSelectedAppointmentIdForUpload(null); }} className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors">
+                                                <Plus size={24} className="rotate-45" />
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-6 relative z-10">
+                                            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-4">
+                                                <AlertCircle size={20} className="text-amber-500 shrink-0 mt-1" />
+                                                <p className="text-xs font-bold text-amber-700 leading-relaxed">
+                                                    {selectedAppointmentIdForUpload 
+                                                        ? `This artifact will be linked to Clinical Session Shard #${selectedAppointmentIdForUpload}.` 
+                                                        : 'This is an independent artifact. It will appear on your master clinical timeline.'}
+                                                </p>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Report Category</label>
+                                                    <select
+                                                        value={uploadReportType}
+                                                        onChange={(e) => setUploadReportType(e.target.value)}
+                                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold text-sm"
+                                                    >
+                                                        <option value="LAB_RESULT">Laboratory Result</option>
+                                                        <option value="IMAGING">Imaging / Radiology</option>
+                                                        <option value="PRESCRIPTION">Historical Rx</option>
+                                                        <option value="OTHER">General Artifact</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Internal Shard ID</label>
+                                                    <div className="px-5 py-4 bg-slate-100/50 border border-slate-100 rounded-2xl font-black text-sm text-slate-400">
+                                                        #{selectedAppointmentIdForUpload || 'NONE'}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Clinical Context</label>
+                                                <input
+                                                    type="text"
+                                                    value={uploadDescription}
+                                                    onChange={(e) => setUploadDescription(e.target.value)}
+                                                    placeholder="Brief clinical description..."
+                                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:outline-none font-bold text-sm"
+                                                />
+                                            </div>
+
+                                            <FileUpload
+                                                onUpload={handleFileUpload}
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                maxSize={10}
+                                                label="Drop Clinical Artifact"
+                                                description="Secure PDF, JPG, or PNG up to 10MB"
+                                            />
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </main>
 

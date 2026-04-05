@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { paymentApi, appointmentApi } from '../lib/api';
 import { 
     CreditCard, 
     ShieldCheck, 
@@ -9,17 +8,14 @@ import {
     AlertCircle,
     CheckCircle2,
     Zap,
-    ArrowRight,
-    Wallet,
-    Info,
-    Check
+    Wallet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Head from 'next/head';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { paymentApi, appointmentApi } from '../lib/api';
 
 const PaymentPage = () => {
     const router = useRouter();
@@ -107,7 +103,7 @@ const PaymentPage = () => {
                 <title>Secure Settlement Protocol | Payment Gateway | SynapsCare</title>
                 <meta name="description" content="Authorize secure financial transactions for specialized clinical services" />
             </Head>
-            <div className="min-h-screen bg-white flex flex-col lg:flex-row font-sans selection:bg-indigo-100 overflow-hidden">
+            <div className="min-h-screen bg-white flex flex-col lg:flex-row font-['Open_Sans',sans-serif] text-slate-700 selection:bg-indigo-100 overflow-hidden">
             {/* Left: Summary & Branding (Fixed on desktop) */}
             <div className="lg:w-[450px] xl:w-[550px] bg-slate-900 lg:h-screen p-12 flex flex-col justify-between shrink-0 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-20 opacity-10 pointer-events-none group translate-x-10 -translate-y-10">
@@ -127,14 +123,14 @@ const PaymentPage = () => {
 
                     <div className="space-y-10">
                         <div>
-                             <Badge variant="success" className="mb-6">SECURE CHECKOUT NODE</Badge>
-                             <h1 className="text-5xl font-black text-white tracking-tighter leading-none mb-4 italic">Settlement <br /> <span className="text-indigo-500">Protocol.</span></h1>
-                             <p className="text-slate-400 font-medium text-lg max-w-sm leading-relaxed">Authorization for specialized medical consultation services.</p>
+                             <Badge variant="teal" className="mb-6">SECURE CHECKOUT HUB</Badge>
+                             <h1 className="text-5xl font-bold text-white tracking-tight leading-none mb-4">Payment <br /> <span className="text-indigo-400">Section.</span></h1>
+                             <p className="text-slate-400 font-medium text-lg max-w-sm leading-relaxed">Secure payment for your specialized medical consultation services.</p>
                         </div>
 
                         <div className="space-y-6">
                             <div className="p-8 rounded-[2.5rem] bg-white/5 border border-white/5 backdrop-blur-md">
-                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-6">Financial Ledger Summary</h3>
+                                 <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-6">Payment Summary</h3>
                                  <div className="space-y-5">
                                      <div className="flex justify-between items-center">
                                          <span className="text-sm font-bold text-slate-400">Consultation Session</span>
@@ -157,7 +153,7 @@ const PaymentPage = () => {
                     </div>
                 </div>
 
-                <div className="relative z-10 mt-12 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 border-t border-white/5 pt-8">
+                <div className="relative z-10 mt-12 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500 border-t border-white/5 pt-8">
                      <span>SynapseCare Financial v1.4</span>
                      <div className="flex items-center gap-2">
                           <Lock size={12} className="text-emerald-500" /> Secure
@@ -172,8 +168,8 @@ const PaymentPage = () => {
                         {!payData ? (
                             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-12">
                                 <div className="space-y-4">
-                                    <h2 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">Execute <span className="text-indigo-600">Payment.</span></h2>
-                                    <p className="text-slate-500 font-medium">Select a secure clearing node to finalize your clinical session.</p>
+                                    <h2 className="text-4xl font-bold text-slate-900 tracking-tight leading-none">Confirm <span className="text-indigo-600">Payment.</span></h2>
+                                    <p className="text-slate-500 font-medium">Select a secure payment method to finalize your clinical session.</p>
                                 </div>
 
                                 <div className="space-y-6">
@@ -186,7 +182,7 @@ const PaymentPage = () => {
                                          ].map((st, i) => (
                                              <div key={i} className="space-y-3">
                                                   <div className={`h-1.5 rounded-full transition-all duration-500 ${st.s === 'done' ? 'bg-indigo-600' : st.s === 'active' ? 'bg-indigo-300' : 'bg-slate-200'}`} />
-                                                  <span className={`text-[9px] font-black uppercase tracking-widest ${st.s === 'pending' ? 'text-slate-300' : 'text-slate-900'}`}>{st.l}</span>
+                                                  <span className={`text-[9px] font-bold uppercase tracking-widest ${st.s === 'pending' ? 'text-slate-300' : 'text-slate-900'}`}>{st.l}</span>
                                              </div>
                                          ))}
                                     </div>
@@ -197,26 +193,26 @@ const PaymentPage = () => {
                                                    <CreditCard size={28} />
                                               </div>
                                               <div>
-                                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Payment Infrastructure</p>
-                                                   <h4 className="text-2xl font-black text-slate-900 tracking-tight">PayHere Gateway</h4>
+                                                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Payment Infrastructure</p>
+                                                   <h4 className="text-2xl font-bold text-slate-900 tracking-tight">PayHere Gateway</h4>
                                               </div>
                                          </div>
 
                                          <div className="grid grid-cols-2 gap-4">
                                               <div className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 flex flex-col justify-center">
                                                    <div className="h-6 w-16 bg-slate-200 rounded animate-pulse" />
-                                                   <p className="text-[9px] font-black text-slate-400 mt-2 uppercase tracking-widest">MasterCard Link</p>
+                                                   <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-widest">MasterCard Link</p>
                                               </div>
                                               <div className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 flex flex-col justify-center">
                                                    <div className="h-6 w-16 bg-slate-200 rounded animate-pulse" />
-                                                   <p className="text-[9px] font-black text-slate-400 mt-2 uppercase tracking-widest">VISA Secure</p>
+                                                   <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-widest">VISA Secure</p>
                                               </div>
                                          </div>
 
                                          {error && (
                                             <div className="p-6 bg-rose-50 border border-rose-100 rounded-[2rem] flex items-start gap-4">
                                                 <AlertCircle className="text-rose-500 shrink-0 mt-1" size={20} />
-                                                <p className="text-xs font-bold text-rose-800 leading-relaxed italic">"{error}"</p>
+                                                <p className="text-xs font-bold text-rose-800 leading-relaxed italic">&quot;{error}&quot;</p>
                                             </div>
                                          )}
 
@@ -228,7 +224,7 @@ const PaymentPage = () => {
                                             className="w-full"
                                             icon={Zap}
                                          >
-                                            Initalize Secure Settlement
+                                            Initialize Secure Payment
                                          </Button>
                                     </div>
 
@@ -236,7 +232,7 @@ const PaymentPage = () => {
                                          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
                                               <ShieldCheck size={22} />
                                          </div>
-                                         <p className="text-xs font-medium text-slate-500 leading-relaxed italic">"Our financial infrastructure is protected by 256-bit encryption and specialized medical cloud security protocols."</p>
+                                         <p className="text-xs font-medium text-slate-500 leading-relaxed italic">&quot;Our financial infrastructure is protected by 256-bit encryption and specialized medical cloud security.&quot;</p>
                                     </div>
                                 </div>
                             </motion.div>
@@ -246,7 +242,7 @@ const PaymentPage = () => {
                                      <Zap size={64} fill="white" />
                                 </div>
                                 <div className="space-y-4">
-                                    <h3 className="text-4xl font-black text-slate-900 tracking-tighter">Connecting to Hub...</h3>
+                                    <h3 className="text-4xl font-bold text-slate-900 tracking-tighter">Connecting to Hub...</h3>
                                     <p className="text-slate-500 font-medium max-w-sm mx-auto">Please do not refresh. Synchronizing with the secure PayHere financial grid.</p>
                                 </div>
                                 <div className="flex items-center justify-center gap-2">

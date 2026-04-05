@@ -19,4 +19,14 @@ public class UserRegisteredEvent {
     private String lastName;
     private String phoneNumber;
     private Set<String> roles;
+
+    private String bloodGroup;
+    private String allergies;
+    private String chronicIllnesses;
+    private String height;
+    private String weight;
+    private String emergencyContact;
+    private String dob;
+    private String gender;
+    private String profileImageUrl;
 }

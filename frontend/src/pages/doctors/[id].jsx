@@ -207,8 +207,8 @@ export default function DoctorProfile() {
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
                 <Card className="max-w-md w-full text-center p-12">
                     <Search size={48} className="mx-auto text-slate-300 mb-6" />
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Practitioner Not Found</h2>
-                    <p className="text-slate-500 font-medium mt-2 mb-10">We couldn't synchronize the requested clinical profile.</p>
+                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Practitioner Not Found</h2>
+                    <p className="text-slate-500 font-medium mt-2 mb-10">We couldn&apos;t locate the requested clinical profile.</p>
                     <Button variant="primary" onClick={() => router.push('/doctors')}>Back to Registry</Button>
                 </Card>
             </div>
@@ -221,7 +221,7 @@ export default function DoctorProfile() {
                 <title>{doctor?.name ? `Dr. ${doctor.name} | ${SPECIALIZATION_LABELS[doctor.specialization] || doctor.specialization}` : 'Specialist Profile'} | SynapsCare</title>
                 <meta name="description" content={doctor?.about ? doctor.about.substring(0, 160) : "View expert medical profile and book appointments with top-tier specialists"} />
             </Head>
-            <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-teal-100 overflow-x-hidden">
+            <div className="min-h-screen bg-slate-50 font-['Open_Sans',sans-serif] text-slate-700 selection:bg-teal-100 overflow-x-hidden">
                 {/* High-End Navigation Header */}
                 <nav className="h-20 bg-white/70 backdrop-blur-2xl border-b border-slate-200/50 px-8 sm:px-16 flex items-center justify-between sticky top-0 z-[60] shadow-sm">
                     <div className="flex items-center gap-4">
@@ -233,10 +233,10 @@ export default function DoctorProfile() {
                         </button>
                         <div className="hidden sm:flex flex-col">
                             <div className="flex items-center gap-2">
-                                <span className="text-sm font-black text-slate-900 tracking-tight leading-none">Practitioner Dossier</span>
+                                <span className="text-sm font-bold text-slate-900 tracking-tight leading-none">Practitioner Profile</span>
                                 <Verified size={12} className="text-teal-500" />
                             </div>
-                            <p className="text-[9px] font-bold text-slate-400 tracking-tight mt-1">ID: {doctor.id} • Synced securely</p>
+                            <p className="text-[9px] font-bold text-slate-400 tracking-tight mt-1">Verified Clinical Identification</p>
                         </div>
                     </div>
 
@@ -269,13 +269,13 @@ export default function DoctorProfile() {
                             <div className="md:col-span-8 lg:col-span-9 space-y-6">
                                 <div>
                                     <div className="flex items-center gap-3 mb-3">
-                                        <Badge variant="success" size="md">Senior specialist</Badge>
+                                        <Badge variant="teal" size="md">Experienced Specialist</Badge>
                                         <div className="flex items-center gap-1.5 text-xs text-slate-400 font-bold tracking-tight">
                                             <Globe size={12} /> {doctor.location}
                                         </div>
                                     </div>
-                                    <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter leading-none mb-3">Dr. {doctor.name}</h1>
-                                    <h2 className="text-2xl font-black text-teal-600 tracking-tight flex items-center gap-3">
+                                    <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-none mb-3">Dr. {doctor.name}</h1>
+                                    <h2 className="text-2xl font-bold text-teal-600 tracking-tight flex items-center gap-3">
                                         {SPECIALIZATION_LABELS[doctor.specialization] || doctor.specialization} <div className="h-0.5 w-12 bg-teal-200" />
                                     </h2>
                                 </div>
@@ -283,15 +283,15 @@ export default function DoctorProfile() {
                                 <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-100">
                                     {[
                                         { label: 'Rating', val: doctor.rating, icon: Star, color: 'text-amber-500' },
-                                        { label: 'Seniority', val: doctor.experience.split(' ')[0], icon: Award, color: 'text-teal-500' },
-                                        { label: 'Feed', val: doctor.reviews, icon: User, color: 'text-emerald-500' }
+                                        { label: 'Experience', val: doctor.experience.split(' ')[0], icon: Award, color: 'text-teal-500' },
+                                        { label: 'Patients', val: doctor.reviews, icon: User, color: 'text-emerald-500' }
                                     ].map((stat, i) => (
                                         <div key={i} className="space-y-2">
                                             <div className="flex items-center gap-2">
                                                 <stat.icon size={16} className={stat.color} />
-                                                <span className="text-xl font-black text-slate-900 tracking-tighter">{stat.val}</span>
+                                                <span className="text-xl font-bold text-slate-900 tracking-tight">{stat.val}</span>
                                             </div>
-                                            <p className="text-[10px] font-bold text-slate-400 tracking-tight">{stat.label}</p>
+                                            <p className="text-[10px] font-bold text-slate-400 tracking-tight uppercase tracking-widest">{stat.label}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -301,8 +301,8 @@ export default function DoctorProfile() {
                         {/* Extended Dossier Information */}
                         <div className="space-y-10">
                             <div className="surface-card p-8 bg-white relative overflow-hidden group border border-slate-100">
-                                <h3 className="text-lg font-black text-slate-900 tracking-tight mb-6 flex items-center gap-3">
-                                    <BookOpen size={18} className="text-teal-600" /> Clinical Statement
+                                <h3 className="text-lg font-bold text-slate-900 tracking-tight mb-6 flex items-center gap-3">
+                                    <BookOpen size={18} className="text-teal-600" /> About Practitioner
                                 </h3>
                                 <p className="copy-description text-base font-medium text-slate-500 leading-relaxed max-w-3xl">
                                     &quot;{doctor.about}&quot;

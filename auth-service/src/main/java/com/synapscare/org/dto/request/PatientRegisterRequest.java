@@ -29,4 +29,14 @@ public class PatientRegisterRequest {
 
     @Pattern(regexp = "^\\+?[0-9]{7,15}$", message = "Invalid phone number")
     private String phoneNumber;
+
+    private String bloodGroup;
+    private String allergies;
+    private String chronicIllnesses;
+    private String height;
+    private String weight;
+    private String emergencyContact;
+    private String dob;
+    private String gender;
+    private String profileImageUrl;
 }

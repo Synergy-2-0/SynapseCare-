@@ -31,5 +31,9 @@ public class PatientDto {
     private String address;
     private String bloodGroup;
     private String allergies;
+    private String chronicIllnesses;
+    private Double height;
+    private Double weight;
     private String emergencyContact;
+    private String profileImageUrl;
 }

@@ -11,12 +11,34 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/patients")
 @RequiredArgsConstructor
 public class PatientController {
 
     private final PatientService patientService;
+
+    @PostMapping("/profile/upload")
+    public ResponseEntity<Map<String, String>> uploadProfileImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "userId", required = false) Long userId) {
+        
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
+        }
+        
+        // Logic: Save file to static/uploads/patients/{userId} and return URL
+        // Implementing mock version first to align with doctor-service logic
+        String targetId = (userId != null) ? String.valueOf(userId) : "temp_reg_" + System.currentTimeMillis();
+        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        String mockUrl = "/uploads/patients/" + targetId + "/profile/" + fileName;
+        
+        return ResponseEntity.ok(Map.of("url", mockUrl));
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<PatientDto>> createPatient(@Valid @RequestBody PatientDto patientDto) {
