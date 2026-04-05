@@ -28,7 +28,6 @@ import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { publicDoctorApi } from '../../lib/api';
 import { SPECIALIZATIONS, SPECIALIZATION_LABELS } from '../../constants/specializations';
-import { SPECIALIZATIONS, SPECIALIZATION_LABELS } from '../../constants/specializations';
 
 // Synchronizing with real API doctor registry
 const DoctorsList = () => {

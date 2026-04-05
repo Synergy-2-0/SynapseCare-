@@ -185,40 +185,42 @@ const PatientDashboard = () => {
     };
 
     const handleFileUpload = async (file) => {
-        const patientId = localStorage.getItem('patient_id') || userData?.clinicalId;
-        const userName = localStorage.getItem('user_name')?.replace(/\s+/g, '_').toLowerCase() || 'patient';
-        const fileExt = file.name.split('.').pop();
-        const fileName = `patient-reports/${patientId}/${userName}_${Date.now()}.${fileExt}`;
+        const patientId = localStorage.getItem('patient_id') || userData?.id;
+        
+        if (!patientId) {
+            toast.error("Clinical identity not resolved. Local session out of sync.");
+            return;
+        }
 
-        // 1. Upload to Supabase clinical-media registry
-        const { error } = await supabaseStorage.upload(file, fileName);
-        if (error) throw new Error(error.message || 'Registry upload failed');
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('patientId', patientId);
+        if (selectedAppointmentIdForUpload) formData.append('appointmentId', selectedAppointmentIdForUpload);
+        formData.append('reportType', uploadReportType);
+        formData.append('description', uploadDescription);
 
-        const fileUrl = supabaseStorage.getPublicUrl(fileName);
-
-        // 2. Link to clinical backend
-        const reportData = {
-            fileName: file.name,
-            fileUrl: fileUrl,
-            fileType: file.type || 'application/octet-stream',
-            fileSize: file.size,
-            description: uploadDescription,
-            reportType: uploadReportType
-        };
-
-        await medicalHistoryApi.post(`/reports/link`, {
-            patientId,
-            appointmentId: selectedAppointmentIdForUpload,
-            ...reportData
-        });
-
-        // Refresh reports list
-        const reportRes = await medicalHistoryApi.get(`/reports/patient/${patientId}`).catch(() => ({ data: { data: [] } }));
-        setReports(reportRes.data?.data || []);
-        setShowUploadModal(false);
-        setUploadDescription('');
-        setUploadReportType('LAB_RESULT');
-        setSelectedAppointmentIdForUpload(null);
+        try {
+            toast.loading("Synchronizing clinical artifact with secure vault...");
+            const res = await medicalHistoryApi.post(`/reports/upload`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
+            toast.dismiss();
+            toast.success("Clinical artifact archived successfully.");
+            
+            // Refresh reports list
+            const reportRes = await medicalHistoryApi.get(`/reports/patient/${patientId}`).catch(() => ({ data: { data: [] } }));
+            setReports(reportRes.data?.data || reportRes.data || []);
+            
+            setShowUploadModal(false);
+            setUploadDescription('');
+            setUploadReportType('LAB_RESULT');
+            setSelectedAppointmentIdForUpload(null);
+        } catch (err) {
+            toast.dismiss();
+            console.error("Clinical sync failure:", err);
+            toast.error(err.response?.data?.message || "Tactical artifact upload failure.");
+        }
     };
 
     const handleDownloadReport = (report) => {

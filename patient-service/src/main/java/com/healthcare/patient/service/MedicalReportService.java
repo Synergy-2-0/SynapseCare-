@@ -19,7 +19,27 @@ public class MedicalReportService {
 
     private final MedicalReportRepository reportRepository;
     private final PatientRepository patientRepository;
+    private final FileStorageService fileStorageService;
 
+    public MedicalReportDto uploadReport(Long patientId, Long appointmentId, String reportType, String description, org.springframework.web.multipart.MultipartFile file) {
+        String subFolder = "patients/" + patientId + "/reports";
+        String fileUrl = fileStorageService.storeFile(file, subFolder);
+
+        MedicalReport report = MedicalReport.builder()
+                .patientId(patientId)
+                .appointmentId(appointmentId)
+                .fileName(file.getOriginalFilename())
+                .fileUrl(fileUrl)
+                .fileType(file.getContentType())
+                .fileSize(file.getSize())
+                .description(description)
+                .reportType(reportType != null ? reportType : "OTHER")
+                .build();
+
+        report = reportRepository.save(report);
+        log.info("Clinical report uploaded and indexed for patient {}: {}", patientId, fileUrl);
+        return mapToDto(report);
+    }
     public MedicalReportDto createReportFromLink(MedicalReportDto reportDto) {
         MedicalReport report = MedicalReport.builder()
                 .patientId(reportDto.getPatientId())

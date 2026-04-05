@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/medical-history")
@@ -56,6 +57,19 @@ public class MedicalHistoryController {
     public ResponseEntity<ApiResponse<List<MedicalReportDto>>> getReportsByUserId(@PathVariable("userId") Long userId) {
         List<MedicalReportDto> reports = reportService.getReportsByUserId(userId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Reports fetched successfully", reports));
+    }
+
+    @PostMapping("/reports/upload")
+    public ResponseEntity<ApiResponse<MedicalReportDto>> uploadReport(
+            @RequestParam("patientId") Long patientId,
+            @RequestParam(value = "appointmentId", required = false) Long appointmentId,
+            @RequestParam(value = "reportType", required = false) String reportType,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam("file") MultipartFile file) {
+        
+        MedicalReportDto created = reportService.uploadReport(patientId, appointmentId, reportType, description, file);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(true, "Clinical report uploaded successfully", created));
     }
 
     @DeleteMapping("/reports/{reportId}")

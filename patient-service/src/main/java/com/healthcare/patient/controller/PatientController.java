@@ -2,6 +2,7 @@ package com.healthcare.patient.controller;
 
 import com.healthcare.patient.dto.ApiResponse;
 import com.healthcare.patient.dto.PatientDto;
+import com.healthcare.patient.service.FileStorageService;
 import com.healthcare.patient.service.PatientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.MediaType;
 import java.util.Map;
 
 @RestController
@@ -21,6 +21,7 @@ import java.util.Map;
 public class PatientController {
 
     private final PatientService patientService;
+    private final FileStorageService fileStorageService;
 
     @PostMapping("/profile/upload")
     public ResponseEntity<Map<String, String>> uploadProfileImage(
@@ -31,13 +32,12 @@ public class PatientController {
             return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
         }
         
-        // Logic: Save file to static/uploads/patients/{userId} and return URL
-        // Implementing mock version first to align with doctor-service logic
         String targetId = (userId != null) ? String.valueOf(userId) : "temp_reg_" + System.currentTimeMillis();
-        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        String mockUrl = "/uploads/patients/" + targetId + "/profile/" + fileName;
+        String subFolder = "patients/" + targetId + "/profile";
         
-        return ResponseEntity.ok(Map.of("url", mockUrl));
+        String imageUrl = fileStorageService.storeFile(file, subFolder);
+        
+        return ResponseEntity.ok(Map.of("url", imageUrl));
     }
 
     @PostMapping
