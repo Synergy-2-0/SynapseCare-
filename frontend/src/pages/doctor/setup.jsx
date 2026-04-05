@@ -222,16 +222,29 @@ export default function DoctorSetupPage() {
                 consultationFee: parseFloat(formData.consultationFee) || 0
             };
 
+            let profileResponse;
             if (hasExistingProfile) {
-                await doctorApi.put('/profile', payload);
+                profileResponse = await doctorApi.put('/profile', payload);
             } else {
-                await doctorApi.post('/profile', payload);
+                profileResponse = await doctorApi.post('/profile', payload);
                 setHasExistingProfile(true);
             }
-            localStorage.setItem('user_verificationStatus', VERIFICATION_STATUS.PENDING);
-            setVerificationStatus(VERIFICATION_STATUS.PENDING);
-            setShowForm(false);
+
+            const normalizedStatus = normalizeVerificationStatus(profileResponse?.data?.verificationStatus);
+
+            setVerificationStatus(normalizedStatus);
+            setShowForm(normalizedStatus !== VERIFICATION_STATUS.APPROVED);
             setRejectionReason('');
+
+            if (normalizedStatus === VERIFICATION_STATUS.APPROVED) {
+                localStorage.setItem('user_verificationStatus', VERIFICATION_STATUS.APPROVED);
+                toast.success('Profile saved. Verification already approved. Redirecting...');
+                router.push('/doctor/dashboard');
+                return;
+            }
+
+            localStorage.setItem('user_verificationStatus', VERIFICATION_STATUS.PENDING);
+            setShowForm(false);
 
             toast.success("Profile submitted successfully!");
         } catch (err) {

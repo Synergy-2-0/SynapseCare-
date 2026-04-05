@@ -61,8 +61,10 @@ export default function DoctorProfile() {
                 const doc = response.data;
 
                 const richDoctor = {
-                    id: doc.userId || doc.id, // Used for URL routing ONLY — the auth userId
-                    dbId: doc.id,             // Internal DB PK — used for all API payload calls
+                    // Route IDs now use doctor-service DB id to avoid collisions.
+                    id: doc.id,
+                    userId: doc.userId,
+                    dbId: doc.id,
                     name: (doc.firstName && doc.lastName) ? `${doc.firstName} ${doc.lastName}` : `Dr. Specialist`,
                     specialization: doc.specialization || "Clinical Practice",
                     image: doc.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doc.id}`,
@@ -95,8 +97,20 @@ export default function DoctorProfile() {
                         });
                         setSlots(slotsRes.data || []);
                     } catch (err) {
-                        console.error("Failed to fetch available slots:", err);
-                        setSlots([]);
+                        if (err.response?.status === 403) {
+                            try {
+                                const fallbackRes = await publicDoctorApi.get(`/${doc.id}/available-slots`, {
+                                    params: { date: selectedDate }
+                                });
+                                setSlots(fallbackRes.data || []);
+                            } catch (fallbackErr) {
+                                console.error("Failed to fetch available slots from fallback endpoint:", fallbackErr);
+                                setSlots([]);
+                            }
+                        } else {
+                            console.error("Failed to fetch available slots:", err);
+                            setSlots([]);
+                        }
                     } finally {
                         setSlotsLoading(false);
                     }

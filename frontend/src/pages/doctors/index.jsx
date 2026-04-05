@@ -44,8 +44,9 @@ const DoctorsList = () => {
                 const response = await publicDoctorApi.get('/search');
                 // Map the new backend fields to the UI card structure
                 const mappedDoctors = response.data.map(doc => ({
-                    id: doc.userId, // Standardized to clinical identity across microservices
-                    dbId: doc.id,
+                    // Use doctor-service primary key for routing to avoid userId/id collisions.
+                    id: doc.id,
+                    userId: doc.userId,
                     name: (doc.firstName && doc.lastName)
                         ? `${doc.firstName} ${doc.lastName}`
                         : `Specialist Node #${doc.userId}`,

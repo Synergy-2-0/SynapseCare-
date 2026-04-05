@@ -147,12 +147,6 @@ public class DoctorService {
             throw new DoctorNotFoundException("Clinical identity not yet validated for public engagement");
         }
 
-        // Completion check: Dossier must be complete for public exposure
-        if (doctor.getSpecialization() == null || doctor.getConsultationFee() == null) {
-            log.warn("Dossier Incomplete: Clinical registry entry {} is lacking critical credentials", id);
-            throw new DoctorNotFoundException("Clinical profile undergoing synchronization");
-        }
-
         return mapToProfileResponse(doctor);
     }
 
@@ -194,22 +188,24 @@ public class DoctorService {
         log.info("Tactical clinical search initiated. Criteria: specialization={}, minFee={}, maxFee={}", 
                 specialization, minFee, maxFee);
 
-        // Fetching strictly APPROVED doctors to ensure identity resolution later
+        // Fetching strictly APPROVED doctors to ensure the public registry only shows verified specialists.
         List<Doctor> approvedDoctors = doctorRepository.findByVerificationStatus(VerificationStatus.APPROVED);
         log.debug("Identified {} approved clinical nodes in valid registry.", approvedDoctors.size());
 
         List<Doctor> filtered = approvedDoctors.stream()
-                .filter(d -> d.getSpecialization() != null && d.getConsultationFee() != null) // Profile must be complete
                 .filter(d -> {
                     if (specialization == null || specialization.isBlank()) return true;
+                    if (d.getSpecialization() == null) return false;
                     return d.getSpecialization().toLowerCase().contains(specialization.toLowerCase());
                 })
                 .filter(d -> {
                     if (minFee == null) return true;
+                    if (d.getConsultationFee() == null) return false;
                     return d.getConsultationFee().compareTo(minFee) >= 0;
                 })
                 .filter(d -> {
                     if (maxFee == null) return true;
+                    if (d.getConsultationFee() == null) return false;
                     return d.getConsultationFee().compareTo(maxFee) <= 0;
                 })
                 .collect(Collectors.toList());
