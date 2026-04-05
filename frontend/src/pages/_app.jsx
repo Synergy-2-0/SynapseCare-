@@ -1,5 +1,4 @@
-import "@fontsource/dm-sans";
-import "@fontsource/lora";
+import "@fontsource/source-sans-3";
 import "../globals.css";
 import React from "react";
 import Head from "next/head";

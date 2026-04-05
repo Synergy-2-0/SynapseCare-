@@ -85,7 +85,8 @@ const DoctorsList = () => {
                 const response = await publicDoctorApi.get('/search');
                 // Map the new backend fields to the UI card structure
                 const mappedDoctors = response.data.map(doc => ({
-                    id: doc.id, // /api/doctors/{id} expects doctor-service DB id
+                    // Use doctor-service primary key for routing to avoid userId/id collisions.
+                    id: doc.id,
                     userId: doc.userId,
                     name: (doc.firstName && doc.lastName)
                         ? `${doc.firstName} ${doc.lastName}`
