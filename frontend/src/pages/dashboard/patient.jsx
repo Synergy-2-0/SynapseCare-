@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -131,7 +131,7 @@ const PatientDashboard = () => {
                     setUserData({ ...patientInfo, name: patientInfo.name || name, id, clinicalId });
                     setAllAppointments(safeAppts);
                     setUpcoming(safeAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)));
-                    setHistory(safeHistory);
+                    setClinicalHistory(safeHistory);
                     setReports(safeReports);
                     setPayments(safePayments);
                     setPrescriptions(safePrescriptions);
@@ -679,47 +679,48 @@ const PatientDashboard = () => {
 
                                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                                             <div className="lg:col-span-8 space-y-8">
-                                                {upcoming.length > 0 ? upcoming.map((u, i) => (
-                                                    <div key={i} className="p-8 rounded-[3rem] border border-slate-100 bg-white hover:border-teal-100 hover:shadow-premium transition-all duration-500 group relative overflow-hidden shadow-sm">
-                                                        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-600/5 rotate-45 translate-x-16 -translate-y-16 pointer-events-none" />
+                                                {upcoming.length > 0 ? (
+                                                    <>
+                                                        <div className="p-8 rounded-[3rem] border border-slate-100 bg-white hover:border-teal-100 hover:shadow-premium transition-all duration-500 group relative overflow-hidden shadow-sm">
+                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-600/5 rotate-45 translate-x-16 -translate-y-16 pointer-events-none" />
 
-                                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10">
-                                                            <div className="flex items-center gap-6">
-                                                                <div className="w-20 h-20 rounded-[2rem] bg-teal-50 text-teal-600 flex items-center justify-center shadow-inner border border-teal-100 flex-shrink-0">
-                                                                    <Calendar size={32} />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                                                        <Clock size={12} className="text-teal-600" /> Confirmed {u.appointmentDate || u.date} at {u.appointmentTime || u.time || '14:00'}
-                                                                    </p>
-                                                                    <h4 className="text-2xl font-semibold tracking-tight leading-tight">{u.doctorName || 'Senior Specialist'}</h4>
-                                                                    <div className="flex gap-2 mt-3">
-                                                                        <Badge variant={['CONFIRMED', 'PAID'].includes(u.status) ? 'success' : 'primary'}>{u.status}</Badge>
-                                                                        <span className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-full text-[9px] font-semibold uppercase tracking-widest text-slate-400">ID #{u.id}</span>
+                                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10">
+                                                                <div className="flex items-center gap-6">
+                                                                    <div className="w-20 h-20 rounded-[2rem] bg-teal-50 text-teal-600 flex items-center justify-center shadow-inner border border-teal-100 flex-shrink-0">
+                                                                        <Calendar size={32} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                                            <Clock size={12} className="text-teal-600" /> Confirmed {upcoming[0].appointmentDate || upcoming[0].date} at {upcoming[0].appointmentTime || upcoming[0].time || '14:00'}
+                                                                        </p>
+                                                                        <h4 className="text-2xl font-semibold tracking-tight leading-tight">{upcoming[0].doctorName || 'Senior Specialist'}</h4>
+                                                                        <div className="flex gap-2 mt-3">
+                                                                            <Badge variant={['CONFIRMED', 'PAID'].includes(upcoming[0].status) ? 'success' : 'primary'}>{upcoming[0].status}</Badge>
+                                                                            <span className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-full text-[9px] font-semibold uppercase tracking-widest text-slate-400">ID #{upcoming[0].id}</span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
+                                                                <div className="text-center md:text-right p-6 bg-slate-50 rounded-3xl border border-slate-100 min-w-[140px]">
+                                                                    <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-1 leading-none">Your Token</p>
+                                                                    <p className="text-4xl font-semibold text-teal-600 drop-shadow-sm leading-none mt-2">{upcoming[0].tokenNumber || 'TBD'}</p>
+                                                                </div>
                                                             </div>
-                                                            <div className="text-center md:text-right p-6 bg-slate-50 rounded-3xl border border-slate-100 min-w-[140px]">
-                                                                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-1 leading-none">Your Token</p>
-                                                                <p className="text-4xl font-semibold text-teal-600 drop-shadow-sm leading-none mt-2">{u.tokenNumber || 'TBD'}</p>
-                                                            </div>
-                                                        </div>
 
-                                                                    <div className="w-full lg:w-56 p-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col items-center justify-center text-center group-hover:scale-105 transition-transform duration-500">
-                                                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 mb-2">Active Token</p>
-                                                                        <p className="text-7xl font-bold text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">{upcoming[0].tokenNumber || '00'}</p>
-                                                                        <div className="mt-6 w-full h-px bg-white/10" />
-                                                                        <p className="mt-4 text-[9px] font-bold text-white/50 uppercase tracking-widest">Session ID: #{upcoming[0].id}</p>
-                                                                    </div>
+                                                            <div className="flex flex-col lg:flex-row gap-8 items-center border-t border-slate-50 pt-10">
+                                                                <div className="w-full lg:w-56 p-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col items-center justify-center text-center group-hover:scale-105 transition-transform duration-500">
+                                                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 mb-2">Active Token</p>
+                                                                    <p className="text-7xl font-bold text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">{upcoming[0].tokenNumber || '00'}</p>
+                                                                    <div className="mt-6 w-full h-px bg-white/10" />
+                                                                    <p className="mt-4 text-[9px] font-bold text-white/50 uppercase tracking-widest">Session ID: #{upcoming[0].id}</p>
                                                                 </div>
 
-                                                                <div className="mt-10 flex flex-wrap gap-4 relative z-10 pt-10 border-t border-white/10">
+                                                                <div className="flex-1 flex flex-wrap gap-4 relative z-10">
                                                                     <button 
                                                                         onClick={() => {
                                                                             localStorage.setItem('active_consultation_id', upcoming[0].id);
                                                                             router.push('/telemedicine');
                                                                         }}
-                                                                        className="h-16 px-10 bg-white text-slate-900 rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-teal-500 hover:text-white transition-all shadow-xl shadow-white/5"
+                                                                        className="h-16 px-10 bg-slate-900 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-teal-600 transition-all shadow-xl shadow-slate-200"
                                                                     >
                                                                         <Video size={18} /> Join Clinical Entry
                                                                     </button>
@@ -729,7 +730,7 @@ const PatientDashboard = () => {
                                                                             setUploadDescription(`Clinical artifacts for Dr. ${upcoming[0].doctorName}`);
                                                                             setShowUploadModal(true);
                                                                         }}
-                                                                        className="h-16 px-10 bg-white/5 border border-white/10 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-white/10 transition-all"
+                                                                        className="h-16 px-10 bg-white border-2 border-slate-100 text-slate-700 rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-slate-50 transition-all"
                                                                     >
                                                                         <Plus size={18} /> Sync Artifacts
                                                                     </button>
@@ -743,6 +744,7 @@ const PatientDashboard = () => {
                                                                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 ml-2 mb-8">Clinical Queue Registry</h4>
                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                                     {upcoming.slice(1).map((u, i) => (
+
                                                                         <div key={i} className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] hover:bg-white/[0.08] transition-all group/item">
                                                                             <div className="flex justify-between items-start mb-8">
                                                                                 <div className="w-12 h-12 rounded-[1.2rem] bg-teal-500/10 text-teal-400 flex items-center justify-center border border-teal-500/20">
@@ -1235,7 +1237,8 @@ const PatientDashboard = () => {
                                                         )}
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )) : null}
+                                        </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
