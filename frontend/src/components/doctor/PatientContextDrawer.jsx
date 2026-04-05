@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, HeartPulse, FileText, BrainCircuit, PlayCircle, PlusCircle, UploadSimple } from '@phosphor-icons/react';
+// import { X, Activity, HeartPulse, FileText, BrainCircuit, PlayCircle, PlusCircle, UploadSimple } from '@phosphor-icons/react';
+import { X, User, Activity, HeartPulse, Shield, FileText, BrainCircuit, PlayCircle, PlusCircle } from 'lucide-react';
 import { supabaseStorage } from '../../lib/supabase';
 import { patientApi, medicalHistoryApi } from '../../lib/api';
 import FileUpload from '../ui/FileUpload';
@@ -39,18 +40,18 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
             {isOpen && (
                 <>
                     {/* Dark Glass Backdrop */}
-                    <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
                         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40"
                     />
 
                     {/* Right-Side Drawer */}
-                    <motion.div 
-                        initial={{ x: '100%', opacity: 0.5 }} 
-                        animate={{ x: 0, opacity: 1, transition: { type: 'spring', damping: 25, stiffness: 200 } }} 
+                    <motion.div
+                        initial={{ x: '100%', opacity: 0.5 }}
+                        animate={{ x: 0, opacity: 1, transition: { type: 'spring', damping: 25, stiffness: 200 } }}
                         exit={{ x: '100%', opacity: 0 }}
                         className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] bg-white border-l border-slate-200 z-50 shadow-2xl flex flex-col"
                     >
@@ -60,7 +61,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                 <div className="flex items-center gap-3 text-xs font-bold text-teal-600 uppercase tracking-widest mb-2">
                                     <Activity className="w-4 h-4" /> Clinical Case Management
                                 </div>
-                                <h2 className="text-3xl font-serif text-slate-900">
+                                <h2 className="text-3xl font-sans text-slate-900">
                                     {appointment.patientName || `Patient #${appointment.patientId}`}
                                 </h2>
                             </div>
@@ -79,12 +80,12 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                             ) : (
                                 <>
                                     {/* AI Summary Block */}
-                                    <div className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-[2rem] border border-indigo-100/50">
+                                    <div className="p-6 bg-gradient-to-br from-teal-50 to-slate-50 rounded-[2rem] border border-teal-100/50">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <BrainCircuit className="w-5 h-5 text-indigo-600" />
-                                            <div className="text-xs font-bold uppercase tracking-widest text-indigo-600">Synapcare Clinical Insight</div>
+                                            <BrainCircuit className="w-5 h-5 text-teal-600" />
+                                            <div className="text-xs font-bold uppercase tracking-widest text-teal-600">Synapcare Clinical Insight</div>
                                         </div>
-                                        <div className="text-slate-700 text-sm leading-relaxed font-medium">
+                                        <div className="text-slate-700 text-sm leading-relaxed font-bold">
                                             {appointment.reason ? (
                                                 `Chief Complaint: "${appointment.reason}" recorded for session at ${appointment.time}.`
                                             ) : (
@@ -95,7 +96,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
 
                                     {/* Vitals Grid */}
                                     <div>
-                                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-slate-400 mb-4">
+                                        <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
                                             <HeartPulse className="w-4 h-4" /> Live Health Markers
                                         </h4>
                                         <div className="grid grid-cols-2 gap-4">
@@ -120,7 +121,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
 
                                     {/* Clinical Profile */}
                                     <div className="surface-card p-6 bg-white border border-slate-100">
-                                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-slate-700 mb-4">
+                                        <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-700 mb-4">
                                             <FileText className="w-4 h-4" /> Identity Profile
                                         </h4>
                                         <ul className="space-y-4">
@@ -143,15 +144,15 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
 
                                     {/* Clinical Media Registry */}
                                     <div className="space-y-4">
-                                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-slate-400 mb-2">
+                                        <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-400 mb-2">
                                             <PlayCircle size={18} /> Clinical Dossier
                                         </h4>
                                         <div className="space-y-3">
                                             {reports.length > 0 ? reports.map((r, i) => (
-                                                <a 
-                                                    key={i} 
-                                                    href={r.fileUrl} 
-                                                    target="_blank" 
+                                                <a
+                                                    key={i}
+                                                    href={r.fileUrl}
+                                                    target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl hover:border-teal-400 hover:shadow-md transition-all group"
                                                 >
@@ -183,18 +184,18 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                             </div>
                                             <div className="text-[10px] font-black uppercase tracking-widest text-white/90">Diagnostics Sync</div>
                                         </div>
-                                        
-                                        <FileUpload 
+
+                                        <FileUpload
                                             label="Sync Critical Artifact"
                                             description="Cloud secure S3 pipeline"
                                             onUpload={async (file) => {
                                                 const patientId = appointment.patientId;
                                                 const doctorId = localStorage.getItem('user_id');
                                                 const path = `clinical-artifacts/${patientId}/${doctorId}_${Date.now()}`;
-                                                
+
                                                 const { error } = await supabaseStorage.upload(file, path);
                                                 if (error) throw new Error(error.message);
-                                                
+
                                                 const url = supabaseStorage.getPublicUrl(path);
                                                 await medicalHistoryApi.post(`/reports/link`, {
                                                     patientId,
@@ -219,7 +220,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
 
                         {/* Action Footer */}
                         <div className="p-6 border-t border-slate-100 bg-white grid grid-cols-2 gap-4">
-                            <button onClick={() => router.push(`/telemedicine?appointmentId=${appointment.id}`)} className="col-span-2 py-4 rounded-[1.2rem] bg-teal-600 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-teal-500/25 hover:bg-teal-700 transition-all hover:-translate-y-0.5">
+                            <button onClick={() => router.push(`/telemedicine?appointmentId=${appointment.id}`)} className="col-span-2 py-4 rounded-[1.2rem] bg-teal-600 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-teal-500/25 hover:bg-teal-700 transition-all hover:-translate-y-0.5">
                                 <PlayCircle className="w-5 h-5" /> Begin Appointment
                             </button>
                         </div>
@@ -229,4 +230,5 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
         </AnimatePresence>
     );
 }
-}
+
+
