@@ -16,10 +16,6 @@ const AdminLayout = ({ children, title = "" }) => {
 
     useEffect(() => {
         setIsClient(true);
-    }, []);
-
-    useEffect(() => {
-        if (!isClient) return;
         
         const role = localStorage.getItem('user_role');
         if (!role || role !== 'ADMIN') {
@@ -32,7 +28,7 @@ const AdminLayout = ({ children, title = "" }) => {
             name: localStorage.getItem('user_name') || 'Administrator',
             role: 'ADMIN'
         });
-    }, [isClient, router]);
+    }, [router]);
 
 
 
@@ -53,7 +49,6 @@ const AdminLayout = ({ children, title = "" }) => {
         <>
             <Head>
                 <title>{displayTitle}</title>
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
             </Head>
             <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800 font-['Inter',_sans-serif]">
                 {/* Minimalist Professional Header */}

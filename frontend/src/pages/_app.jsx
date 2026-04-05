@@ -1,4 +1,6 @@
-import "@fontsource/source-sans-3";
+import "@fontsource/open-sans";
+import "@fontsource/open-sans/700.css";
+import "@fontsource/open-sans/800.css";
 import "../globals.css";
 import React from "react";
 import Head from "next/head";

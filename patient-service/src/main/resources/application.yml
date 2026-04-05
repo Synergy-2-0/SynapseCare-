@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:5432/synapscare
     username: ${DB_USER:postgres}
-    password: ${DB_PASS:1234}
+    password: ${DB_PASS:Luqa}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -41,14 +41,10 @@ app:
     exchange: ${PATIENT_EXCHANGE:patient.exchange}
     routing-key: ${PATIENT_ROUTING_KEY:patient.routing.key}
 
-# MinIO Configuration for file storage
-minio:
-  url: ${MINIO_URL:http://localhost:9000}
-  access-key: ${MINIO_ACCESS_KEY:minioadmin}
-  secret-key: ${MINIO_SECRET_KEY:minioadmin}
-  bucket-name: ${MINIO_BUCKET:medical-reports}
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1
 
-# File upload settings
-spring.servlet.multipart:
-  max-file-size: 10MB
-  max-request-size: 10MB
+# Integrated High-Fidelity Clinical Asset Registry (Supabase S3)
+

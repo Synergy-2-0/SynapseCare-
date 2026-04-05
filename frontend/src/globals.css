@@ -79,7 +79,7 @@
 }
 
 body {
-  font-family: 'Source Sans 3', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg-base);
   color: var(--text-primary);
   font-size: 15px;
@@ -87,7 +87,7 @@ body {
 }
 
 .font-serif {
-  font-family: 'Source Sans 3', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: 'Lora', var(--font-lora), serif;
 }
 
 .glass-morphism {

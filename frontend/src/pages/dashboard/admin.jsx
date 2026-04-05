@@ -314,9 +314,9 @@ const AdminDashboard = () => {
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <AdminMiniCalendar />
                                         <div className="grid grid-cols-1 gap-4">
-                                            <MiniSparkline title="Patient Growth" value={stats.totalPatients} percentage="16" color="#0D9488" data={[]} />
-                                            <MiniSparkline title="Available Clinicians" value={stats.totalDoctors} percentage="4" color="#10B981" data={[]} />
-                                            <MiniSparkline title="Active Appointments" value="163" percentage="21" color="#8B5CF6" data={[]} />
+                                            <MiniSparkline title="Patient Growth" value={stats.totalPatients} percentage="16" color="#0D9488" data={[{value: 30}, {value: 45}, {value: 32}, {value: 50}, {value: 48}, {value: 65}, {value: 52}]} />
+                                            <MiniSparkline title="Available Clinicians" value={stats.totalDoctors} percentage="4" color="#10B981" data={[{value: 20}, {value: 22}, {value: 21}, {value: 25}, {value: 24}, {value: 28}, {value: 27}]} />
+                                            <MiniSparkline title="Active Appointments" value="163" percentage="21" color="#8B5CF6" data={[{value: 100}, {value: 120}, {value: 115}, {value: 140}, {value: 135}, {value: 160}, {value: 158}]} />
                                         </div>
                                     </div>
                                     <div className="bg-white rounded-2xl p-6 border border-slate-50 shadow-sm flex items-center justify-center min-h-[300px]">

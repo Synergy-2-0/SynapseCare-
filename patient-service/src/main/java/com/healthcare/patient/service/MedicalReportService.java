@@ -9,8 +9,6 @@ import com.healthcare.patient.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,37 +18,48 @@ import java.util.stream.Collectors;
 public class MedicalReportService {
 
     private final MedicalReportRepository reportRepository;
-    private final FileStorageService fileStorageService;
     private final PatientRepository patientRepository;
+    private final FileStorageService fileStorageService;
 
-    public MedicalReportDto uploadReport(Long patientId, MultipartFile file, String description, String reportType) {
-        try {
-            String objectName = fileStorageService.uploadFile(patientId, file);
-            String presignedUrl = fileStorageService.getPresignedUrl(objectName);
+    public MedicalReportDto uploadReport(Long patientId, Long appointmentId, String reportType, String description, org.springframework.web.multipart.MultipartFile file) {
+        String subFolder = "patients/" + patientId + "/reports";
+        String fileUrl = fileStorageService.storeFile(file, subFolder);
 
-            MedicalReport report = MedicalReport.builder()
-                    .patientId(patientId)
-                    .fileName(file.getOriginalFilename())
-                    .objectName(objectName)
-                    .fileType(file.getContentType())
-                    .fileSize(file.getSize())
-                    .fileUrl(presignedUrl)
-                    .description(description)
-                    .reportType(reportType != null ? reportType : "OTHER")
-                    .build();
+        MedicalReport report = MedicalReport.builder()
+                .patientId(patientId)
+                .appointmentId(appointmentId)
+                .fileName(file.getOriginalFilename())
+                .fileUrl(fileUrl)
+                .fileType(file.getContentType())
+                .fileSize(file.getSize())
+                .description(description)
+                .reportType(reportType != null ? reportType : "OTHER")
+                .build();
 
-            report = reportRepository.save(report);
-            log.info("Medical report uploaded for patient {}: {}", patientId, objectName);
-            return mapToDto(report);
-        } catch (Exception e) {
-            log.error("Failed to upload medical report for patient {}: {}", patientId, e.getMessage());
-            throw new RuntimeException("Failed to upload file: " + e.getMessage(), e);
-        }
+        report = reportRepository.save(report);
+        log.info("Clinical report uploaded and indexed for patient {}: {}", patientId, fileUrl);
+        return mapToDto(report);
+    }
+    public MedicalReportDto createReportFromLink(MedicalReportDto reportDto) {
+        MedicalReport report = MedicalReport.builder()
+                .patientId(reportDto.getPatientId())
+                .appointmentId(reportDto.getAppointmentId())
+                .fileName(reportDto.getFileName())
+                .fileUrl(reportDto.getFileUrl())
+                .fileType(reportDto.getFileType())
+                .fileSize(reportDto.getFileSize())
+                .description(reportDto.getDescription())
+                .reportType(reportDto.getReportType() != null ? reportDto.getReportType() : "OTHER")
+                .uploadedAt(reportDto.getUploadedAt())
+                .build();
+
+        report = reportRepository.save(report);
+        log.info("Clinical media artifact indexed for patient {}: {}", reportDto.getPatientId(), reportDto.getFileUrl());
+        return mapToDto(report);
     }
 
     public List<MedicalReportDto> getReportsByPatientId(Long patientId) {
         return reportRepository.findByPatientId(patientId).stream()
-                .map(this::enrichWithPresignedUrl)
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
@@ -61,66 +70,24 @@ public class MedicalReportService {
         return getReportsByPatientId(patient.getId());
     }
 
-    private MedicalReport enrichWithPresignedUrl(MedicalReport report) {
-        try {
-            if (report.getObjectName() != null) {
-                String freshUrl = fileStorageService.getPresignedUrl(report.getObjectName());
-                report.setFileUrl(freshUrl);
-            }
-        } catch (Exception e) {
-            log.warn("Could not generate presigned URL for report {}: {}", report.getId(), e.getMessage());
-        }
-        return report;
-    }
-
     public MedicalReportDto getReportById(Long reportId) {
         MedicalReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new ResourceNotFoundException("Report not found with id: " + reportId));
-
-        try {
-            if (report.getObjectName() != null) {
-                String freshUrl = fileStorageService.getPresignedUrl(report.getObjectName());
-                report.setFileUrl(freshUrl);
-            }
-        } catch (Exception e) {
-            log.warn("Could not generate presigned URL for report {}: {}", reportId, e.getMessage());
-        }
-
         return mapToDto(report);
     }
 
     public void deleteReport(Long reportId) {
         MedicalReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new ResourceNotFoundException("Report not found with id: " + reportId));
-
-        try {
-            if (report.getObjectName() != null) {
-                fileStorageService.deleteFile(report.getObjectName());
-            }
-            reportRepository.delete(report);
-            log.info("Medical report deleted: {}", reportId);
-        } catch (Exception e) {
-            log.error("Failed to delete medical report {}: {}", reportId, e.getMessage());
-            throw new RuntimeException("Failed to delete file: " + e.getMessage(), e);
-        }
-    }
-
-    public byte[] downloadReport(Long reportId) {
-        MedicalReport report = reportRepository.findById(reportId)
-                .orElseThrow(() -> new ResourceNotFoundException("Report not found with id: " + reportId));
-
-        try {
-            return fileStorageService.downloadFile(report.getObjectName()).readAllBytes();
-        } catch (Exception e) {
-            log.error("Failed to download report {}: {}", reportId, e.getMessage());
-            throw new RuntimeException("Failed to download file: " + e.getMessage(), e);
-        }
+        reportRepository.delete(report);
+        log.info("Medical record artifact de-indexed: {}", reportId);
     }
 
     private MedicalReportDto mapToDto(MedicalReport entity) {
         return MedicalReportDto.builder()
                 .id(entity.getId())
                 .patientId(entity.getPatientId())
+                .appointmentId(entity.getAppointmentId())
                 .fileName(entity.getFileName())
                 .fileUrl(entity.getFileUrl())
                 .fileType(entity.getFileType())

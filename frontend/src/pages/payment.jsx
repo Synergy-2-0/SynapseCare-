@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { paymentApi, appointmentApi } from '../lib/api';
 import {
     CreditCard,
     ShieldCheck,
@@ -9,17 +8,14 @@ import {
     AlertCircle,
     CheckCircle2,
     Zap,
-    ArrowRight,
-    Wallet,
-    Info,
-    Check
+    Wallet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Head from 'next/head';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { paymentApi, appointmentApi } from '../lib/api';
 
 const PaymentPage = () => {
     const router = useRouter();

@@ -58,7 +58,11 @@ public class PatientService {
         patient.setGender(patientDto.getGender());
         patient.setBloodGroup(patientDto.getBloodGroup());
         patient.setAllergies(patientDto.getAllergies());
+        patient.setChronicIllnesses(patientDto.getChronicIllnesses());
+        patient.setHeight(patientDto.getHeight());
+        patient.setWeight(patientDto.getWeight());
         patient.setEmergencyContact(patientDto.getEmergencyContact());
+        patient.setProfileImageUrl(patientDto.getProfileImageUrl());
         
         Patient updatedPatient = patientRepository.save(patient);
         PatientDto updatedDto = mapToDto(updatedPatient);
@@ -85,7 +89,11 @@ public class PatientService {
                 .address(dto.getAddress())
                 .bloodGroup(dto.getBloodGroup())
                 .allergies(dto.getAllergies())
+                .chronicIllnesses(dto.getChronicIllnesses())
+                .height(dto.getHeight())
+                .weight(dto.getWeight())
                 .emergencyContact(dto.getEmergencyContact())
+                .profileImageUrl(dto.getProfileImageUrl())
                 .build();
     }
 
@@ -101,7 +109,11 @@ public class PatientService {
                 .address(entity.getAddress())
                 .bloodGroup(entity.getBloodGroup())
                 .allergies(entity.getAllergies())
+                .chronicIllnesses(entity.getChronicIllnesses())
+                .height(entity.getHeight())
+                .weight(entity.getWeight())
                 .emergencyContact(entity.getEmergencyContact())
+                .profileImageUrl(entity.getProfileImageUrl())
                 .build();
     }
 }

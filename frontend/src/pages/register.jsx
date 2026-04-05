@@ -11,8 +11,10 @@ import {
     ChevronRight,
     Sparkles
 } from 'lucide-react';
-import { authApi } from '../lib/api';
+import { authApi, fileUploadApi } from '../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
+import Image from 'next/image';
+import { SPECIALIZATIONS, SPECIALIZATION_LABELS } from '../constants/specializations';
 
 const RegisterPage = () => {
     const [role, setRole] = useState('PATIENT');
@@ -27,7 +29,19 @@ const RegisterPage = () => {
         email: '',
         password: '',
         phoneNumber: '',
+        // Clinical Step 2 Shards
+        bloodGroup: '',
+        allergies: '',
+        chronicIllnesses: '',
+        height: '',
+        weight: '',
+        emergencyContact: '',
+        dob: '',
+        gender: '',
+        profileImageUrl: ''
     });
+    const [isUploading, setIsUploading] = useState(false);
+    const [step, setStep] = useState(1);
     const [fieldErrors, setFieldErrors] = useState({});
 
     const validateForm = () => {
@@ -51,14 +65,50 @@ const RegisterPage = () => {
             errors.password = 'Password must be at least 8 characters.';
         }
 
+        if (step === 2 && role === 'PATIENT') {
+            if (!formData.bloodGroup) errors.bloodGroup = 'Blood group is required.';
+            if (!formData.dob) errors.dob = 'Date of birth is required.';
+            if (!formData.gender) errors.gender = 'Gender identity is required.';
+            if (formData.height && (formData.height < 50 || formData.height > 250)) errors.height = 'Invalid height metric.';
+            if (formData.weight && (formData.weight < 2 || formData.weight > 500)) errors.weight = 'Invalid weight metric.';
+        }
+
         setFieldErrors(errors);
         return Object.keys(errors).length === 0;
     };
 
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fileUploadApi.post('/profile/upload', formData);
+            setFormData(prev => ({ ...prev, profileImageUrl: res.data.url }));
+            toast.success("Identity shard uploaded!");
+        } catch (err) {
+            console.error("Artifact upload failure:", err);
+            toast.error("Cloud registry upload failed.");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleNextStep = () => {
+        if (validateForm()) {
+            if (role === 'PATIENT' && step === 1) {
+                setStep(2);
+            } else {
+                handleRegister();
+            }
+        }
+    };
+
     const handleRegister = async (e) => {
-        e.preventDefault();
-        setError('');
-        if (!validateForm()) return;
+        if (e) e.preventDefault();
         
         setLoading(true);
         try {
@@ -107,7 +157,7 @@ const RegisterPage = () => {
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-widest">
                                 <Sparkles size={12} /> Adaptive Onboarding
                             </div>
-                            <h1 className="text-4xl font-black leading-tight tracking-tight">
+                            <h1 className="text-4xl font-bold leading-tight tracking-tight">
                                 Establish your <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-sky-300">Medical Identity.</span>
                             </h1>
@@ -143,7 +193,7 @@ const RegisterPage = () => {
                 <div className="p-8 md:p-14 lg:p-16 flex flex-col">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                         <div className="mb-10">
-                            <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-4">Create Account</h2>
+                            <h2 className="text-4xl font-bold text-slate-900 tracking-tighter mb-4">Create Account</h2>
                             <p className="copy-description font-medium">Select your role to begin the clinical setup.</p>
                         </div>
 
@@ -187,92 +237,206 @@ const RegisterPage = () => {
                             </div>
                         )}
 
-                        <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">First Name</label>
-                                <input
-                                    placeholder="John"
-                                    value={formData.firstName}
-                                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                                    className={`input-field ${fieldErrors.firstName ? 'border-rose-500' : ''}`}
-                                />
-                                {fieldErrors.firstName && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.firstName}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Last Name</label>
-                                <input
-                                    placeholder="Doe"
-                                    value={formData.lastName}
-                                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                                    className={`input-field ${fieldErrors.lastName ? 'border-rose-500' : ''}`}
-                                />
-                                {fieldErrors.lastName && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.lastName}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Username</label>
-                                <input
-                                    placeholder="johndoe_123"
-                                    value={formData.username}
-                                    onChange={(e) => setFormData({...formData, username: e.target.value})}
-                                    className={`input-field ${fieldErrors.username ? 'border-rose-500' : ''}`}
-                                />
-                                {fieldErrors.username && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.username}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Contact Terminal</label>
-                                <input
-                                    type="tel"
-                                    placeholder="+15550000000"
-                                    maxLength="15"
-                                    pattern="^\+[1-9]\d{1,14}$"
-                                    title="Phone number must start with + and contain only numbers (up to 15 digits)"
-                                    onKeyPress={(e) => {
-                                        if (e.target.value.length === 0 && e.key !== '+') {
-                                            e.preventDefault();
-                                        }
-                                        if (e.target.value.length > 0 && !/[0-9]/.test(e.key)) {
-                                            e.preventDefault();
-                                        }
-                                    }}
-                                    value={formData.phoneNumber}
-                                    onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                                    className={`input-field ${fieldErrors.phoneNumber ? 'border-rose-500' : ''}`}
-                                />
-                                {fieldErrors.phoneNumber && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.phoneNumber}</p>}
-                            </div>
-                            <div className="md:col-span-2 space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Email Node</label>
-                                <input
-                                    type="email"
-                                    placeholder="user@synapsecare.com"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                    className={`input-field ${fieldErrors.email ? 'border-rose-500' : ''}`}
-                                />
-                                {fieldErrors.email && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.email}</p>}
-                            </div>
-                            <div className="md:col-span-2 space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Access Pass (8+ Chars)</label>
-                                <input
-                                    type="password"
-                                    placeholder="••••••••••••"
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                                    className={`input-field ${fieldErrors.password ? 'border-rose-500' : ''}`}
-                                />
-                                {fieldErrors.password && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.password}</p>}
-                            </div>
+                        <form onSubmit={(e) => { e.preventDefault(); handleNextStep(); }} className="space-y-8">
+                            {step === 1 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">First Name</label>
+                                        <input
+                                            placeholder="John"
+                                            value={formData.firstName}
+                                            onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                                            className={`input-field ${fieldErrors.firstName ? 'border-rose-500' : ''}`}
+                                        />
+                                        {fieldErrors.firstName && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.firstName}</p>}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Last Name</label>
+                                        <input
+                                            placeholder="Doe"
+                                            value={formData.lastName}
+                                            onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                                            className={`input-field ${fieldErrors.lastName ? 'border-rose-500' : ''}`}
+                                        />
+                                        {fieldErrors.lastName && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.lastName}</p>}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Username</label>
+                                        <input
+                                            placeholder="johndoe_123"
+                                            value={formData.username}
+                                            onChange={(e) => setFormData({...formData, username: e.target.value})}
+                                            className={`input-field ${fieldErrors.username ? 'border-rose-500' : ''}`}
+                                        />
+                                        {fieldErrors.username && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.username}</p>}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Contact Terminal</label>
+                                        <input
+                                            type="tel"
+                                            placeholder="+15550000000"
+                                            value={formData.phoneNumber}
+                                            onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                                            className={`input-field ${fieldErrors.phoneNumber ? 'border-rose-500' : ''}`}
+                                        />
+                                        {fieldErrors.phoneNumber && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.phoneNumber}</p>}
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Email Node</label>
+                                        <input
+                                            type="email"
+                                            placeholder="user@synapsecare.com"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                            className={`input-field ${fieldErrors.email ? 'border-rose-500' : ''}`}
+                                        />
+                                        {fieldErrors.email && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.email}</p>}
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Access Pass (8+ Chars)</label>
+                                        <input
+                                            type="password"
+                                            placeholder="••••••••••••"
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                            className={`input-field ${fieldErrors.password ? 'border-rose-500' : ''}`}
+                                        />
+                                        {fieldErrors.password && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.password}</p>}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="md:col-span-2 flex flex-col items-center mb-6">
+                                        <div className="w-32 h-32 rounded-[2.5rem] bg-slate-900 flex items-center justify-center text-indigo-400 text-4xl shadow-xl relative group overflow-hidden border-4 border-slate-50">
+                                            {formData.profileImageUrl ? (
+                                                <Image src={formData.profileImageUrl} alt="Identity" fill className="object-cover group-hover:scale-110 transition-transform" unoptimized />
+                                            ) : (
+                                                <UserRound size={48} className="group-hover:scale-110 transition-transform opacity-50" />
+                                            )}
+                                            <div 
+                                                className="absolute inset-0 bg-indigo-600/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-sm"
+                                                onClick={() => document.getElementById('reg-image-input').click()}
+                                            >
+                                                {isUploading ? (
+                                                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Upload Shard</span>
+                                                )}
+                                            </div>
+                                            <input 
+                                                type="file" 
+                                                id="reg-image-input" 
+                                                className="hidden" 
+                                                accept="image/*" 
+                                                onChange={handleImageUpload}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-4">Profile Identity Photo (Required)</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Blood Group</label>
+                                        <select
+                                            value={formData.bloodGroup}
+                                            onChange={(e) => setFormData({...formData, bloodGroup: e.target.value})}
+                                            className="input-field"
+                                        >
+                                            <option value="">Select Group</option>
+                                            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => (
+                                                <option key={bg} value={bg}>{bg}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Date of Birth</label>
+                                        <input
+                                            type="date"
+                                            value={formData.dob}
+                                            onChange={(e) => setFormData({...formData, dob: e.target.value})}
+                                            className="input-field"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Height (cm)</label>
+                                        <input
+                                            type="number"
+                                            placeholder="175"
+                                            value={formData.height}
+                                            onChange={(e) => setFormData({...formData, height: e.target.value})}
+                                            className="input-field"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Weight (kg)</label>
+                                        <input
+                                            type="number"
+                                            placeholder="70"
+                                            value={formData.weight}
+                                            onChange={(e) => setFormData({...formData, weight: e.target.value})}
+                                            className="input-field"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 ml-1">Gender Identity</label>
+                                        <select
+                                            value={formData.gender}
+                                            onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                                            className="input-field"
+                                        >
+                                            <option value="">Select Gender</option>
+                                            <option value="MALE">Male</option>
+                                            <option value="FEMALE">Female</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 ml-1">Emergency Contact Node</label>
+                                        <input
+                                            placeholder="+15559998888"
+                                            value={formData.emergencyContact}
+                                            onChange={(e) => setFormData({...formData, emergencyContact: e.target.value})}
+                                            className="input-field"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 ml-1">Allergies</label>
+                                        <textarea
+                                            placeholder="E.g., Peanuts, Penicillin (Leave empty if none)"
+                                            value={formData.allergies}
+                                            onChange={(e) => setFormData({...formData, allergies: e.target.value})}
+                                            className="input-field min-h-24 resize-none"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 ml-1">Chronic Illnesses</label>
+                                        <textarea
+                                            placeholder="E.g., Diabetes, Hypertension"
+                                            value={formData.chronicIllnesses}
+                                            onChange={(e) => setFormData({...formData, chronicIllnesses: e.target.value})}
+                                            className="input-field min-h-24 resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
-                            <div className="md:col-span-2 pt-4">
+                            <div className="md:col-span-2 pt-4 flex gap-4">
+                                {step === 2 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setStep(1)}
+                                        className="h-14 px-8 border border-slate-200 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all"
+                                    >
+                                        Back
+                                    </button>
+                                )}
                                 <button
                                     disabled={loading}
-                                    className="btn-primary w-full flex items-center justify-center gap-3 py-4 text-base font-bold group"
+                                    className="btn-primary flex-1 flex items-center justify-center gap-3 py-4 text-base font-bold group"
                                 >
                                     {loading ? (
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
                                         <>
-                                            Complete Clinical Onboarding
+                                            {step === 1 && role === 'PATIENT' ? 'Next: Medical Details' : 'Complete Registration'}
                                             <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                         </>
                                     )}

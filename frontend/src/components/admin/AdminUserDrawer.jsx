@@ -110,7 +110,7 @@ const AdminUserDrawer = ({ isOpen, onClose, user, profile, onToggleStatus, onDel
                                         <div className={`w-20 h-20 rounded-3xl flex items-center justify-center font-bold text-2xl shadow-xl shadow-opacity-10 
                                             ${isDoctor ? 'bg-emerald-50 text-emerald-600 shadow-emerald-100' : 'bg-indigo-50 text-indigo-600 shadow-indigo-100'}`}>
                                             <Image 
-                                                src={user?.profilePic || profile?.profilePic || `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=${isDoctor ? '0ea5e9' : '6366f1'}&color=fff&bold=true`} 
+                                                src={profile?.profileImageUrl || user?.profileImageUrl || user?.profilePic || profile?.profilePic || `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=${isDoctor ? '0ea5e9' : '6366f1'}&color=fff&bold=true`} 
                                                 className="w-full h-full rounded-3xl object-cover" 
                                                 alt="avatar" 
                                                 width={80}
