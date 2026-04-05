@@ -29,13 +29,13 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { patientApi, appointmentApi, medicalHistoryApi, paymentApi, prescriptionApi, notificationApi, fileUploadApi } from '../../lib/api';
-import { PATIENT_ROUTES } from '../../constants/routes';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import FileUpload from '../../components/ui/FileUpload';
 
 const PatientDashboard = () => {
     const [userData, setUserData] = useState(null);
     const [stats, setStats] = useState({ appointments: 0, reports: 0, prescriptions: 0 });
+    const [allAppointments, setAllAppointments] = useState([]);
     const [upcoming, setUpcoming] = useState([]);
     const [history, setHistory] = useState([]);
     const [reports, setReports] = useState([]);
@@ -48,6 +48,12 @@ const PatientDashboard = () => {
     const [uploadDescription, setUploadDescription] = useState('');
     const [uploadReportType, setUploadReportType] = useState('LAB_RESULT');
     const router = useRouter();
+
+    useEffect(() => {
+        if (typeof router.query.tab === 'string') {
+            setActiveTab(router.query.tab);
+        }
+    }, [router.query.tab]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -108,6 +114,7 @@ const PatientDashboard = () => {
                     const safeNotifications = Array.isArray(notificationInfo) ? notificationInfo : [];
 
                     setUserData({ ...patientInfo, name: patientInfo.name || name, id, clinicalId });
+                    setAllAppointments(safeAppts);
                     setUpcoming(safeAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)));
                     setHistory(safeHistory);
                     setReports(safeReports);
@@ -135,22 +142,14 @@ const PatientDashboard = () => {
         if (router.query.payment === 'success') {
             console.log("Payment success detected — synchronizing visit states...");
             const id = localStorage.getItem('patient_id') || localStorage.getItem('user_id');
-            const targetApptId = router.query.appointmentId;
 
             const syncData = async () => {
-                if (targetApptId) {
-                    try {
-                        // explicitly confirm here to bypass localhost webhook block
-                        await appointmentApi.patch(`/${targetApptId}/status?status=CONFIRMED`);
-                        console.log("Appointment confirmed after return from payment:", targetApptId);
-                    } catch (e) {
-                        console.warn("Could not auto-confirm post-payment:", e);
-                    }
-                }
-
+                await new Promise((resolve) => setTimeout(resolve, 750));
                 const apptRes = await appointmentApi.get(`/patient/${id}`).catch(() => ({ data: { data: [] } }));
                 const allAppts = apptRes.data?.data || apptRes.data || [];
-                setUpcoming(Array.isArray(allAppts) ? allAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)) : []);
+                const safeAppts = Array.isArray(allAppts) ? allAppts : [];
+                setAllAppointments(safeAppts);
+                setUpcoming(safeAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)));
 
                 // Update URL to remove visual success param without reload
                 router.replace('/dashboard/patient', undefined, { shallow: true });
@@ -249,11 +248,8 @@ const PatientDashboard = () => {
                             <button
                                 key={item.id}
                                 onClick={() => {
-                                    if (item.id === 'telemedicine') {
-                                        router.push(PATIENT_ROUTES.TELEMEDICINE);
-                                    } else {
-                                        setActiveTab(item.id);
-                                    }
+                                    setActiveTab(item.id);
+                                    router.replace(`/dashboard/patient?tab=${item.id}`, undefined, { shallow: true });
                                 }}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold tracking-tight transition-all duration-300 relative group overflow-hidden ${activeTab === item.id
                                     ? 'bg-teal-600 text-white shadow-xl shadow-teal-200'
@@ -810,24 +806,115 @@ const PatientDashboard = () => {
                                 )}
 
                                 {activeTab === 'telemedicine' && (
-                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 text-center py-20">
-                                        <div className="max-w-xl mx-auto space-y-8 surface-card p-8 bg-white">
-                                            <div className="w-24 h-24 bg-teal-50 rounded-[2rem] text-teal-600 flex items-center justify-center mx-auto shadow-inner">
-                                                <Video size={48} />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Virtual Clinic Access</h2>
-                                                <p className="text-slate-500 font-medium mt-4">Connect with your specialist through a secure video link.</p>
-                                            </div>
-                                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-left">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Queue Status</span>
-                                                </div>
-                                                <p className="text-sm font-bold text-slate-700">Your join button will activate shortly before the session starts.</p>
-                                            </div>
-                                            <button onClick={() => router.push('/telemedicine')} className="btn-primary w-full py-4 text-center">Enter Command Center</button>
-                                        </div>
+                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+                                        {(() => {
+                                            const telemedicineAppointments = allAppointments.filter((a) => {
+                                                const mode = String(a.consultationType || a.mode || a.type || '').toUpperCase();
+                                                return mode === 'ONLINE' || mode === 'TELEMEDICINE';
+                                            });
+
+                                            const upcomingTelemedicine = telemedicineAppointments.filter((a) =>
+                                                ['PENDING', 'PENDING_PAYMENT', 'CONFIRMED', 'PAID', 'IN_SESSION'].includes(String(a.status || '').toUpperCase())
+                                            );
+
+                                            const completedTelemedicine = telemedicineAppointments.filter((a) =>
+                                                ['COMPLETED', 'CANCELLED'].includes(String(a.status || '').toUpperCase())
+                                            );
+
+                                            const canJoinSession = (appt) => {
+                                                const status = String(appt?.status || '').toUpperCase();
+                                                if (['PAID', 'CONFIRMED', 'IN_SESSION'].includes(status)) return true;
+
+                                                const date = appt?.appointmentDate || appt?.date;
+                                                const time = appt?.appointmentTime || appt?.time;
+                                                if (!date || !time) return false;
+
+                                                const when = new Date(`${date}T${time}`);
+                                                if (Number.isNaN(when.getTime())) return false;
+                                                const unlockAt = new Date(when.getTime() - 60 * 60 * 1000);
+                                                return new Date() >= unlockAt;
+                                            };
+
+                                            return (
+                                                <>
+                                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                                                        <div>
+                                                            <h2 className="text-4xl leading-tight tracking-tighter text-slate-900 font-black">Virtual <span className="text-teal-600">Clinic.</span></h2>
+                                                            <p className="text-lg text-slate-500 font-medium mt-2">Join upcoming video consultations without leaving your patient dashboard.</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <Badge variant="primary">Upcoming {upcomingTelemedicine.length}</Badge>
+                                                            <Badge variant="success">Completed {completedTelemedicine.length}</Badge>
+                                                        </div>
+                                                    </div>
+
+                                                    {upcomingTelemedicine.length > 0 ? (
+                                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                                            {upcomingTelemedicine.map((appt) => {
+                                                                const whenDate = appt.appointmentDate || appt.date || 'TBD';
+                                                                const whenTime = appt.appointmentTime || appt.time || 'TBD';
+                                                                const doctorName = appt.doctorName || `Doctor #${appt.doctorId}`;
+                                                                const status = String(appt.status || 'PENDING').toUpperCase();
+
+                                                                return (
+                                                                    <div key={appt.id} className="surface-card p-8 bg-white border border-slate-100 space-y-6">
+                                                                        <div className="flex items-start justify-between gap-4">
+                                                                            <div className="flex items-center gap-4">
+                                                                                <div className="w-14 h-14 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center shadow-inner">
+                                                                                    <Video size={24} />
+                                                                                </div>
+                                                                                <div>
+                                                                                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Telemedicine Visit</p>
+                                                                                    <h3 className="text-xl font-black text-slate-900 tracking-tight mt-1">Dr. {doctorName}</h3>
+                                                                                </div>
+                                                                            </div>
+                                                                            <Badge variant={status === 'PAID' || status === 'CONFIRMED' || status === 'IN_SESSION' ? 'success' : 'warning'}>{status}</Badge>
+                                                                        </div>
+
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</p>
+                                                                                <p className="text-sm font-bold text-slate-700 mt-1">{whenDate}</p>
+                                                                            </div>
+                                                                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Time</p>
+                                                                                <p className="text-sm font-bold text-slate-700 mt-1">{whenTime}</p>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="flex flex-col sm:flex-row gap-3">
+                                                                            <button
+                                                                                onClick={() => router.push(`/telemedicine?appointmentId=${appt.id}`)}
+                                                                                disabled={!canJoinSession(appt)}
+                                                                                className={`flex-1 py-3 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${canJoinSession(appt)
+                                                                                    ? 'bg-teal-600 text-white hover:scale-[1.02] shadow-lg shadow-teal-200'
+                                                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                                                    }`}
+                                                                            >
+                                                                                {canJoinSession(appt) ? 'Join Session' : 'Locked'}
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => setActiveTab('appointments')}
+                                                                                className="flex-1 py-3 rounded-2xl text-sm font-black uppercase tracking-widest bg-white border border-slate-200 text-slate-600 hover:border-teal-200 hover:text-teal-600 transition-all"
+                                                                            >
+                                                                                View Visit
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="surface-card p-12 bg-white border border-slate-100 text-center max-w-3xl">
+                                                            <Video size={44} className="mx-auto text-slate-300 mb-6" />
+                                                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">No Upcoming Virtual Consultations</h3>
+                                                            <p className="text-slate-500 font-medium mt-3">Book a telemedicine appointment to see your live session queue here.</p>
+                                                            <button onClick={() => setActiveTab('appointments')} className="mt-6 px-8 py-3 bg-teal-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs hover:scale-105 transition-transform">Go to Visits & Tokens</button>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                     </motion.div>
                                 )}
 
