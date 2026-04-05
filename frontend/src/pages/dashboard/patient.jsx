@@ -158,6 +158,17 @@ const PatientDashboard = () => {
         }
     }, [router.query.payment, router.query.appointmentId]);
 
+    useEffect(() => {
+        if (!router.isReady) return;
+
+        const requestedTab = router.query.tab;
+        const allowedTabs = new Set(['overview', 'appointments', 'prescriptions', 'reports', 'payments', 'telemedicine', 'chat', 'profile']);
+
+        if (typeof requestedTab === 'string' && allowedTabs.has(requestedTab)) {
+            setActiveTab(requestedTab);
+        }
+    }, [router.isReady, router.query.tab]);
+
     const logout = () => {
         localStorage.clear();
         router.push('/login');
@@ -215,7 +226,7 @@ const PatientDashboard = () => {
     const navItems = [
         { id: 'overview', icon: LayoutDashboard, label: 'Health Center' },
         { id: 'appointments', icon: Calendar, label: 'Visits & Tokens' },
-        { id: 'prescriptions', icon: Shield, label: 'Digital Rx' },
+        { id: 'prescriptions', icon: Shield, label: 'My Prescriptions' },
         { id: 'reports', icon: FileText, label: 'Records Vault' },
         { id: 'payments', icon: CreditCard, label: 'Billing Nest' },
         { id: 'telemedicine', icon: Video, label: 'Virtual Clinic' },

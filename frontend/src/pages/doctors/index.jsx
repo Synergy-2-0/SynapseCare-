@@ -36,6 +36,47 @@ const DoctorsList = () => {
     const [doctors, setDoctors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('ALL');
+    const [aiSpecialties, setAiSpecialties] = useState([]);
+    const [brokenDoctorImages, setBrokenDoctorImages] = useState({});
+
+    const getFallbackImage = (seed) => `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}`;
+
+    const getDoctorImage = (doc) => {
+        if (brokenDoctorImages[doc.id]) return getFallbackImage(doc.id);
+        return doc.image || getFallbackImage(doc.id);
+    };
+
+    const normalizeToken = (value) => String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+
+    const matchesSpecialty = (doctorSpecialization, specialty) => {
+        const doc = normalizeToken(doctorSpecialization);
+        const spec = normalizeToken(specialty);
+        if (!doc || !spec) return false;
+        return doc.includes(spec) || spec.includes(doc);
+    };
+
+    useEffect(() => {
+        if (!router.isReady) return;
+
+        const qParam = typeof router.query.q === 'string' ? router.query.q : '';
+        const specialtiesParam = typeof router.query.specialties === 'string' ? router.query.specialties : '';
+
+        if (qParam) {
+            setSearchTerm(qParam);
+        }
+
+        if (specialtiesParam) {
+            const parsed = specialtiesParam
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean);
+            setAiSpecialties(parsed);
+        } else {
+            setAiSpecialties([]);
+        }
+    }, [router.isReady, router.query.q, router.query.specialties]);
 
     useEffect(() => {
         const fetchDoctors = async () => {
@@ -49,12 +90,12 @@ const DoctorsList = () => {
                     userId: doc.userId,
                     name: (doc.firstName && doc.lastName)
                         ? `${doc.firstName} ${doc.lastName}`
-                        : `Specialist Node #${doc.userId}`,
+                        : `Specialist Node #${doc.id}`,
                     specialization: doc.specialization || "Clinical Practice",
-                    image: doc.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doc.userId}`,
+                    image: doc.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doc.id}`,
                     location: "SynapseCare Global Hub",
-                    rating: 4.8 + (doc.userId % 5) * 0.05,
-                    reviews: 50 + (doc.userId * 7) % 200,
+                    rating: 4.8 + (doc.id % 5) * 0.05,
+                    reviews: 50 + (doc.id * 7) % 200,
                     experience: doc.experience ? `${doc.experience}+ Years` : "Senior Practitioner",
                     availableToday: doc.isAvailable,
                     fee: doc.consultationFee || 1500
@@ -72,11 +113,17 @@ const DoctorsList = () => {
         fetchDoctors();
     }, []);
 
-    const filteredDoctors = doctors.filter(doc =>
-        (doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doc.specialization.toLowerCase().includes(searchTerm.toLowerCase())) &&
-        (activeFilter === 'ALL' || doc.specialization.toUpperCase() === activeFilter)
-    );
+    const filteredDoctors = doctors.filter(doc => {
+        const searchMatch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            doc.specialization.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const activeFilterMatch = activeFilter === 'ALL' || doc.specialization.toUpperCase() === activeFilter;
+
+        const aiSpecialtyMatch = aiSpecialties.length === 0 ||
+            aiSpecialties.some(spec => matchesSpecialty(doc.specialization, spec));
+
+        return searchMatch && activeFilterMatch && aiSpecialtyMatch;
+    });
 
     const specializationFilters = ['ALL', ...SPECIALIZATIONS];
 
@@ -166,6 +213,23 @@ const DoctorsList = () => {
                         </div>
                     </div>
 
+                    {aiSpecialties.length > 0 && (
+                        <div className="mb-6 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-teal-700">
+                                AI Referral Active: {aiSpecialties.join(' • ')}
+                            </p>
+                            <button
+                                onClick={() => {
+                                    setAiSpecialties([]);
+                                    router.push('/doctors');
+                                }}
+                                className="px-4 py-2 bg-white border border-teal-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-teal-700 hover:bg-teal-100 transition-colors"
+                            >
+                                Show All Doctors
+                            </button>
+                        </div>
+                    )}
+
                     {loading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                             {[1, 2, 3, 4, 5, 6].map(i => (
@@ -189,7 +253,12 @@ const DoctorsList = () => {
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="w-20 h-20 bg-slate-50 rounded-[1.5rem] border-2 border-slate-100 shadow-inner overflow-hidden p-2 group-hover:border-teal-500/20 transition-all duration-500">
                                                 <div className="w-full h-full rounded-[1.5rem] overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
-                                                    <img src={doc.image} alt={doc.name} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
+                                                    <img
+                                                        src={getDoctorImage(doc)}
+                                                        alt={doc.name}
+                                                        onError={() => setBrokenDoctorImages(prev => ({ ...prev, [doc.id]: true }))}
+                                                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="flex flex-col items-end gap-2 text-right">

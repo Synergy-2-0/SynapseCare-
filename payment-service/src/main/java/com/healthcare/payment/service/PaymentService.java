@@ -178,8 +178,16 @@ public class PaymentService {
     // -------------------------------------------------------
     public PaymentDto getPaymentByAppointment(Long appointmentId) {
         return paymentRepository.findByAppointmentId(appointmentId)
-                .map(this::toDto)
+                .stream().map(this::toDto).findFirst()
                 .orElseThrow(() -> new RuntimeException("No payment found for appointment: " + appointmentId));
+    }
+
+    /**
+     * Admin: Get all transactions for the global ledger.
+     */
+    public List<PaymentDto> getAllPayments() {
+        return paymentRepository.findAll()
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     // -------------------------------------------------------
