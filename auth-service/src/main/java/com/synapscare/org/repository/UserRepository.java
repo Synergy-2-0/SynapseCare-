@@ -56,4 +56,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
             User.Role role,
             Boolean isVerified,
             Boolean isActive);
+
+    Optional<User> findByResetToken(String token);
 }

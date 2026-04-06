@@ -226,7 +226,9 @@ services:
     restart: unless-stopped
 
   notification-service:
-    build: ./notification-service
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
     container_name: synapscare-notification-service
     ports:
       - '8089:8089'
@@ -240,6 +242,18 @@ services:
       - 'SPRING_RABBITMQ_PORT=5672'
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
+      # Email configuration (Gmail SMTP)
+      - 'MAIL_HOST=smtp.gmail.com'
+      - 'MAIL_PORT=587'
+      - 'MAIL_USERNAME=luqmanbooso@gmail.com'
+      - 'MAIL_PASSWORD=zmqegzlwtywughrk'
+      - 'EMAIL_NOTIFICATIONS_ENABLED=true'
+      - 'EMAIL_MOCK_MODE=false'
+      # SMS configuration (TextBee)
+      - 'TEXTBEE_API_KEY=d2a26f3a-2636-4c70-be28-8aaa41167de2'
+      - 'TEXTBEE_DEVICE_ID=69d349ceb5cd3ce4c7d6cfe5'
+      - 'SMS_NOTIFICATIONS_ENABLED=true'
+      - 'SMS_MOCK_MODE=false'
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -248,7 +262,9 @@ services:
     restart: unless-stopped
 
   api-gateway:
-    build: ./api-gateway
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
     container_name: synapscare-api-gateway
     ports:
       - '8080:8080'
