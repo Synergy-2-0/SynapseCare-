@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, HeartPulse, FileText, BrainCircuit, PlayCircle, PlusCircle, UploadSimple } from '@phosphor-icons/react';
+import { 
+    X, Activity, Heart, FileText, 
+    Brain, PlayCircle, PlusCircle, UploadCloud 
+} from 'lucide-react';
 import { supabaseStorage } from '../../lib/supabase';
 import { patientApi, medicalHistoryApi } from '../../lib/api';
 import FileUpload from '../ui/FileUpload';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
     const [patientData, setPatientData] = useState(null);
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         if (isOpen && appointment?.patientId) {
@@ -81,7 +86,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                     {/* AI Summary Block */}
                                     <div className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-[2rem] border border-indigo-100/50">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <BrainCircuit className="w-5 h-5 text-indigo-600" />
+                                            <Brain className="w-5 h-5 text-indigo-600" />
                                             <div className="text-xs font-bold uppercase tracking-widest text-indigo-600">Synapcare Clinical Insight</div>
                                         </div>
                                         <div className="text-slate-700 text-sm leading-relaxed font-medium">
@@ -96,7 +101,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                     {/* Vitals Grid */}
                                     <div>
                                         <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-slate-400 mb-4">
-                                            <HeartPulse className="w-4 h-4" /> Live Health Markers
+                                            <Heart className="w-4 h-4" /> Live Health Markers
                                         </h4>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
@@ -179,7 +184,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 blur-[50px] rounded-full pointer-events-none" />
                                         <div className="flex items-center gap-2 relative z-10">
                                             <div className="w-8 h-8 rounded-xl bg-teal-500/20 flex items-center justify-center">
-                                                <UploadSimple size={18} weight="bold" className="text-teal-400" />
+                                                <UploadCloud size={18} strokeWidth={3} className="text-teal-400" />
                                             </div>
                                             <div className="text-[10px] font-black uppercase tracking-widest text-white/90">Diagnostics Sync</div>
                                         </div>
@@ -228,5 +233,4 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
             )}
         </AnimatePresence>
     );
-}
 }
