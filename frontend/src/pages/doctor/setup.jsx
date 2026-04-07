@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Image as ImageIcon, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
-import { useRouter } from 'next/router';
 import Image from 'next/image';
+import { useRouter } from 'next/router';
 import { doctorApi } from '../../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
-import { supabaseStorage } from '../../lib/supabase';
 import { SPECIALIZATIONS, SPECIALIZATION_LABELS } from '../../constants/specializations';
 import { normalizeVerificationStatus, VERIFICATION_STATUS } from '../../lib/doctorVerification';
 
@@ -162,7 +161,7 @@ export default function DoctorSetupPage() {
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         setFieldErrors({});
-        
+
         let errors = {};
         if (!formData.licenseNumber?.trim()) errors.licenseNumber = "Medical License Number is required.";
         if (!formData.specialization) errors.specialization = "Specialization is required.";
@@ -172,7 +171,7 @@ export default function DoctorSetupPage() {
         if (formData.experience && parseInt(formData.experience) < 0) {
             errors.experience = "Experience cannot be negative.";
         }
-        
+
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
             return;
@@ -184,30 +183,36 @@ export default function DoctorSetupPage() {
             let profileImageUrl = photoPreview;
             let licenseImageUrl = null;
 
-            // Helper for Supabase S3-Compatible Upload
-            const uploadToSupabase = async (file, folder) => {
-                const fileExt = file.name.split('.').pop();
-                const userName = localStorage.getItem('user_name')?.replace(/\s+/g, '_').toLowerCase() || 'unnamed';
-                const fileName = `${folder}/${userName}_${Date.now()}.${fileExt}`;
-                
-                const { error } = await supabaseStorage.upload(file, fileName);
-                
-                if (error) {
-                    throw new Error(error.message || 'Failed to upload to clinical-media registry');
+            // Helper for Cloudinary Unsigned Upload
+            const uploadToCloudinary = async (file) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'synapcare_preset');
+                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dao7fkewx';
+
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result.secure_url) {
+                    throw new Error(result?.error?.message || 'Failed to upload to clinical-media registry');
                 }
-                
-                return supabaseStorage.getPublicUrl(fileName);
+
+                return result.secure_url;
             };
 
             // 1. Upload files if selected
             if (photoFile) {
-                profileImageUrl = await uploadToSupabase(photoFile, 'profile-photos');
+                profileImageUrl = await uploadToCloudinary(photoFile);
             }
 
             if (licenseFile) {
-                licenseImageUrl = await uploadToSupabase(licenseFile, 'licenses');
+                licenseImageUrl = await uploadToCloudinary(licenseFile);
             }
 
+            // 2. Build payload — use Cloudinary URL if upload
             // 2. Build payload — use Cloudinary URL if uploaded, else existing DB URL
             const finalProfileImageUrl = photoFile ? profileImageUrl : existingProfileImageUrl;
             const finalLicenseImageUrl = licenseFile ? licenseImageUrl : existingLicenseDocumentUrl;
@@ -425,21 +430,21 @@ export default function DoctorSetupPage() {
 
                                         <div>
                                             <label className="block text-sm font-semibold text-slate-700 mb-1">Specialization *</label>
-                                             <select 
-                                                 required 
-                                                 name="specialization" 
-                                                 value={formData.specialization} 
-                                                 onChange={handleInputChange} 
-                                                 className={`w-full bg-slate-50 border ${fieldErrors.specialization ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all appearance-none cursor-pointer`}
-                                             >
-                                                 <option value="" disabled>Select Specialization</option>
-                                                 {SPECIALIZATIONS.map(spec => (
-                                                     <option key={spec} value={spec}>
-                                                         {SPECIALIZATION_LABELS[spec]}
-                                                     </option>
-                                                 ))}
-                                             </select>
-                                             {fieldErrors.specialization && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.specialization}</p>}
+                                            <select
+                                                required
+                                                name="specialization"
+                                                value={formData.specialization}
+                                                onChange={handleInputChange}
+                                                className={`w-full bg-slate-50 border ${fieldErrors.specialization ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all appearance-none cursor-pointer`}
+                                            >
+                                                <option value="" disabled>Select Specialization</option>
+                                                {SPECIALIZATIONS.map(spec => (
+                                                    <option key={spec} value={spec}>
+                                                        {SPECIALIZATION_LABELS[spec]}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {fieldErrors.specialization && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.specialization}</p>}
                                         </div>
 
                                         <div>
@@ -481,12 +486,12 @@ export default function DoctorSetupPage() {
 
                                             <div className="flex-shrink-0">
                                                 {photoPreview ? (
-                                                    <Image 
-                                                        src={photoPreview} 
-                                                        alt="Preview" 
+                                                    <Image
+                                                        src={photoPreview}
+                                                        alt="Preview"
                                                         width={64}
                                                         height={64}
-                                                        className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" 
+                                                        className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
                                                         unoptimized
                                                     />
                                                 ) : (
