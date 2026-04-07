@@ -75,6 +75,13 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Password Reset
+    @Column(name = "reset_token", length = 100)
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
+
     public enum Role {
         PATIENT,
         DOCTOR,

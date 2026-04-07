@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Search, Bell, User, LayoutDashboard, Command } from 'lucide-react';
+import { Menu, Search, User, LayoutDashboard, Command } from 'lucide-react';
 import Head from 'next/head';
 import Sidebar from './Sidebar';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import NotificationBell from '../ui/NotificationBell';
 
 const DashboardLayout = ({ children, title = "" }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -130,10 +131,7 @@ const DashboardLayout = ({ children, title = "" }) => {
                     </div>
 
                     <div className="flex items-center gap-4 lg:gap-6 ml-4">
-                        <button className="relative w-10 h-10 rounded-xl bg-white border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:border-[var(--accent-teal)] hover:text-[var(--accent-teal)] transition-all shadow-sm group">
-                            <Bell size={18} className="group-hover:rotate-12 transition-transform" />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-[var(--accent-amber)] rounded-full border-2 border-white" />
-                        </button>
+                        <NotificationBell />
                         
                         <div className="h-8 w-px bg-[var(--border-color)] hidden sm:block" />
 
