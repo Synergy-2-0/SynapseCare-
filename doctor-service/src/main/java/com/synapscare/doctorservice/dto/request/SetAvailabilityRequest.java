@@ -19,4 +19,8 @@ public class SetAvailabilityRequest {
     private LocalTime endTime;
 
     private Boolean isActive = true;
+
+    private Integer slotDuration;
+
+    private Integer bufferTime;
 }

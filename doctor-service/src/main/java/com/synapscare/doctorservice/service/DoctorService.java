@@ -62,6 +62,12 @@ public class DoctorService {
             if (request.getLicenseDocumentUrl() != null) {
                 doctor.setLicenseDocumentUrl(request.getLicenseDocumentUrl());
             }
+            if (request.getSlotDuration() != null) {
+                doctor.setSlotDuration(request.getSlotDuration());
+            }
+            if (request.getBufferTime() != null) {
+                doctor.setBufferTime(request.getBufferTime());
+            }
             // Keep isAvailable false until APPROVED via RabbitMQ event
             // Keep existing verification status
 
@@ -83,6 +89,8 @@ public class DoctorService {
             doctor.setBio(request.getBio());
             doctor.setProfileImageUrl(request.getProfileImageUrl());
             doctor.setLicenseDocumentUrl(request.getLicenseDocumentUrl());
+            doctor.setSlotDuration(request.getSlotDuration() != null ? request.getSlotDuration() : 30);
+            doctor.setBufferTime(request.getBufferTime() != null ? request.getBufferTime() : 0);
             doctor.setIsAvailable(false); // Not available until APPROVED
             doctor.setVerificationStatus(VerificationStatus.PENDING);
         }
@@ -125,6 +133,12 @@ public class DoctorService {
         }
         if (request.getLicenseDocumentUrl() != null) {
             doctor.setLicenseDocumentUrl(request.getLicenseDocumentUrl());
+        }
+        if (request.getSlotDuration() != null) {
+            doctor.setSlotDuration(request.getSlotDuration());
+        }
+        if (request.getBufferTime() != null) {
+            doctor.setBufferTime(request.getBufferTime());
         }
 
         Doctor updatedDoctor = doctorRepository.save(doctor);
@@ -271,6 +285,15 @@ public class DoctorService {
         availability.setStartTime(request.getStartTime());
         availability.setEndTime(request.getEndTime());
         availability.setIsActive(request.getIsActive());
+
+        // Update doctor's global duration & buffer settings
+        if (request.getSlotDuration() != null) {
+            doctor.setSlotDuration(request.getSlotDuration());
+        }
+        if (request.getBufferTime() != null) {
+            doctor.setBufferTime(request.getBufferTime());
+        }
+        doctorRepository.save(doctor);
 
         DoctorAvailability saved = availabilityRepository.save(availability);
         log.info("Availability set for doctor: {} on {}", doctorId, request.getDayOfWeek());
@@ -442,7 +465,7 @@ public class DoctorService {
             // If they have a specific working range for this day, generate slots from it
             return overrides.stream()
                     .filter(s -> Boolean.TRUE.equals(s.getIsAvailable()))
-                    .flatMap(s -> generate30MinSlots(date, s.getStartTime(), s.getEndTime()).stream())
+                    .flatMap(s -> generateDynamicSlots(date, s.getStartTime(), s.getEndTime(), doctor.getSlotDuration(), doctor.getBufferTime()).stream())
                     .collect(Collectors.toList());
         }
 
@@ -458,23 +481,25 @@ public class DoctorService {
 
         return weeklySlots.stream()
                 .filter(DoctorAvailability::getIsActive)
-                .flatMap(slot -> generate30MinSlots(date, slot.getStartTime(), slot.getEndTime()).stream())
+                .flatMap(slot -> generateDynamicSlots(date, slot.getStartTime(), slot.getEndTime(), doctor.getSlotDuration(), doctor.getBufferTime()).stream())
                 .collect(Collectors.toList());
     }
 
-    private List<AvailableSlotResponse> generate30MinSlots(LocalDate date, java.time.LocalTime start, java.time.LocalTime end) {
+    private List<AvailableSlotResponse> generateDynamicSlots(LocalDate date, java.time.LocalTime start, java.time.LocalTime end, int duration, int buffer) {
         List<AvailableSlotResponse> slots = new java.util.ArrayList<>();
-        if (start == null || end == null) return slots;
+        if (start == null || end == null || duration <= 0) return slots;
 
         java.time.LocalTime current = start;
-        while (current.plusMinutes(30).isBefore(end) || current.plusMinutes(30).equals(end)) {
+        int totalDelta = duration + buffer;
+
+        while (current.plusMinutes(duration).isBefore(end) || current.plusMinutes(duration).equals(end)) {
             slots.add(AvailableSlotResponse.builder()
                     .date(date)
                     .startTime(current)
-                    .endTime(current.plusMinutes(30))
+                    .endTime(current.plusMinutes(duration))
                     .isAvailable(true)
                     .build());
-            current = current.plusMinutes(30);
+            current = current.plusMinutes(totalDelta);
         }
         return slots;
     }
@@ -520,6 +545,8 @@ public class DoctorService {
                 .licenseDocumentUrl(doctor.getLicenseDocumentUrl())
                 .isAvailable(doctor.getIsAvailable())
                 .verificationStatus(doctor.getVerificationStatus())
+                .slotDuration(doctor.getSlotDuration())
+                .bufferTime(doctor.getBufferTime())
                 .verificationRejectionReason(doctor.getVerificationRejectionReason())
                 .createdAt(doctor.getCreatedAt())
                 .updatedAt(doctor.getUpdatedAt())

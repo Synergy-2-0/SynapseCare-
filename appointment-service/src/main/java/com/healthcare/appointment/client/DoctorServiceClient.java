@@ -99,7 +99,9 @@ public class DoctorServiceClient {
                         "dayOfWeek", normalizeDoctorServiceDay(dto.getDayOfWeek()),
                 "startTime", dto.getStartTime() != null ? dto.getStartTime().toString() : null,
                 "endTime", dto.getEndTime() != null ? dto.getEndTime().toString() : null,
-                        "isActive", Boolean.TRUE.equals(dto.getIsWorking())
+                        "isActive", Boolean.TRUE.equals(dto.getIsWorking()),
+                        "slotDuration", dto.getSlotDuration(),
+                        "bufferTime", dto.getBufferTime()
                 );
 
                 restTemplate.exchange(

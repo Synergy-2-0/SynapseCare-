@@ -28,6 +28,8 @@ public class DoctorProfileResponse {
     private String licenseDocumentUrl;
     private Boolean isAvailable;
     private VerificationStatus verificationStatus;
+    private Integer slotDuration;
+    private Integer bufferTime;
     private String verificationRejectionReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
