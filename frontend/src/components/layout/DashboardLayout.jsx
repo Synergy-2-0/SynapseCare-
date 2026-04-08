@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Search, User, LayoutDashboard, Command } from 'lucide-react';
+import { Menu, Search, Command } from 'lucide-react';
 import Head from 'next/head';
+import Image from 'next/image';
 import Sidebar from './Sidebar';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import NotificationBell from '../ui/NotificationBell';
@@ -135,7 +136,7 @@ const DashboardLayout = ({ children, title = "" }) => {
                         
                         <div className="h-8 w-px bg-[var(--border-color)] hidden sm:block" />
 
-                        <div className="flex items-center gap-3 group cursor-pointer">
+                        <div className="flex items-center gap-3 group cursor-pointer" onClick={() => router.push(userRole === 'DOCTOR' ? '/doctor/dashboard?tab=profile' : userRole === 'PATIENT' ? '/dashboard/patient?tab=profile' : '#')}>
                             <div className="text-right hidden sm:block">
                                 <p className="text-sm font-bold font-serif text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent-teal)] transition-colors">
                                     {userRole === 'DOCTOR' ? `Dr. ${userData.name}` : userRole === 'ADMIN' ? `Admin ${userData.name}` : userData.name}
@@ -144,13 +145,22 @@ const DashboardLayout = ({ children, title = "" }) => {
                                     {userRole === 'DOCTOR' ? userData.specialization : userRole === 'ADMIN' ? 'Administrator' : 'Patient'}
                                 </p>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-center text-[var(--accent-teal)] relative group-hover:scale-105 transition-transform">
-                                <img 
-                                    src={`https://ui-avatars.com/api/?name=${userData.name}&background=0D9488&color=fff`} 
-                                    alt={userData.name}
-                                    className="w-full h-full rounded-full object-cover p-0.5"
-                                />
-                                <div className="absolute 0 right-0 bottom-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
+                            <div className="w-10 h-10 rounded-full bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-center text-[var(--accent-teal)] relative group-hover:scale-105 transition-transform overflow-hidden">
+                                {typeof window !== 'undefined' && localStorage.getItem('user_image') ? (
+                                    <Image 
+                                        src={localStorage.getItem('user_image')} 
+                                        alt={userData.name}
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                    />
+                                ) : (
+                                    <img 
+                                        src={`https://ui-avatars.com/api/?name=${userData.name}&background=0D9488&color=fff`} 
+                                        alt={userData.name}
+                                        className="w-full h-full rounded-full object-cover p-0.5"
+                                    />
+                                )}
                             </div>
                         </div>
                     </div>

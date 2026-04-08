@@ -27,10 +27,9 @@ import {
     CreditCard,
     ArrowRight
 } from 'lucide-react';
-import { patientApi, appointmentApi, medicalHistoryApi, paymentApi, prescriptionApi, notificationApi, fileUploadApi } from '../../lib/api';
+import { patientApi, appointmentApi, medicalHistoryApi, paymentApi, prescriptionApi, notificationApi } from '../../lib/api';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import FileUpload from '../../components/ui/FileUpload';
-import { supabaseStorage } from '../../lib/supabase';
 import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -94,6 +93,10 @@ const PatientDashboard = () => {
                     });
                     const patientInfo = patientRes.data?.data || patientRes.data || {};
                     const clinicalId = patientInfo.id;
+                    
+                    if (patientInfo.profileImageUrl) {
+                        localStorage.setItem('user_image', patientInfo.profileImageUrl);
+                    }
 
                     if (!clinicalId) {
                         console.warn("Could not resolve clinical ID for user:", id);
@@ -240,17 +243,41 @@ const PatientDashboard = () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('userId', localStorage.getItem('user_id'));
+        const uploadToCloudinary = async (file) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'synapcare_preset');
+            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dao7fkewx';
+
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.secure_url) {
+                throw new Error(result?.error?.message || 'Failed to upload to clinical-media registry');
+            }
+            return result.secure_url;
+        };
 
         try {
-            const res = await fileUploadApi.post('/profile/upload', formData);
-            const imageUrl = res.data.data?.url || res.data.url;
-            setProfileForm(prev => ({ ...prev, profileImageUrl: imageUrl }));
+            toast.loading('Synchronizing identity with Cloud Registry...');
+            const imageUrl = await uploadToCloudinary(file);
+            
+            // Sync with backend immediately using clinicalId
+            await patientApi.put(`/${userData.clinicalId}`, {
+                ...userData,
+                profileImageUrl: imageUrl
+            });
+
             setUserData(prev => ({ ...prev, profileImageUrl: imageUrl }));
-            toast.success('Identity artifact uploaded to vault.');
+            setProfileForm(prev => ({ ...prev, profileImageUrl: imageUrl }));
+            
+            toast.dismiss();
+            toast.success('Clinical identity artifact updated.');
         } catch (err) {
+            toast.dismiss();
             console.error("Artifact upload failed:", err);
             toast.error('Identity artifact synchronization failed.');
         }
@@ -265,7 +292,7 @@ const PatientDashboard = () => {
 
         try {
             setLoading(true);
-            const res = await patientApi.put(`/${userData.id}`, profileForm);
+            const res = await patientApi.put(`/${userData.clinicalId}`, profileForm);
             const updatedData = res.data?.data || res.data;
             setUserData(updatedData);
             setProfileForm(updatedData);
@@ -434,8 +461,18 @@ const PatientDashboard = () => {
                                     <p className="text-xs font-bold text-slate-900 leading-none mb-1">{userData?.name || 'Authorized Patient'}</p>
                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Patient Workspace</p>
                                 </div>
-                                <div className="w-11 h-11 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shadow-sm">
-                                    <User size={20} />
+                                <div className="w-11 h-11 rounded-2xl bg-teal-50 border-2 border-teal-100 flex items-center justify-center text-teal-600 shadow-sm relative overflow-hidden">
+                                    {userData?.profileImageUrl ? (
+                                        <Image 
+                                            src={userData.profileImageUrl} 
+                                            alt="Profile" 
+                                            fill 
+                                            className="object-cover"
+                                            unoptimized
+                                        />
+                                    ) : (
+                                        <User size={20} />
+                                    )}
                                 </div>
                             </div>
                         </div>

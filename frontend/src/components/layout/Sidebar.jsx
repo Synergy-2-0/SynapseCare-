@@ -8,14 +8,12 @@ import {
     FileText,
     Video,
     LogOut,
-    User,
-    Activity,
+    UserCog,
+    Clock,
+    ClipboardList,
     ShieldCheck,
     Search,
-    UserCog,
-    Settings,
-    Clock,
-    ClipboardList
+    Activity
 } from 'lucide-react';
 import { DOCTOR_ROUTES, PATIENT_ROUTES, ADMIN_ROUTES } from '../../constants/routes';
 
@@ -46,6 +44,7 @@ const Sidebar = ({ onClose }) => {
         { id: 'consultations', icon: Video, label: 'Consultations', path: DOCTOR_ROUTES.TELEMEDICINE },
         { id: 'prescriptions', icon: ClipboardList, label: 'Prescriptions', path: DOCTOR_ROUTES.PRESCRIPTIONS },
         { id: 'schedule', icon: Clock, label: 'Schedule', path: DOCTOR_ROUTES.SCHEDULE },
+        { id: 'profile', icon: UserCog, label: 'My Settings', path: `${DOCTOR_ROUTES.DASHBOARD}?tab=profile` },
     ];
 
     const patientNav = [
