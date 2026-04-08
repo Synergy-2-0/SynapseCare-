@@ -108,7 +108,7 @@ const PatientDashboard = () => {
                     const [apptRes, historyRes, reportRes, paymentRes, prescRes, notifRes] = await Promise.all([
                         appointmentApi.get(`/patient/${clinicalId}`).catch(() => ({ data: { data: [] } })),
                         medicalHistoryApi.get(`/patient/${clinicalId}`).catch(() => ({ data: { data: [] } })),
-                        patientApi.get(`/${clinicalId}/reports`).catch(() => ({ data: { data: [] } })),
+                        medicalHistoryApi.get(`/reports/patient/${clinicalId}`).catch(() => ({ data: { data: [] } })),
                         paymentApi.get(`/patient/${clinicalId}/history`).catch(() => ({ data: { data: [] } })),
                         prescriptionApi.get(`/patient/${clinicalId}`).catch(() => ({ data: { data: [] } })),
                         notificationApi.get(`/user/${id}`).catch(() => ({ data: { data: [] } }))
@@ -246,7 +246,7 @@ const PatientDashboard = () => {
 
         try {
             const res = await fileUploadApi.post('/profile/upload', formData);
-            const imageUrl = res.data.url;
+            const imageUrl = res.data.data?.url || res.data.url;
             setProfileForm(prev => ({ ...prev, profileImageUrl: imageUrl }));
             setUserData(prev => ({ ...prev, profileImageUrl: imageUrl }));
             toast.success('Identity artifact uploaded to vault.');

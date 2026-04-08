@@ -56,7 +56,14 @@ const DoctorDashboard = () => {
                         return;
                     }
 
-                    const apptRes = await appointmentApi.get(`/doctor/${id}`);
+                    const doctorId = profileRes?.data?.id;
+                    if (!doctorId) {
+                        console.error("No clinical ID found for doctor profile");
+                        setLoading(false);
+                        return;
+                    }
+
+                    const apptRes = await appointmentApi.get(`/doctor/${doctorId}`);
                     const allAppts = apptRes.data?.data || apptRes.data || [];
                     const safeAppts = Array.isArray(allAppts) ? allAppts : [];
                     
