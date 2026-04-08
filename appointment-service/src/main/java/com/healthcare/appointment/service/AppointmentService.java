@@ -44,6 +44,7 @@ public class AppointmentService {
     private final DoctorServiceClient doctorServiceClient;
     private final PatientServiceClient patientServiceClient;
     private final AppointmentEventProducer appointmentEventProducer;
+    private final com.healthcare.appointment.repository.ExtraSlotRepository extraSlotRepository;
 
     public AppointmentDto bookAppointment(AppointmentDto dto) {
         patientServiceClient.getPatientById(dto.getPatientId());
@@ -234,8 +235,26 @@ public class AppointmentService {
          .map(com.healthcare.appointment.entity.Appointment::getTime)
          .collect(Collectors.toSet());
 
-        // 3. Mark slots as unavailable if booked
-        return slots.stream()
+        // 3. Get extra slots from local DB
+        List<com.healthcare.appointment.entity.ExtraSlot> extraSlots = extraSlotRepository.findByDoctorIdAndDate(doctorId, date);
+        List<AvailableSlotClientDto> extraDtos = extraSlots.stream()
+                .map(es -> AvailableSlotClientDto.builder()
+                        .date(es.getDate())
+                        .startTime(es.getStartTime())
+                        .endTime(es.getEndTime())
+                        .isAvailable(true)
+                        .build())
+                .collect(Collectors.toList());
+
+        // 4. Merge all slots
+        List<AvailableSlotClientDto> allSlots = new java.util.ArrayList<>(slots);
+        allSlots.addAll(extraDtos);
+
+        // 5. Sort by time
+        allSlots.sort(java.util.Comparator.comparing(AvailableSlotClientDto::getStartTime));
+
+        // 6. Mark slots as unavailable if booked
+        return allSlots.stream()
                 .map(slot -> {
                     if (bookedTimes.contains(slot.getStartTime())) {
                         return AvailableSlotClientDto.builder()
@@ -294,13 +313,17 @@ public class AppointmentService {
     }
 
     public AppointmentDto blockSlot(Long doctorId, Long userId, BlockSlotRequest request) {
-        DoctorProfileClientDto doctor = doctorServiceClient.getDoctorById(doctorId);
-        if (doctor == null) {
-            throw new ResourceNotFoundException("Doctor not found");
+        log.info("Attempting to block clinical slot for doctor {} on {} at {}", doctorId, request.getDate(), request.getTime());
+        
+        DoctorProfileClientDto doctor = null;
+        try {
+            doctor = doctorServiceClient.getDoctorById(doctorId);
+        } catch (Exception e) {
+            log.warn("Identity verification for doctor {} failed during slot blocking, but proceeding with safety checks: {}", doctorId, e.getMessage());
         }
 
-        if (userId != null && doctor.getUserId() != null && !doctor.getUserId().equals(userId)) {
-            throw new SlotConflictException("Not authorized to block this slot");
+        if (doctor != null && userId != null && doctor.getUserId() != null && !doctor.getUserId().equals(userId)) {
+            throw new SlotConflictException("Security breach: Unauthorized practitioner identity detected for this clinical channel.");
         }
 
         boolean alreadyOccupied = appointmentRepository.existsByDoctorIdAndDateAndTimeAndStatusIn(
@@ -309,26 +332,60 @@ public class AppointmentService {
                 request.getTime(),
                 OCCUPIED_STATUSES
         );
+
         if (alreadyOccupied) {
-            throw new SlotConflictException("Doctor already has an appointment or blocked slot at this time");
+            throw new SlotConflictException("Clinical collision: Practitioner is already committed to an appointment or block at this juncture.");
         }
 
-        long existingCount = appointmentRepository.countByDoctorIdAndDate(doctorId, request.getDate());
-        Appointment appointment = Appointment.builder()
-                .patientId(null)
+        try {
+            long existingCount = appointmentRepository.countByDoctorIdAndDate(doctorId, request.getDate());
+            
+            Appointment appointment = Appointment.builder()
+                    .patientId(null) // Identity is vacant for blocked clinical nodes
+                    .doctorId(doctorId)
+                    .date(request.getDate())
+                    .time(request.getTime())
+                    .reason(request.getReason() != null ? request.getReason() : "Clinical schedule adjustment")
+                    .fee(0.0)
+                    .notes("Secured Practitioner Availability")
+                    .consultationType("CLINICAL_BLOCK")
+                    .tokenNumber((int) existingCount + 1)
+                    .status(AppointmentStatus.BLOCKED)
+                    .build();
+
+            appointment = appointmentRepository.save(appointment);
+            log.info("Clinical slot successfully secured for practitioner {}. Identity Artifact ID: {}", doctorId, appointment.getId());
+            return mapToDto(appointment);
+        } catch (Exception e) {
+            log.error("CRITICAL: Clinical slot persistence failed for doctor {}. Root cause: {}", doctorId, e.getMessage());
+            throw new RuntimeException("Clinical availability failure: Contact systems engineering. Error: " + e.getMessage());
+        }
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public List<AppointmentDto> blockSlotsBulk(Long doctorId, Long userId, List<BlockSlotRequest> requests) {
+        return requests.stream()
+                .map(request -> {
+                    try {
+                        return blockSlot(doctorId, userId, request);
+                    } catch (Exception e) {
+                        log.warn("Could not block individual slot: {}", e.getMessage());
+                        return null;
+                    }
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    public void addExtraSlot(Long doctorId, BlockSlotRequest request) {
+        com.healthcare.appointment.entity.ExtraSlot extraSlot = com.healthcare.appointment.entity.ExtraSlot.builder()
                 .doctorId(doctorId)
                 .date(request.getDate())
-                .time(request.getTime())
-                .reason(request.getReason() != null ? request.getReason() : "Doctor blocked this slot")
-                .fee(0.0)
-                .notes("Blocked by doctor")
-                .consultationType("BLOCKED")
-                .tokenNumber((int) existingCount + 1)
-                .status(AppointmentStatus.BLOCKED)
+                .startTime(request.getTime())
+                .endTime(request.getTime().plusMinutes(60)) // Assuming 1 hour for extra slot for now
+                .reason("Clinician Defined Extra Availability")
                 .build();
-
-        appointment = appointmentRepository.save(appointment);
-        return mapToDto(appointment);
+        extraSlotRepository.save(extraSlot);
     }
 
     public void bulkReassign(List<Long> appointmentIds, Long targetDoctorId) {

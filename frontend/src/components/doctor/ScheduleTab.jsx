@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { 
     format, addDays, startOfWeek, addWeeks, subWeeks, subDays, 
-    setHours, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, 
+    setHours, isSameDay, startOfMonth, eachDayOfInterval, 
     isSameMonth
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Video, User, List, Calendar as CalendarIcon, Grid, Settings } from 'lucide-react';
@@ -15,18 +15,18 @@ const getStatusColor = (status) => {
             return 'bg-amber-50 border-amber-200 text-amber-800 hover:border-amber-400';
         case 'CONFIRMED':
         case 'PAID':
-            return 'bg-blue-100 border-blue-300 text-blue-800 hover:border-blue-400';
+            return 'bg-blue-100 border-blue-300 text-blue-800 hover:border-blue-400 shadow-sm';
         case 'IN_PROGRESS':
             return 'bg-green-50 border-green-400 text-green-900 border-2 animate-pulse';
         case 'COMPLETED':
             return 'bg-gray-100 border-gray-300 text-gray-600';
+        case 'BLOCKED':
+            return 'bg-slate-100 border-slate-200 text-slate-500';
         case 'MISSED':
         case 'CANCELLED':
             return 'bg-red-50 border-red-200 text-red-700';
-        case 'BLOCKED':
-            return 'bg-slate-800 border-slate-900 text-white';
-        default: // PENDING / AVAILABLE
-            return 'bg-amber-50 border-amber-200 text-amber-800 hover:border-amber-400';
+        default: 
+            return 'bg-indigo-50 border-indigo-100 text-indigo-700';
     }
 };
 
@@ -42,14 +42,18 @@ const parseTimeToMinutes = (value) => {
 };
 
 const isHourWithinAvailability = (availabilityRow, hour) => {
+    // If no row or explicitly marked as not working, the clinician is unavailable.
     if (!availabilityRow || !availabilityRow.isWorking) return false;
 
+    // Use a strict minute-based check for granular engagement windows.
     const startMinutes = parseTimeToMinutes(availabilityRow.startTime);
     const endMinutes = parseTimeToMinutes(availabilityRow.endTime);
     if (startMinutes === null || endMinutes === null) return false;
 
     const slotStart = hour * 60;
     const slotEnd = (hour + 1) * 60;
+    
+    // An hour is available if its timeframe intersects with the clinician's working window.
     return slotStart < endMinutes && slotEnd > startMinutes;
 };
 
@@ -63,56 +67,65 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
 
     const fetchAvailability = useCallback(async () => {
         if (!doctorId) return;
-
         try {
             const res = await appointmentApi.get(`/schedule/doctor/${doctorId}/availability`);
             setAvailabilityRows(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
-            console.error('Failed to fetch availability for calendar markings', error);
+            console.error('Clinical Node availability retrieval failure', error);
             setAvailabilityRows([]);
         }
     }, [doctorId]);
 
     const fetchLeaves = useCallback(async () => {
         if (!doctorId) return;
-
         try {
             const res = await appointmentApi.get(`/schedule/doctor/${doctorId}/leaves`);
             setLeaveRows(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
-            console.error('Failed to fetch leave ranges for calendar markings', error);
+            console.error('Tactical leave registry lookup failure', error);
             setLeaveRows([]);
         }
     }, [doctorId]);
 
     useEffect(() => {
-        fetchAvailability();
-        fetchLeaves();
+        let mounted = true;
+        // Defer execution to resolve synchronous setState warning in mounting phase
+        const timer = setTimeout(() => {
+            if (mounted) {
+                fetchAvailability();
+                fetchLeaves();
+            }
+        }, 0);
+        return () => { 
+            mounted = false; 
+            clearTimeout(timer);
+        };
     }, [fetchAvailability, fetchLeaves]);
 
-    const blockedLeaveDates = leaveRows.reduce((acc, leave) => {
-        if (!leave?.startDate || !leave?.endDate) return acc;
-
-        const start = new Date(`${leave.startDate}T00:00:00`);
-        const end = new Date(`${leave.endDate}T00:00:00`);
-        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return acc;
-
-        eachDayOfInterval({ start, end }).forEach((date) => {
-            acc.add(format(date, 'yyyy-MM-dd'));
+    const blockedLeaveDates = useMemo(() => {
+        const dates = new Set();
+        leaveRows.forEach((leave) => {
+            if (!leave?.startDate || !leave?.endDate) return;
+            const start = new Date(`${leave.startDate}T00:00:00`);
+            const end = new Date(`${leave.endDate}T00:00:00`);
+            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                eachDayOfInterval({ start, end }).forEach((date) => {
+                    dates.add(format(date, 'yyyy-MM-dd'));
+                });
+            }
         });
+        return dates;
+    }, [leaveRows]);
 
-        return acc;
-    }, new Set());
+    const isLeaveDay = useCallback((date) => blockedLeaveDates.has(format(date, 'yyyy-MM-dd')), [blockedLeaveDates]);
 
-    const isLeaveDay = (date) => blockedLeaveDates.has(format(date, 'yyyy-MM-dd'));
-
-    const availabilityByDay = availabilityRows.reduce((acc, row) => {
-        const key = normalizeDayKey(row.dayOfWeek);
-        if (key && !acc[key]) {
-            acc[key] = row;
-        }
-        return acc;
-    }, {});
+    const availabilityByDay = useMemo(() => {
+        return availabilityRows.reduce((acc, row) => {
+            const key = normalizeDayKey(row.dayOfWeek);
+            if (key && !acc[key]) acc[key] = row;
+            return acc;
+        }, {});
+    }, [availabilityRows]);
     
     // Dates math
     const startDateWeek = startOfWeek(currentDate, { weekStarts: 1 });
@@ -137,9 +150,7 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
 
     const isTelemed = (appt) => appt.type === 'TELEMEDICINE' || appt.mode === 'TELEMEDICINE';
 
-    // Renders a single appointment chip
     const renderAppt = (appt) => {
-        const telemed = isTelemed(appt);
         const colorClasses = getStatusColor(appt.status);
         const isBlocked = appt.status === 'BLOCKED';
         const label = isBlocked ? 'Blocked Slot' : `Pt #${appt.patientId}`;
@@ -151,10 +162,6 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                 className={`w-full rounded-xl p-2.5 cursor-pointer shadow-sm border transition-all hover:scale-[1.02] hover:shadow-md mb-2 ${colorClasses}`}
             >
                 <div className="flex items-center gap-1.5 justify-between mb-1.5">
-                    <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
-                        {isBlocked ? <Settings className="w-3 h-3" /> : telemed ? <Video className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                        {isBlocked ? 'Blocked' : telemed ? 'Video' : 'Clinic'}
-                    </span>
                     <span className="text-[10px] font-semibold opacity-70">{appt.time}</span>
                 </div>
                 <div className="text-xs font-bold leading-tight line-clamp-2">
@@ -290,30 +297,48 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                                         const dayBlocked = isLeaveDay(day);
 
                                         return (
-                                            <div key={day.toString()+hour} className={`border-b border-r border-slate-200/60 p-2 min-h-[100px] relative group ${dayBlocked ? 'bg-slate-100/90 hover:bg-slate-100' : cellAvailable ? 'bg-emerald-50/60 hover:bg-emerald-50' : 'bg-slate-50/80 hover:bg-slate-50'} ${isToday ? 'ring-1 ring-inset ring-teal-200' : ''}`}>
+                                            <div 
+                                                key={day.toString() + hour} 
+                                                className={`border-b border-r border-slate-200/60 p-2 min-h-[120px] relative group transition-colors
+                                                    ${dayBlocked ? 'bg-slate-800 border-slate-900' : cellAvailable ? 'bg-emerald-50/50 hover:bg-emerald-50/80' : 'bg-slate-50/80 opacity-40'} 
+                                                    ${isToday ? 'ring-1 ring-inset ring-teal-400' : ''}`}
+                                            >
+                                                {/* Open Status Indicator - Removed Pulse/Icon as requested */}
                                                 {!slotAppts.length && !dayBlocked && cellAvailable && (
-                                                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 text-[9px] font-black uppercase tracking-widest">
+                                                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
                                                         Open
                                                     </div>
                                                 )}
-                                                {slotAppts.map(renderAppt)}
+
+                                                {/* Blocked Status Indicator (Leave) - Removed Shield icon */}
                                                 {!slotAppts.length && dayBlocked && (
-                                                    <div className="absolute inset-0 flex items-center justify-center p-3 text-center">
-                                                        <span className="px-2 py-1 rounded-full bg-slate-700 text-white text-[9px] font-black uppercase tracking-widest border border-slate-800">
-                                                            Blocked (Leave)
-                                                        </span>
+                                                    <div className="absolute inset-0 flex items-center justify-center p-4 bg-slate-50">
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                                                                Blocked
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 )}
+
+                                                {/* Appointment Chips */}
+                                                <div className="relative z-10 space-y-2">
+                                                    {slotAppts.map(renderAppt)}
+                                                </div>
+
                                                 {!slotAppts.length && !dayBlocked && (
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/40 backdrop-blur-[2px] z-20">
                                                         <button 
-                                                            onClick={() => setSelectedEmptySlot({ day, timeStr: format(setHours(new Date(), hour), 'h a') })}
-                                                            className={`w-6 h-6 rounded-full flex items-center justify-center font-bold ${cellAvailable ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedEmptySlot({ day, timeStr: format(setHours(new Date(), hour), 'h a'), isAvailable: cellAvailable });
+                                                            }}
+                                                            className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xl shadow-xl transition-all scale-90 group-hover:scale-100 ${cellAvailable ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-700 text-white hover:bg-slate-900'}`}
                                                         >+</button>
                                                     </div>
                                                 )}
                                             </div>
-                                        )
+                                        );
                                     })}
                                 </React.Fragment>
                             ))}
@@ -427,24 +452,18 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
             </div>
             
             {/* Legend */}
-            <div className="mt-8 pt-6 border-t border-slate-200/60 flex flex-wrap gap-6 items-center justify-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-amber-100 border border-amber-300"></div> Pending
+            <div className="mt-8 pt-6 border-t border-slate-200/60 flex flex-wrap gap-10 items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded-full bg-emerald-100 border-2 border-emerald-400 shadow-sm shadow-emerald-500/20"></div> 
+                    <span className="text-emerald-700">Open (Available)</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-blue-100 border border-blue-300"></div> Confirmed/Paid
+                <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded-lg bg-slate-800 border border-slate-900 shadow-md"></div> 
+                    <span className="text-slate-600">Blocked (Clinical/Leave)</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-100 border-2 border-green-500"></div> In Progress
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-gray-200 border border-gray-400"></div> Completed
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-100 border border-red-300"></div> Missed/Cancelled
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-slate-700 border border-slate-800"></div> Blocked (Leave)
+                <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded-lg bg-blue-100 border border-blue-300"></div> 
+                    <span className="text-blue-700 font-bold italic opacity-70">Booked Appointment</span>
                 </div>
             </div>
 

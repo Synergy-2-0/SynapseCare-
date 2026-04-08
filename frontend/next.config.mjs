@@ -6,6 +6,10 @@ const nextConfig = {
       {
         source: '/backend-api/:path*',
         destination: `${gatewayUrl}/:path*`
+      },
+      {
+        source: '/uploads/:path*',
+        destination: `http://localhost:8080/uploads/:path*`
       }
     ];
   }

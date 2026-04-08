@@ -49,7 +49,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/doctors/all",
             "/api/doctors/*",
             "/api/appointments/doctor/*/available-slots",
-            "/api/payments/payhere/notify"
+            "/api/payments/payhere/notify",
+            "/uploads/**"
     );
 
     @Override

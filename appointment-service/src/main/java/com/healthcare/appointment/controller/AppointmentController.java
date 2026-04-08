@@ -10,6 +10,7 @@ import com.healthcare.appointment.entity.AppointmentStatus;
 import com.healthcare.appointment.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,6 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/appointments")
 @RequiredArgsConstructor
+@Slf4j
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
@@ -47,6 +49,31 @@ public class AppointmentController {
         );
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ApiResponse<>(true, "Slot blocked successfully", blocked));
+        }
+
+    @PostMapping("/doctor/{doctorId}/blocked-slots/bulk")
+    public ResponseEntity<ApiResponse<List<AppointmentDto>>> blockSlotsBulk(
+            @PathVariable("doctorId") Long doctorId,
+            @RequestBody List<BlockSlotRequest> requests,
+            @AuthenticationPrincipal com.healthcare.appointment.security.UserPrincipal userPrincipal) {
+        
+        log.info("Bulk blocking slots for doctor {}: {} slots requested", doctorId, requests.size());
+        List<AppointmentDto> blocked = appointmentService.blockSlotsBulk(
+            doctorId,
+            userPrincipal != null ? userPrincipal.getUserId() : null,
+            requests
+        );
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(new ApiResponse<>(true, "Slots blocked successfully", blocked));
+    }
+
+        @PostMapping("/doctor/{doctorId}/extra-slots")
+        public ResponseEntity<ApiResponse<String>> addExtraSlot(
+            @PathVariable("doctorId") Long doctorId,
+            @RequestBody BlockSlotRequest request) {
+            appointmentService.addExtraSlot(doctorId, request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(true, "Extra slot added successfully", "SUCCESS"));
         }
 
     @PutMapping("/{id}/cancel")

@@ -242,18 +242,23 @@ services:
       - 'SPRING_RABBITMQ_PORT=5672'
       - 'SPRING_RABBITMQ_USERNAME=admin'
       - 'SPRING_RABBITMQ_PASSWORD=admin123'
-      # Email configuration (Gmail SMTP)
-      - 'MAIL_HOST=smtp.gmail.com'
-      - 'MAIL_PORT=587'
-      - 'MAIL_USERNAME=luqmanbooso@gmail.com'
-      - 'MAIL_PASSWORD=zmqegzlwtywughrk'
-      - 'EMAIL_NOTIFICATIONS_ENABLED=true'
-      - 'EMAIL_MOCK_MODE=false'
-      # SMS configuration (TextBee)
-      - 'TEXTBEE_API_KEY=d2a26f3a-2636-4c70-be28-8aaa41167de2'
-      - 'TEXTBEE_DEVICE_ID=69d349ceb5cd3ce4c7d6cfe5'
-      - 'SMS_NOTIFICATIONS_ENABLED=true'
-      - 'SMS_MOCK_MODE=false'
+      # Email configuration (JavaMailSender)
+      - 'MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}'
+      - 'MAIL_PORT=${MAIL_PORT:-587}'
+      - 'MAIL_USERNAME=${MAIL_USERNAME:-luqmanbooso@gmail.com}'
+      - 'MAIL_PASSWORD=${MAIL_PASSWORD:-zmqegzlwtywughrk}'
+      - 'EMAIL_NOTIFICATIONS_ENABLED=${EMAIL_NOTIFICATIONS_ENABLED:-true}'
+      
+      # SMS Configuration (TexBee)
+      - 'SMS_NOTIFICATIONS_ENABLED=${SMS_NOTIFICATIONS_ENABLED:-true}'
+      - 'TEXTBEE_API_KEY=${TEXTBEE_API_KEY:-d2a26f3a-2636-4c70-be28-8aaa41167de2}'
+      - 'TEXTBEE_DEVICE_ID=${TEXTBEE_DEVICE_ID:-67f226c61cd68b248a391cb4}'
+      
+      # WhatsApp Configuration (UltraMsg)
+      - 'WHATSAPP_NOTIFICATIONS_ENABLED=${WHATSAPP_NOTIFICATIONS_ENABLED:-true}'
+      - 'ULTRAMSG_INSTANCE_ID=${ULTRAMSG_INSTANCE_ID:-instance168773}'
+      - 'ULTRAMSG_TOKEN=${ULTRAMSG_TOKEN:-vugvi2m21314s03x}'
+      - 'ULTRAMSG_API_URL=${ULTRAMSG_API_URL:-https://api.ultramsg.com/instance168773/}'
     depends_on:
       rabbitmq:
         condition: service_healthy

@@ -33,4 +33,8 @@ public class UpdateDoctorProfileRequest {
     private String profileImageUrl;
 
     private String licenseDocumentUrl;
+
+    private Integer slotDuration;
+
+    private Integer bufferTime;
 }
