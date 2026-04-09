@@ -204,7 +204,10 @@ const AppointmentsPage = () => {
                             <h2 className="text-2xl font-sans text-slate-800 font-bold leading-tight">
                                 Add appointment in<br />your schedule now
                             </h2>
-                            <button className="mt-5 flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-teal-500/20 active:scale-95">
+                            <button
+                                onClick={() => router.push('/doctor/schedule')}
+                                className="mt-5 flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-teal-500/20 active:scale-95"
+                            >
                                 <Plus size={16} /> Add Appointment
                             </button>
                         </div>

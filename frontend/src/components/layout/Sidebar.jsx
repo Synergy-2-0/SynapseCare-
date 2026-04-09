@@ -44,7 +44,7 @@ const Sidebar = ({ onClose }) => {
         { id: 'consultations', icon: Video, label: 'Consultations', path: DOCTOR_ROUTES.TELEMEDICINE },
         { id: 'prescriptions', icon: ClipboardList, label: 'Prescriptions', path: DOCTOR_ROUTES.PRESCRIPTIONS },
         { id: 'schedule', icon: Clock, label: 'Schedule', path: DOCTOR_ROUTES.SCHEDULE },
-        { id: 'profile', icon: UserCog, label: 'My Settings', path: `${DOCTOR_ROUTES.DASHBOARD}?tab=profile` },
+        { id: 'profile', icon: UserCog, label: 'My Settings', path: DOCTOR_ROUTES.SETTINGS },
     ];
 
     const patientNav = [

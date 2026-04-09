@@ -49,7 +49,7 @@ const DashboardLayout = ({ children, title = "" }) => {
         }
 
         if (role === 'DOCTOR' && verificationStatus === 'APPROVED' && router.pathname.startsWith('/doctor/setup')) {
-            router.push('/dashboard/doctor');
+            router.push('/doctor/dashboard');
             return;
         }
 

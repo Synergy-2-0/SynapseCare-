@@ -12,18 +12,29 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const resolvedPatientId = appointment?.patientId || appointment?.id;
+    const resolvedAppointmentId = appointment?.appointmentId || (appointment?.date && appointment?.time ? appointment?.id : null);
+
+    const resolvedWeight = patientData?.weight ?? patientData?.weightKg ?? patientData?.weight_kg;
+    const resolvedHeight = patientData?.height ?? patientData?.heightCm ?? patientData?.height_cm;
 
     useEffect(() => {
-        if (isOpen && appointment?.patientId) {
+        if (isOpen && resolvedPatientId) {
             const fetchPatientContext = async () => {
                 setLoading(true);
                 try {
-                    const [pRes, rRes] = await Promise.all([
-                        patientApi.get(`/${appointment.patientId}`),
-                        medicalHistoryApi.get(`/reports/patient/${appointment.patientId}`)
-                    ]);
+                    // Keep patient identity loading independent from report loading.
+                    // If reports fail due backend routing issues, the drawer still shows core patient details.
+                    const pRes = await patientApi.get(`/${resolvedPatientId}`);
                     setPatientData(pRes.data?.data || pRes.data || {});
-                    setReports(rRes.data?.data || rRes.data || []);
+
+                    try {
+                        const rRes = await medicalHistoryApi.get(`/reports/patient/${resolvedPatientId}`);
+                        setReports(rRes.data?.data || rRes.data || []);
+                    } catch (reportErr) {
+                        console.warn('Could not load patient reports:', reportErr?.message || reportErr);
+                        setReports([]);
+                    }
                 } catch (err) {
                     console.error("Clinical Context Fetch Failure:", err);
                 } finally {
@@ -32,7 +43,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
             };
             fetchPatientContext();
         }
-    }, [isOpen, appointment]);
+    }, [isOpen, resolvedPatientId]);
 
     if (!appointment) return null;
 
@@ -63,7 +74,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                     <Activity className="w-4 h-4" /> Clinical Case Management
                                 </div>
                                 <h2 className="text-3xl font-sans text-slate-900">
-                                    {appointment.patientName || `Patient #${appointment.patientId}`}
+                                    {appointment.patientName || appointment.name || `Patient #${resolvedPatientId}`}
                                 </h2>
                             </div>
                             <button onClick={onClose} className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 shadow-sm transition-all group">
@@ -107,7 +118,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                             </div>
                                             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
                                                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Weight / Height</div>
-                                                <div className="text-xl font-bold text-slate-900">{patientData?.weight || '--'} kg / {patientData?.height || '--'} cm</div>
+                                                <div className="text-xl font-bold text-slate-900">{resolvedWeight ?? '--'} kg / {resolvedHeight ?? '--'} cm</div>
                                             </div>
                                             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
                                                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</div>
@@ -115,7 +126,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                             </div>
                                             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
                                                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">ID Registry</div>
-                                                <div className="text-xl font-bold text-slate-900">P-{appointment.patientId}</div>
+                                                <div className="text-xl font-bold text-slate-900">P-{resolvedPatientId}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -190,7 +201,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                             label="Sync Critical Artifact"
                                             description="Cloud secure S3 pipeline"
                                             onUpload={async (file) => {
-                                                const patientId = appointment.patientId;
+                                                const patientId = resolvedPatientId;
                                                 const doctorId = localStorage.getItem('user_id');
                                                 const path = `clinical-artifacts/${patientId}/${doctorId}_${Date.now()}`;
 
@@ -200,7 +211,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                                 const url = supabaseStorage.getPublicUrl(path);
                                                 await medicalHistoryApi.post(`/reports/link`, {
                                                     patientId,
-                                                    appointmentId: appointment.id,
+                                                    appointmentId: resolvedAppointmentId,
                                                     fileName: file.name,
                                                     fileUrl: url,
                                                     fileType: file.type || 'application/octet-stream',
@@ -209,7 +220,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                                     reportType: 'LAB_RESULT'
                                                 });
                                                 // refresh local shard
-                                                const rRes = await medicalHistoryApi.get(`/reports/patient/${appointment.patientId}`);
+                                                const rRes = await medicalHistoryApi.get(`/reports/patient/${resolvedPatientId}`);
                                                 setReports(rRes.data?.data || rRes.data || []);
                                             }}
                                             className="bg-white/5 border-white/10 text-white rounded-2xl"
@@ -221,8 +232,16 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
 
                         {/* Action Footer */}
                         <div className="p-6 border-t border-slate-100 bg-white grid grid-cols-2 gap-4">
-                            <button onClick={() => router.push(`/telemedicine?appointmentId=${appointment.id}`)} className="col-span-2 py-4 rounded-[1.2rem] bg-teal-600 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-teal-500/25 hover:bg-teal-700 transition-all hover:-translate-y-0.5">
-                                <PlayCircle className="w-5 h-5" /> Begin Appointment
+                            <button
+                                onClick={() => {
+                                    if (resolvedAppointmentId) {
+                                        router.push(`/telemedicine?appointmentId=${resolvedAppointmentId}`);
+                                    }
+                                }}
+                                disabled={!resolvedAppointmentId}
+                                className="col-span-2 py-4 rounded-[1.2rem] bg-teal-600 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-teal-500/25 hover:bg-teal-700 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <PlayCircle className="w-5 h-5" /> {resolvedAppointmentId ? 'Begin Appointment' : 'Select Appointment from Queue'}
                             </button>
                         </div>
                     </motion.div>

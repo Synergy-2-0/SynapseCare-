@@ -52,6 +52,7 @@ const NewConsultationPage = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [error, setError] = useState(null);
+    const [doctorDbId, setDoctorDbId] = useState(null);
 
     // Create case on mount if appointmentId exists
     useEffect(() => {
@@ -66,6 +67,9 @@ const NewConsultationPage = () => {
         const validateAccess = async () => {
             try {
                 const res = await doctorApi.get('/profile/me');
+                if (mounted) {
+                    setDoctorDbId(res?.data?.id || null);
+                }
                 if (mounted && !isDoctorApproved(res?.data?.verificationStatus)) {
                     router.replace('/doctor/setup');
                 }
@@ -163,7 +167,7 @@ const NewConsultationPage = () => {
 
             // Create prescriptions if any
             if (finalize && consultationData.prescriptions.length > 0) {
-                const doctorId = localStorage.getItem('user_id');
+                const doctorId = doctorDbId || localStorage.getItem('user_id');
                 const doctorName = localStorage.getItem('user_name');
 
                 for (const prescription of consultationData.prescriptions) {
