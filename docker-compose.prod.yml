@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # --- Infrastructure ---
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: synapscare
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # --- Microservices ---
+  api-gateway:
+    image: registry.digitalocean.com/synapscare-registry/auth-service:gateway
+    container_name: api-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      DOCTOR_SERVICE_URL: http://doctor-service:8082
+      APPOINTMENT_SERVICE_URL: http://appointment-service:8083
+      PATIENT_SERVICE_URL: http://patient-service:8084
+    ports:
+      - "8080:8080"
+    depends_on:
+      - rabbitmq
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  auth-service:
+    image: registry.digitalocean.com/synapscare-registry/auth-service:auth
+    container_name: auth-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/synapscare
+      SPRING_RABBITMQ_HOST: rabbitmq
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  doctor-service:
+    image: registry.digitalocean.com/synapscare-registry/auth-service:doctor
+    container_name: doctor-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/synapscare
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  frontend:
+    image: registry.digitalocean.com/synapscare-registry/auth-service:frontend
+    container_name: frontend
+    ports:
+      - "80:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # (Additional services like appointment, patient, ai-symptom should be added here
+  # following the same pattern with memory limits)
