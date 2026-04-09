@@ -7,13 +7,13 @@ const NotificationContext = createContext({
     unreadCount: 0,
     loading: true,
     error: null,
-    fetchNotifications: () => {},
-    fetchUnreadCount: () => {},
-    markAsRead: () => {},
-    markAllAsRead: () => {},
-    deleteNotification: () => {},
+    fetchNotifications: () => { },
+    fetchUnreadCount: () => { },
+    markAsRead: () => { },
+    markAllAsRead: () => { },
+    deleteNotification: () => { },
     preferences: null,
-    updatePreferences: () => {},
+    updatePreferences: () => { },
 });
 
 export const NotificationProvider = ({ children }) => {
@@ -26,11 +26,14 @@ export const NotificationProvider = ({ children }) => {
 
     // Get user ID from localStorage
     const getUserId = () => {
+        const directUserId = localStorage.getItem('user_id');
+        if (directUserId) return directUserId;
+
         const userStr = localStorage.getItem('user');
         if (!userStr) return null;
         try {
             const user = JSON.parse(userStr);
-            return user.id;
+            return user.id || user.userId || null;
         } catch (e) {
             return null;
         }
@@ -83,7 +86,7 @@ export const NotificationProvider = ({ children }) => {
     const markAsRead = async (notificationId) => {
         try {
             await notificationApi.put(`/${notificationId}/read`);
-            setNotifications(prev => 
+            setNotifications(prev =>
                 prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
             );
             setUnreadCount(prev => Math.max(0, prev - 1));
@@ -164,7 +167,7 @@ export const NotificationProvider = ({ children }) => {
         };
 
         window.addEventListener('storage', handleAuthChange);
-        
+
         // Add Polling Heartbeat (every 30 seconds)
         let pollInterval;
         const userId = getUserId();
