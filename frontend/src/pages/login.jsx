@@ -14,6 +14,12 @@ const LoginPage = () => {
     const [error, setError] = useState('');
     const router = useRouter();
 
+    React.useEffect(() => {
+        if (router.query.expired === 'true') {
+            setError('Your clinical session has expired. Please re-authenticate to continue.');
+        }
+    }, [router.query.expired]);
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);

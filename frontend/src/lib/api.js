@@ -52,6 +52,13 @@ const createApiInstance = (baseURL, isPublic = false) => {
                 headers: error.response?.headers
             });
 
+            if (status === 401 && typeof window !== 'undefined') {
+                if (!window.location.pathname.startsWith('/login')) {
+                    localStorage.clear();
+                    window.location.href = '/login?expired=true';
+                }
+            }
+
             return Promise.reject(error);
         }
     );
@@ -82,7 +89,12 @@ export const createFileUploadInstance = (baseURL) => {
     instance.interceptors.response.use(
         response => response,
         error => {
-            console.error('[File Upload Error]', error.response?.data || error.message);
+            if (error.response?.status === 401 && typeof window !== 'undefined') {
+                if (!window.location.pathname.startsWith('/login')) {
+                    localStorage.clear();
+                    window.location.href = '/login?expired=true';
+                }
+            }
             return Promise.reject(error);
         }
     );
