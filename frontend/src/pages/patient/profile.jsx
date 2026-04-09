@@ -99,6 +99,9 @@ const PatientProfilePage = () => {
             setSuccess('Profile updated successfully.');
             localStorage.setItem('user_name', payload.name);
             localStorage.setItem('user_phone', payload.phone);
+            if (payload.profileImageUrl) {
+                localStorage.setItem('user_image', payload.profileImageUrl);
+            }
         } catch (err) {
             console.error('Failed to update patient profile:', err);
             setError(err?.response?.data?.message || 'Unable to update profile.');

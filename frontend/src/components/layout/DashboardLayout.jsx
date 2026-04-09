@@ -9,7 +9,7 @@ import NotificationBell from '../ui/NotificationBell';
 
 const DashboardLayout = ({ children, title = "" }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [userData, setUserData] = useState({ name: 'Practitioner', specialization: 'General Physician' });
+    const [userData, setUserData] = useState({ name: 'Practitioner', specialization: 'General Physician', profileImageUrl: null });
     const [userRole, setUserRole] = useState('PATIENT');
     const [isClient, setIsClient] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false);
@@ -58,7 +58,8 @@ const DashboardLayout = ({ children, title = "" }) => {
             setUserRole(role);
             setUserData({
                 name: localStorage.getItem('user_name') || 'Practitioner',
-                specialization: localStorage.getItem('user_specialization') || (role === 'DOCTOR' ? 'General Physician' : 'Patient')
+                specialization: localStorage.getItem('user_specialization') || (role === 'DOCTOR' ? 'General Physician' : 'Patient'),
+                profileImageUrl: localStorage.getItem('user_image')
             });
             return;
         }
@@ -146,7 +147,7 @@ const DashboardLayout = ({ children, title = "" }) => {
                             </div>
                             <div className="w-10 h-10 rounded-full bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-center text-[var(--accent-teal)] relative group-hover:scale-105 transition-transform">
                                 <img 
-                                    src={`https://ui-avatars.com/api/?name=${userData.name}&background=0D9488&color=fff`} 
+                                    src={userData.profileImageUrl || `https://ui-avatars.com/api/?name=${userData.name}&background=0D9488&color=fff`} 
                                     alt={userData.name}
                                     className="w-full h-full rounded-full object-cover p-0.5"
                                 />
