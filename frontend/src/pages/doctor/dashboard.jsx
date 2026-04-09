@@ -31,6 +31,15 @@ const Badge = ({ children, variant }) => {
     );
 };
 
+const parseLocalDate = (value) => {
+    if (!value) return null;
+    const [year, month, day] = String(value).split('-').map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(year, month - 1, day);
+};
+
+const getAppointmentType = (appointment) => String(appointment?.consultationType || appointment?.type || appointment?.mode || '').toUpperCase();
+
 const DoctorDashboard = () => {
     const [userData, setUserData] = useState(null);
     const [stats, setStats] = useState({ appointmentsToday: 0, activePatients: 0, hours: 8 });
@@ -120,7 +129,7 @@ const DoctorDashboard = () => {
             const name = localStorage.getItem('user_name');
 
             if (role !== 'DOCTOR') { router.push('/login'); return; }
-            setUserData({ name, id });
+            setUserData({ name, id, doctorDbId: null });
 
             const fetchData = async () => {
                 try {
@@ -140,6 +149,8 @@ const DoctorDashboard = () => {
                         return;
                     }
 
+                    setUserData({ name, id, doctorDbId: doctorId });
+
                     const apptRes = await appointmentApi.get(`/doctor/${doctorId}`);
                     const allAppts = apptRes.data?.data || apptRes.data || [];
                     const safeAppts = Array.isArray(allAppts) ? allAppts : [];
@@ -147,7 +158,10 @@ const DoctorDashboard = () => {
                     setAppointments(safeAppts.filter(a => a.status !== 'CANCELLED'));
                     setStats(prev => ({
                         ...prev,
-                        appointmentsToday: safeAppts.filter(a => a.status === 'PAID' && a.date && isToday(new Date(a.date))).length,
+                        appointmentsToday: safeAppts.filter(a => {
+                            const appointmentDate = parseLocalDate(a.date);
+                            return appointmentDate && isToday(appointmentDate) && a.status !== 'CANCELLED' && a.status !== 'REJECTED';
+                        }).length,
                         activePatients: new Set(safeAppts.map(a => a.patientId)).size
                     }));
 
@@ -239,7 +253,7 @@ const DoctorDashboard = () => {
                                             { label: 'Total Patients', value: stats.activePatients, icon: Users, bg: 'bg-teal-600', text: 'text-white', iconColor: 'text-white', iconBg: 'bg-white/20' },
                                             { label: 'Avg. Severity', value: 'Normal', icon: Activity, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-amber-500', iconBg: 'bg-amber-50' },
                                             { label: "Today's Visits", value: stats.appointmentsToday, icon: Calendar, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-rose-500', iconBg: 'bg-rose-50' },
-                                            { label: 'Tele-sessions', value: appointments.filter(a => a.mode === 'TELEMEDICINE').length, icon: Video, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-indigo-500', iconBg: 'bg-indigo-50' },
+                                            { label: 'Tele-sessions', value: appointments.filter(a => getAppointmentType(a) === 'TELEMEDICINE').length, icon: Video, bg: 'bg-white', text: 'text-slate-900', iconColor: 'text-indigo-500', iconBg: 'bg-indigo-50' },
                                         ].map((s, i) => (
                                             <div key={i} className={`p-6 rounded-3xl ${s.bg} flex flex-col items-center justify-center shadow-sm border border-slate-100 hover:-translate-y-1 transition-all`}>
                                                 <div className={`w-12 h-12 ${s.iconBg} rounded-2xl flex items-center justify-center mb-4`}>
@@ -562,7 +576,7 @@ const DoctorDashboard = () => {
                         <SessionPrescriptionModal 
                             session={activePostSession} 
                             onClose={() => setActivePostSession(null)} 
-                            doctorId={userData?.id} 
+                            doctorId={userData?.doctorDbId || userData?.id} 
                         />
                     )}
                 </AnimatePresence>
