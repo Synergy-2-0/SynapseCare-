@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
-import { telemedicineApi } from '../lib/api';
+import { telemedicineApi, appointmentApi } from '../lib/api';
 import { Clock, ArrowLeft, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Head from 'next/head';
@@ -48,7 +48,19 @@ const TelemedicinePage = () => {
                     if (sessionErr?.response?.status !== 404) {
                         throw sessionErr;
                     }
-                    sessionRes = await telemedicineApi.get(`/sessions/appointment/${appointmentId}`);
+
+                    const apptRes = await appointmentApi.get(`/${appointmentId}`);
+                    const appt = apptRes?.data?.data ?? apptRes?.data;
+
+                    if (!appt?.patientId || !appt?.doctorId) {
+                        throw new Error('Unable to initialize session for this appointment');
+                    }
+
+                    sessionRes = await telemedicineApi.post(`/appointments/${appointmentId}/session`, {
+                        appointmentId: Number(appointmentId),
+                        patientId: appt.patientId,
+                        doctorId: appt.doctorId
+                    });
                 }
 
                 const sessionData = sessionRes.data?.data;
