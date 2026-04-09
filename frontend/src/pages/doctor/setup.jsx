@@ -82,6 +82,7 @@ export default function DoctorSetupPage() {
                     if (res.data.profileImageUrl) {
                         setPhotoPreview(res.data.profileImageUrl);
                         setExistingProfileImageUrl(res.data.profileImageUrl);
+                        localStorage.setItem('user_image', res.data.profileImageUrl);
                     }
 
                     if (res.data.licenseDocumentUrl) {
@@ -224,6 +225,10 @@ export default function DoctorSetupPage() {
                 experience: parseInt(formData.experience) || 0,
                 consultationFee: parseFloat(formData.consultationFee) || 0
             };
+
+            if (finalProfileImageUrl) {
+                localStorage.setItem('user_image', finalProfileImageUrl);
+            }
 
             let profileResponse;
             if (hasExistingProfile) {
