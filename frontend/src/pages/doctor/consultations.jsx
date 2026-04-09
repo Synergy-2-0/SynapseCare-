@@ -22,7 +22,7 @@ const ConsultationsPage = () => {
             const name = localStorage.getItem('user_name');
 
             if (role !== 'DOCTOR') { router.push('/login'); return; }
-            setUserData({ name, id });
+            setUserData({ name, id, doctorDbId: null });
 
             const fetchData = async () => {
                 try {
@@ -32,7 +32,9 @@ const ConsultationsPage = () => {
                         return;
                     }
 
-                    const apptRes = await appointmentApi.get(`/doctor/${id}`);
+                    const doctorDbId = profileRes?.data?.id || id;
+                    setUserData({ name, id, doctorDbId });
+                    const apptRes = await appointmentApi.get(`/doctor/${doctorDbId}`);
                     setAppointments((apptRes.data?.data || apptRes.data || []).filter(a => a.status !== 'CANCELLED'));
                 } catch (err) {
                     console.error("Failed to fetch tele-consultations", err);
@@ -65,7 +67,7 @@ const ConsultationsPage = () => {
                         <SessionPrescriptionModal 
                             session={activePostSession} 
                             onClose={() => setActivePostSession(null)} 
-                            doctorId={userData?.id} 
+                            doctorId={userData?.doctorDbId || userData?.id} 
                         />
                     )}
                 </AnimatePresence>
