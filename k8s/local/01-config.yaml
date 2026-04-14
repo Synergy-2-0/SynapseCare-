@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: synapscare-config
+data:
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/synapscare"
+  SPRING_DATASOURCE_USERNAME: "postgres"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  SPRING_RABBITMQ_HOST: "rabbitmq"
+  SPRING_RABBITMQ_PORT: "5672"
+  SPRING_RABBITMQ_USERNAME: "admin"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: synapscare-secrets
+type: Opaque
+stringData:
+  SPRING_DATASOURCE_PASSWORD: "1234"
+  SPRING_RABBITMQ_PASSWORD: "admin123"
+  MINIO_ROOT_PASSWORD: "minioadmin"
+  MINIO_SECRET_KEY: "minioadmin"
+  MISTRAL_API_KEY: "yAgB9m01JEg3YaFmT2OMa9iAuowSkhkA"
+  JWT_SECRET: "ejedVZ4KIRRaAy8kWjs4QSadL823O1WKUDanGentLY3"
+  PAYHERE_MERCHANT_SECRET: "MTcyODEzMjU3MzIyNzA0OTMxODkyMDU1NjQ2NTExMjAwNjgyODc2Mg=="
+  JITSI_APP_SECRET: "synapscare-jitsi-secret-2024"

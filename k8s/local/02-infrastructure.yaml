@@ -1,4 +1,14 @@
-# postgres
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -28,13 +38,26 @@ spec:
           image: postgres:15
           env:
             - name: POSTGRES_USER
-              value: "postgres"
+              valueFrom:
+                configMapKeyRef:
+                  name: synapscare-config
+                  key: SPRING_DATASOURCE_USERNAME
             - name: POSTGRES_PASSWORD
-              value: "1234"
+              valueFrom:
+                secretKeyRef:
+                  name: synapscare-secrets
+                  key: SPRING_DATASOURCE_PASSWORD
             - name: POSTGRES_DB
               value: "synapscare"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
           ports:
             - containerPort: 5432
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-pvc
 ---
 # rabbitmq
 apiVersion: v1
@@ -69,14 +92,31 @@ spec:
           image: rabbitmq:3-management
           env:
             - name: RABBITMQ_DEFAULT_USER
-              value: "admin"
+              valueFrom:
+                configMapKeyRef:
+                  name: synapscare-config
+                  key: SPRING_RABBITMQ_USERNAME
             - name: RABBITMQ_DEFAULT_PASS
-              value: "admin123"
+              valueFrom:
+                secretKeyRef:
+                  name: synapscare-secrets
+                  key: SPRING_RABBITMQ_PASSWORD
           ports:
             - containerPort: 5672
             - containerPort: 15672
 ---
 # minio
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -110,9 +150,22 @@ spec:
           args: ["server", "/data", "--console-address", ":9001"]
           env:
             - name: MINIO_ROOT_USER
-              value: "minioadmin"
+              valueFrom:
+                secretKeyRef:
+                  name: synapscare-secrets
+                  key: MINIO_ROOT_PASSWORD
             - name: MINIO_ROOT_PASSWORD
-              value: "minioadmin"
+              valueFrom:
+                secretKeyRef:
+                  name: synapscare-secrets
+                  key: MINIO_ROOT_PASSWORD
+          volumeMounts:
+            - name: minio-data
+              mountPath: /data
           ports:
             - containerPort: 9000
             - containerPort: 9001
+      volumes:
+        - name: minio-data
+          persistentVolumeClaim:
+            claimName: minio-pvc

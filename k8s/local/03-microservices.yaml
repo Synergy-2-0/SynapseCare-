@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: registry.digitalocean.com/synapscare-registry/auth-service:auth-service:latest
+          image: synapscare/auth-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
@@ -42,8 +42,8 @@ spec:
                   key: SPRING_DATASOURCE_USERNAME
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_DATASOURCE_PASSWORD
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               valueFrom:
@@ -67,8 +67,8 @@ spec:
                   key: SPRING_RABBITMQ_USERNAME
             - name: SPRING_RABBITMQ_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_RABBITMQ_PASSWORD
             - name: SPRING_APPLICATION_NAME
               value: userService
@@ -100,7 +100,7 @@ spec:
     spec:
       containers:
         - name: doctor-service
-          image: registry.digitalocean.com/synapscare-registry/auth-service:doctor-service:latest
+          image: synapscare/doctor-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8082
@@ -117,8 +117,8 @@ spec:
                   key: SPRING_DATASOURCE_USERNAME
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_DATASOURCE_PASSWORD
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               valueFrom:
@@ -142,8 +142,8 @@ spec:
                   key: SPRING_RABBITMQ_USERNAME
             - name: SPRING_RABBITMQ_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_RABBITMQ_PASSWORD
             - name: SPRING_APPLICATION_NAME
               value: doctor-service
@@ -177,7 +177,7 @@ spec:
     spec:
       containers:
         - name: appointment-service
-          image: registry.digitalocean.com/synapscare-registry/auth-service:appointment-service:latest
+          image: synapscare/appointment-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8083
@@ -194,8 +194,8 @@ spec:
                   key: SPRING_DATASOURCE_USERNAME
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_DATASOURCE_PASSWORD
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               valueFrom:
@@ -219,8 +219,8 @@ spec:
                   key: SPRING_RABBITMQ_USERNAME
             - name: SPRING_RABBITMQ_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_RABBITMQ_PASSWORD
             - name: SPRING_APPLICATION_NAME
               value: appointment-service
@@ -256,7 +256,7 @@ spec:
     spec:
       containers:
         - name: patient-service
-          image: registry.digitalocean.com/synapscare-registry/auth-service:patient-service:latest
+          image: synapscare/patient-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8084
@@ -273,8 +273,8 @@ spec:
                   key: SPRING_DATASOURCE_USERNAME
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_DATASOURCE_PASSWORD
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               valueFrom:
@@ -298,8 +298,8 @@ spec:
                   key: SPRING_RABBITMQ_USERNAME
             - name: SPRING_RABBITMQ_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_RABBITMQ_PASSWORD
             - name: SPRING_APPLICATION_NAME
               value: patient-service
@@ -308,7 +308,10 @@ spec:
             - name: MINIO_ACCESS_KEY
               value: minioadmin
             - name: MINIO_SECRET_KEY
-              value: minioadmin
+              valueFrom:
+                secretKeyRef:
+                  name: synapscare-secrets
+                  key: MINIO_SECRET_KEY
             - name: MINIO_BUCKET
               value: medical-reports
 ---
@@ -339,15 +342,21 @@ spec:
     spec:
       containers:
         - name: ai-symptom-checker
-          image: registry.digitalocean.com/synapscare-registry/auth-service:ai-symptom-checker:latest
+          image: synapscare/ai-symptom-checker:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8085
           env:
             - name: MISTRAL_API_KEY
-              value: yAgB9m01JEg3YaFmT2OMa9iAuowSkhkA
+              valueFrom:
+                secretKeyRef:
+                  name: synapscare-secrets
+                  key: MISTRAL_API_KEY
             - name: JWT_SECRET
-              value: ejedVZ4KIRRaAy8kWjs4QSadL823O1WKUDanGentLY3
+              valueFrom:
+                secretKeyRef:
+                  name: synapscare-secrets
+                  key: JWT_SECRET
 ---
 apiVersion: v1
 kind: Service
@@ -376,7 +385,7 @@ spec:
     spec:
       containers:
         - name: payment-service
-          image: registry.digitalocean.com/synapscare-registry/auth-service:payment-service:latest
+          image: synapscare/payment-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8086
@@ -393,8 +402,8 @@ spec:
                   key: SPRING_DATASOURCE_USERNAME
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_DATASOURCE_PASSWORD
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               valueFrom:
@@ -418,15 +427,18 @@ spec:
                   key: SPRING_RABBITMQ_USERNAME
             - name: SPRING_RABBITMQ_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_RABBITMQ_PASSWORD
             - name: SPRING_APPLICATION_NAME
               value: payment-service
             - name: PAYHERE_MERCHANT_ID
               value: "1233989"
             - name: PAYHERE_MERCHANT_SECRET
-              value: "MTcyODEzMjU3MzIyNzA0OTMxODkyMDU1NjQ2NTExMjAwNjgyODc2Mg=="
+              valueFrom:
+                secretKeyRef:
+                  name: synapscare-secrets
+                  key: PAYHERE_MERCHANT_SECRET
             - name: APP_NOTIFY_URL
               value: "https://synapscare-payment.loca.lt/api/payments/payhere/notify"
 ---
@@ -457,7 +469,7 @@ spec:
     spec:
       containers:
         - name: telemedicine-service
-          image: registry.digitalocean.com/synapscare-registry/auth-service:telemedicine-service:latest
+          image: synapscare/telemedicine-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8087
@@ -474,8 +486,8 @@ spec:
                   key: SPRING_DATASOURCE_USERNAME
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_DATASOURCE_PASSWORD
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               valueFrom:
@@ -499,8 +511,8 @@ spec:
                   key: SPRING_RABBITMQ_USERNAME
             - name: SPRING_RABBITMQ_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_RABBITMQ_PASSWORD
             - name: SPRING_APPLICATION_NAME
               value: telemedicine-service
@@ -509,7 +521,10 @@ spec:
             - name: JITSI_APP_ID
               value: synapscare
             - name: JITSI_APP_SECRET
-              value: synapscare-jitsi-secret-2024
+              valueFrom:
+                secretKeyRef:
+                  name: synapscare-secrets
+                  key: JITSI_APP_SECRET
 ---
 apiVersion: v1
 kind: Service
@@ -538,7 +553,7 @@ spec:
     spec:
       containers:
         - name: prescription-service
-          image: registry.digitalocean.com/synapscare-registry/auth-service:prescription-service:latest
+          image: synapscare/prescription-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8088
@@ -555,8 +570,8 @@ spec:
                   key: SPRING_DATASOURCE_USERNAME
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_DATASOURCE_PASSWORD
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               valueFrom:
@@ -580,8 +595,8 @@ spec:
                   key: SPRING_RABBITMQ_USERNAME
             - name: SPRING_RABBITMQ_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_RABBITMQ_PASSWORD
             - name: SPRING_APPLICATION_NAME
               value: prescription-service
@@ -613,7 +628,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: registry.digitalocean.com/synapscare-registry/auth-service:notification-service:latest
+          image: synapscare/notification-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8089
@@ -630,8 +645,8 @@ spec:
                   key: SPRING_DATASOURCE_USERNAME
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_DATASOURCE_PASSWORD
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               valueFrom:
@@ -655,8 +670,8 @@ spec:
                   key: SPRING_RABBITMQ_USERNAME
             - name: SPRING_RABBITMQ_PASSWORD
               valueFrom:
-                configMapKeyRef:
-                  name: synapscare-config
+                secretKeyRef:
+                  name: synapscare-secrets
                   key: SPRING_RABBITMQ_PASSWORD
             - name: SPRING_APPLICATION_NAME
               value: notification-service
@@ -688,7 +703,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: registry.digitalocean.com/synapscare-registry/auth-service:api-gateway:latest
+          image: synapscare/api-gateway:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

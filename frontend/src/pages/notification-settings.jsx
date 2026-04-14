@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { useToast } from '../hooks/useToast';
+import useToast from '../hooks/useToast';
 
 /**
  * NotificationSettingsPage

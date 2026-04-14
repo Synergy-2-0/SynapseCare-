@@ -10,6 +10,7 @@ $services = @(
     "telemedicine-service",
     "prescription-service",
     "notification-service",
+    "frontend",
     "api-gateway"
 )
 
