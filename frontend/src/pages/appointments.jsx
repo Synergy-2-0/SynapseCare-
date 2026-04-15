@@ -36,18 +36,35 @@ const AppointmentsPage = () => {
 
             const fetchData = async () => {
                 try {
-                    let endpoint = `/patient/${userId}`;
+                    let endpoint = null;
 
                     if (role === 'DOCTOR') {
                         endpoint = `/doctor/${userId}`;
                     } else {
+                        const cachedClinicalId = localStorage.getItem('patient_id');
+                        if (cachedClinicalId) {
+                            endpoint = `/patient/${cachedClinicalId}`;
+                        }
+
                         try {
-                            const patientRes = await patientApi.get(`/user/${userId}`);
-                            const payload = patientRes?.data?.data ?? patientRes?.data ?? {};
-                            const clinicalId = payload?.id || userId;
-                            endpoint = `/patient/${clinicalId}`;
+                            if (!endpoint) {
+                                const patientRes = await patientApi.get(`/user/${userId}`);
+                                const payload = patientRes?.data?.data ?? patientRes?.data ?? {};
+                                const clinicalId = payload?.id;
+
+                                if (clinicalId) {
+                                    localStorage.setItem('patient_id', String(clinicalId));
+                                    endpoint = `/patient/${clinicalId}`;
+                                }
+                            }
                         } catch (resolveErr) {
-                            endpoint = `/patient/${userId}`;
+                            endpoint = endpoint || null;
+                        }
+
+                        if (!endpoint) {
+                            setAppointments([]);
+                            setLoading(false);
+                            return;
                         }
                     }
 
