@@ -32,8 +32,8 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public DirectExchange userExchange() {
-        return new DirectExchange(USER_EXCHANGE, true, false);
+    public TopicExchange userExchange() {
+        return new TopicExchange(USER_EXCHANGE, true, false);
     }
 
     @Bean
