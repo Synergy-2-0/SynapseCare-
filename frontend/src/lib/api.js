@@ -1,11 +1,11 @@
 import axios from 'axios';
 
 const defaultGatewayBase = typeof window === 'undefined'
-    ? 'http://localhost:8080/api'
+    ? (process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://api-gateway:8080/api')
     : '/backend-api';
 
 const CONFIG = {
-    API_GATEWAY: process.env.NEXT_PUBLIC_API_GATEWAY_BASE || defaultGatewayBase
+    API_GATEWAY: process.env.NEXT_PUBLIC_API_GATEWAY_URL || process.env.NEXT_PUBLIC_API_GATEWAY_BASE || defaultGatewayBase
 };
 
 const createApiInstance = (baseURL, isPublic = false) => {
