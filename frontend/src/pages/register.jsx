@@ -29,7 +29,7 @@ const RegisterPage = () => {
         email: '',
         password: '',
         phoneNumber: '',
-        // Clinical Step 2 Shards
+        // Health Information
         bloodGroup: '',
         allergies: '',
         chronicIllnesses: '',
@@ -40,9 +40,15 @@ const RegisterPage = () => {
         gender: '',
         profileImageUrl: ''
     });
-    const [isUploading, setIsUploading] = useState(false);
     const [step, setStep] = useState(1);
     const [fieldErrors, setFieldErrors] = useState({});
+
+    // Dropdown state
+    const [showOtherAllergy, setShowOtherAllergy] = useState(false);
+    const [showOtherIllness, setShowOtherIllness] = useState(false);
+
+    const ALLERGY_OPTIONS = ['None', 'Peanuts', 'Dairy', 'Gluten', 'Penicillin', 'Pollen', 'Shellfish', 'Latex', 'Dust'];
+    const ILLNESS_OPTIONS = ['None', 'Diabetes', 'Hypertension', 'Asthma', 'Arthritis', 'Heart Disease', 'Thyroid Disorder', 'Anxiety/Depression'];
 
     const validateForm = () => {
         const errors = {};
@@ -75,26 +81,6 @@ const RegisterPage = () => {
 
         setFieldErrors(errors);
         return Object.keys(errors).length === 0;
-    };
-
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setIsUploading(true);
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const res = await fileUploadApi.post('/profile/upload', formData);
-            setFormData(prev => ({ ...prev, profileImageUrl: res.data.url }));
-            toast.success("Identity shard uploaded!");
-        } catch (err) {
-            console.error("Artifact upload failure:", err);
-            toast.error("Cloud registry upload failed.");
-        } finally {
-            setIsUploading(false);
-        }
     };
 
     const handleNextStep = () => {
@@ -168,8 +154,8 @@ const RegisterPage = () => {
     return (
         <>
             <Head>
-                <title>Create Identity | Clinical Registration | SynapsCare</title>
-                <meta name="description" content="Register as a patient or practitioner on the world's most advanced healthcare network" />
+                <title>Create Account | Registration | SynapsCare</title>
+                <meta name="description" content="Register as a patient or doctor on SynapseCare" />
             </Head>
             <Toaster position="top-right" />
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 selection:bg-indigo-100 selection:text-indigo-900">
@@ -189,11 +175,11 @@ const RegisterPage = () => {
                         <div className="relative z-10 space-y-10">
                             <div className="space-y-4">
                                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-widest">
-                                    <Sparkles size={12} /> Adaptive Onboarding
+                                    <Sparkles size={12} /> Smart Registration
                                 </div>
                                 <h1 className="text-4xl font-bold leading-tight tracking-tight">
-                                    Establish your <br />
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-sky-300">Medical Identity.</span>
+                                    Set up your <br />
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-sky-300">Health Profile.</span>
                                 </h1>
                             </div>
 
@@ -228,7 +214,7 @@ const RegisterPage = () => {
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                             <div className="mb-10">
                                 <h2 className="text-4xl font-bold text-slate-900 tracking-tighter mb-4">Create Account</h2>
-                                <p className="copy-description font-medium">Select your role to begin the clinical setup.</p>
+                                <p className="copy-description font-medium">Select your role to start your setup.</p>
                             </div>
 
                             {/* Role Selector */}
@@ -303,7 +289,7 @@ const RegisterPage = () => {
                                             {fieldErrors.username && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.username}</p>}
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Contact Terminal</label>
+                                            <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Phone Number</label>
                                             <input
                                                 type="tel"
                                                 placeholder="+15550000000"
@@ -314,7 +300,7 @@ const RegisterPage = () => {
                                             {fieldErrors.phoneNumber && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.phoneNumber}</p>}
                                         </div>
                                         <div className="md:col-span-2 space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Email Node</label>
+                                            <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Email Address</label>
                                             <input
                                                 type="email"
                                                 placeholder="user@synapsecare.com"
@@ -325,7 +311,7 @@ const RegisterPage = () => {
                                             {fieldErrors.email && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.email}</p>}
                                         </div>
                                         <div className="md:col-span-2 space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Access Pass (8+ Chars)</label>
+                                            <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Password (8+ Chars)</label>
                                             <input
                                                 type="password"
                                                 placeholder="••••••••••••"
@@ -338,33 +324,6 @@ const RegisterPage = () => {
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="md:col-span-2 flex flex-col items-center mb-6">
-                                            <div className="w-32 h-32 rounded-[2.5rem] bg-slate-900 flex items-center justify-center text-indigo-400 text-4xl shadow-xl relative group overflow-hidden border-4 border-slate-50">
-                                                {formData.profileImageUrl ? (
-                                                    <Image src={formData.profileImageUrl} alt="Identity" fill className="object-cover group-hover:scale-110 transition-transform" unoptimized />
-                                                ) : (
-                                                    <UserRound size={48} className="group-hover:scale-110 transition-transform opacity-50" />
-                                                )}
-                                                <div
-                                                    className="absolute inset-0 bg-indigo-600/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-sm"
-                                                    onClick={() => document.getElementById('reg-image-input').click()}
-                                                >
-                                                    {isUploading ? (
-                                                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    ) : (
-                                                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Upload Shard</span>
-                                                    )}
-                                                </div>
-                                                <input
-                                                    type="file"
-                                                    id="reg-image-input"
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                    onChange={handleImageUpload}
-                                                />
-                                            </div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-4">Profile Identity Photo (Required)</p>
-                                        </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Blood Group</label>
                                             <select
@@ -421,9 +380,9 @@ const RegisterPage = () => {
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 ml-1">Emergency Contact Node</label>
+                                            <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 ml-1">Emergency Contact</label>
                                             <input
-                                                placeholder="+15559998888"
+                                                placeholder="Name or Phone Number"
                                                 value={formData.emergencyContact}
                                                 onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
                                                 className="input-field"
@@ -431,21 +390,59 @@ const RegisterPage = () => {
                                         </div>
                                         <div className="md:col-span-2 space-y-2">
                                             <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 ml-1">Allergies</label>
-                                            <textarea
-                                                placeholder="E.g., Peanuts, Penicillin (Leave empty if none)"
-                                                value={formData.allergies}
-                                                onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-                                                className="input-field min-h-24 resize-none"
-                                            />
+                                            <select
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'Other') {
+                                                        setShowOtherAllergy(true);
+                                                        setFormData({ ...formData, allergies: '' });
+                                                    } else {
+                                                        setShowOtherAllergy(false);
+                                                        setFormData({ ...formData, allergies: val });
+                                                    }
+                                                }}
+                                                className="input-field"
+                                            >
+                                                <option value="">Select Allergy</option>
+                                                {ALLERGY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                <option value="Other">Other (Type below)</option>
+                                            </select>
+                                            {showOtherAllergy && (
+                                                <input
+                                                    placeholder="Specify Allergy"
+                                                    value={formData.allergies}
+                                                    onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
+                                                    className="input-field mt-2"
+                                                />
+                                            )}
                                         </div>
                                         <div className="md:col-span-2 space-y-2">
                                             <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 ml-1">Chronic Illnesses</label>
-                                            <textarea
-                                                placeholder="E.g., Diabetes, Hypertension"
-                                                value={formData.chronicIllnesses}
-                                                onChange={(e) => setFormData({ ...formData, chronicIllnesses: e.target.value })}
-                                                className="input-field min-h-24 resize-none"
-                                            />
+                                            <select
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'Other') {
+                                                        setShowOtherIllness(true);
+                                                        setFormData({ ...formData, chronicIllnesses: '' });
+                                                    } else {
+                                                        setShowOtherIllness(false);
+                                                        setFormData({ ...formData, chronicIllnesses: val });
+                                                    }
+                                                }}
+                                                className="input-field"
+                                            >
+                                                <option value="">Select Condition</option>
+                                                {ILLNESS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                <option value="Other">Other (Type below)</option>
+                                            </select>
+                                            {showOtherIllness && (
+                                                <input
+                                                    placeholder="Specify Condition"
+                                                    value={formData.chronicIllnesses}
+                                                    onChange={(e) => setFormData({ ...formData, chronicIllnesses: e.target.value })}
+                                                    className="input-field mt-2"
+                                                />
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -468,7 +465,7 @@ const RegisterPage = () => {
                                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                         ) : (
                                             <>
-                                                {step === 1 && role === 'PATIENT' ? 'Next: Medical Details' : 'Complete Registration'}
+                                                {step === 1 && role === 'PATIENT' ? 'Next: Health Info' : 'Complete Registration'}
                                                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                             </>
                                         )}
@@ -478,8 +475,8 @@ const RegisterPage = () => {
 
                             <div className="mt-10 text-center">
                                 <p className="text-slate-500 font-bold text-sm">
-                                    Already identified? <br className="sm:hidden" />
-                                    <Link href="/login" className="text-indigo-600 hover:text-indigo-700 transition-colors ml-1 uppercase tracking-wider text-xs">Sign In to Dashboard</Link>
+                                    Already have an account? <br className="sm:hidden" />
+                                    <Link href="/login" className="text-indigo-600 hover:text-indigo-700 transition-colors ml-1 uppercase tracking-wider text-xs">Sign In</Link>
                                 </p>
                             </div>
                         </motion.div>

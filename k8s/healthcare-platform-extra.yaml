@@ -169,6 +169,30 @@ spec:
               value: admin
             - name: SPRING_RABBITMQ_PASSWORD
               value: admin123
+            - name: MAIL_HOST
+              value: "smtp.gmail.com"
+            - name: MAIL_PORT
+              value: "587"
+            - name: MAIL_USERNAME
+              value: "luqmanbooso@gmail.com"
+            - name: MAIL_PASSWORD
+              value: "zmqegzlwtywughrk"
+            - name: EMAIL_NOTIFICATIONS_ENABLED
+              value: "true"
+            - name: SMS_NOTIFICATIONS_ENABLED
+              value: "true"
+            - name: TEXTBEE_API_KEY
+              value: "d2a26f3a-2636-4c70-be28-8aaa41167de2"
+            - name: TEXTBEE_DEVICE_ID
+              value: "67f226c61cd68b248a391cb4"
+            - name: WHATSAPP_NOTIFICATIONS_ENABLED
+              value: "true"
+            - name: ULTRAMSG_INSTANCE_ID
+              value: "instance168773"
+            - name: ULTRAMSG_TOKEN
+              value: "vugvi2m21314s03x"
+            - name: ULTRAMSG_API_URL
+              value: "https://api.ultramsg.com/instance168773/"
           ports:
             - containerPort: 8089
 ---

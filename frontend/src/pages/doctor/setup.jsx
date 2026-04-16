@@ -37,6 +37,17 @@ export default function DoctorSetupPage() {
     });
     const [fieldErrors, setFieldErrors] = useState({});
 
+    // Dropdown/Other state
+    const [showOtherSpec, setShowOtherSpec] = useState(false);
+    const [showOtherQual, setShowOtherQual] = useState(false);
+    const [licensePrefix, setLicensePrefix] = useState('');
+    const [showOtherPrefix, setShowOtherPrefix] = useState(false);
+    const [customPrefix, setCustomPrefix] = useState('');
+    const [licenseSuffix, setLicenseSuffix] = useState('');
+
+    const QUAL_OPTIONS = ['MD', 'MBBS', 'PhD', 'MS', 'BDS', 'DNB', 'DO', 'DPM'];
+    const LIC_PREFIX_OPTIONS = ['SLMC', 'GMC', 'PMC', 'DMC', 'KMC'];
+
     useEffect(() => {
         const fetchInitialProfile = async () => {
             try {
@@ -83,6 +94,25 @@ export default function DoctorSetupPage() {
                         setPhotoPreview(res.data.profileImageUrl);
                         setExistingProfileImageUrl(res.data.profileImageUrl);
                         localStorage.setItem('user_image', res.data.profileImageUrl);
+                    }
+
+                    if (res.data.licenseNumber) {
+                        const parts = res.data.licenseNumber.split('-');
+                        if (parts.length > 1) {
+                            const pref = parts[0];
+                            const suff = parts.slice(1).join('-');
+                            if (LIC_PREFIX_OPTIONS.includes(pref)) {
+                                setLicensePrefix(pref);
+                                setLicenseSuffix(suff);
+                            } else {
+                                setLicensePrefix('Other');
+                                setShowOtherPrefix(true);
+                                setCustomPrefix(pref);
+                                setLicenseSuffix(suff);
+                            }
+                        } else {
+                            setLicenseSuffix(res.data.licenseNumber);
+                        }
                     }
 
                     if (res.data.licenseDocumentUrl) {
@@ -156,7 +186,44 @@ export default function DoctorSetupPage() {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        let cleanValue = value;
+        
+        // Strict Numeric Filtering & Real-time Validation
+        if (name === 'experience') {
+            cleanValue = value.replace(/[^0-9]/g, '');
+            if (cleanValue !== '' && parseInt(cleanValue) > 60) {
+                setFieldErrors(prev => ({ ...prev, experience: 'Experience cannot exceed 60 years.' }));
+                // Don't returned, still set value but capped or just let them type and show error
+            } else {
+                setFieldErrors(prev => ({ ...prev, experience: null }));
+            }
+        }
+        
+        if (name === 'consultationFee') {
+            cleanValue = value.replace(/[^0-9.]/g, '');
+            const parts = cleanValue.split('.');
+            if (parts.length > 2) return; 
+            
+            const fee = parseFloat(cleanValue);
+            if (!isNaN(fee) && fee > 10000) {
+                setFieldErrors(prev => ({ ...prev, consultationFee: 'Fee cannot exceed $10,000.' }));
+            } else if (!isNaN(fee) && fee <= 0) {
+                setFieldErrors(prev => ({ ...prev, consultationFee: 'Fee must be greater than 0.' }));
+            } else {
+                setFieldErrors(prev => ({ ...prev, consultationFee: null }));
+            }
+        }
+
+        // General Real-time Validation for other fields
+        if (name === 'licenseNumber' || name === 'licenseNumberSuffix') {
+             setFieldErrors(prev => ({ ...prev, licenseNumber: null }));
+        }
+
+        if (name === 'specialization' && cleanValue) {
+             setFieldErrors(prev => ({ ...prev, specialization: null }));
+        }
+
+        setFormData(prev => ({ ...prev, [name]: cleanValue }));
     };
 
     const handleFormSubmit = async (e) => {
@@ -164,17 +231,33 @@ export default function DoctorSetupPage() {
         setFieldErrors({});
 
         let errors = {};
-        if (!formData.licenseNumber?.trim()) errors.licenseNumber = "Medical License Number is required.";
+        
+        // Build final license number
+        const finalPrefix = licensePrefix === 'Other' ? customPrefix : licensePrefix;
+        const finalLicenseNumber = finalPrefix ? `${finalPrefix}-${licenseSuffix}` : licenseSuffix;
+
+        if (!finalLicenseNumber?.trim()) errors.licenseNumber = "Medical License Number is required.";
         if (!formData.specialization) errors.specialization = "Specialization is required.";
-        if (!formData.consultationFee || parseFloat(formData.consultationFee) <= 0) {
+        
+        // Fee Validation
+        const fee = parseFloat(formData.consultationFee);
+        if (isNaN(fee)) {
+            errors.consultationFee = "Please enter a valid amount.";
+        } else if (fee <= 0) {
             errors.consultationFee = "Consultation Fee must be greater than 0.";
         }
-        if (formData.experience && parseInt(formData.experience) < 0) {
+        
+        // Experience Validation
+        const expValue = formData.experience === '' ? 0 : parseInt(formData.experience);
+        if (isNaN(expValue)) {
+            errors.experience = "Please enter a valid number.";
+        } else if (expValue < 0) {
             errors.experience = "Experience cannot be negative.";
         }
 
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
+            toast.error("Please correct the errors before submitting.");
             return;
         }
 
@@ -184,14 +267,22 @@ export default function DoctorSetupPage() {
             let profileImageUrl = photoPreview;
             let licenseImageUrl = null;
 
+            // Update main formData with final combined license
+            const updatedFormData = { ...formData, licenseNumber: finalLicenseNumber };
+
             // Helper for Cloudinary Unsigned Upload
             const uploadToCloudinary = async (file) => {
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'synapcare_preset');
+                
+                // Now that PDF delivery is enabled, we categorize by MIME type
+                const resourceType = file.type.startsWith('image/') ? 'image' : 'raw'; 
+                formData.append('resource_type', resourceType);
+                
                 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dao7fkewx';
 
-                const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -219,7 +310,7 @@ export default function DoctorSetupPage() {
             const finalLicenseImageUrl = licenseFile ? licenseImageUrl : existingLicenseDocumentUrl;
 
             const payload = {
-                ...formData,
+                ...updatedFormData,
                 profileImageUrl: finalProfileImageUrl,
                 licenseDocumentUrl: finalLicenseImageUrl,
                 experience: parseInt(formData.experience) || 0,
@@ -429,7 +520,36 @@ export default function DoctorSetupPage() {
 
                                         <div>
                                             <label className="block text-sm font-semibold text-slate-700 mb-1">Medical License Number *</label>
-                                            <input required name="licenseNumber" value={formData.licenseNumber} onChange={handleInputChange} type="text" className={`w-full bg-slate-50 border ${fieldErrors.licenseNumber ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all`} placeholder="e.g. MED-123456" />
+                                            <div className="flex gap-2 mb-2">
+                                                <select
+                                                    value={licensePrefix}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setLicensePrefix(val);
+                                                        setShowOtherPrefix(val === 'Other');
+                                                        if (val !== 'Other') setCustomPrefix('');
+                                                    }}
+                                                    className={`w-1/3 bg-slate-50 border ${fieldErrors.licenseNumber ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-3 py-2.5 outline-none focus:border-teal-500 transition-all text-sm`}
+                                                >
+                                                    <option value="">Prefix</option>
+                                                    {LIC_PREFIX_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                                <input
+                                                    placeholder="License Digits"
+                                                    value={licenseSuffix}
+                                                    onChange={(e) => setLicenseSuffix(e.target.value)}
+                                                    className={`flex-1 bg-slate-50 border ${fieldErrors.licenseNumber ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 transition-all`}
+                                                />
+                                            </div>
+                                            {showOtherPrefix && (
+                                                <input
+                                                    placeholder="Specify Prefix (e.g., STATE-MED)"
+                                                    value={customPrefix}
+                                                    onChange={(e) => setCustomPrefix(e.target.value)}
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 mb-2 outline-none focus:border-teal-500 transition-all text-sm"
+                                                />
+                                            )}
                                             {fieldErrors.licenseNumber && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.licenseNumber}</p>}
                                         </div>
 
@@ -438,8 +558,17 @@ export default function DoctorSetupPage() {
                                             <select
                                                 required
                                                 name="specialization"
-                                                value={formData.specialization}
-                                                onChange={handleInputChange}
+                                                value={showOtherSpec ? 'Other' : formData.specialization}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'Other') {
+                                                        setShowOtherSpec(true);
+                                                        setFormData({ ...formData, specialization: '' });
+                                                    } else {
+                                                        setShowOtherSpec(false);
+                                                        setFormData({ ...formData, specialization: val });
+                                                    }
+                                                }}
                                                 className={`w-full bg-slate-50 border ${fieldErrors.specialization ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all appearance-none cursor-pointer`}
                                             >
                                                 <option value="" disabled>Select Specialization</option>
@@ -448,13 +577,48 @@ export default function DoctorSetupPage() {
                                                         {SPECIALIZATION_LABELS[spec]}
                                                     </option>
                                                 ))}
+                                                <option value="Other">Other (Specify below)</option>
                                             </select>
+                                            {showOtherSpec && (
+                                                <input
+                                                    placeholder="Specify Specialization"
+                                                    value={formData.specialization}
+                                                    onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 mt-2 outline-none focus:border-teal-500 transition-all"
+                                                />
+                                            )}
                                             {fieldErrors.specialization && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.specialization}</p>}
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-semibold text-slate-700 mb-1">Qualifications</label>
-                                            <input name="qualifications" value={formData.qualifications} onChange={handleInputChange} type="text" className={`w-full bg-slate-50 border ${fieldErrors.qualifications ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all`} placeholder="e.g. MD, MBBS, FACC" />
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1">Qualifications *</label>
+                                            <select
+                                                required
+                                                value={showOtherQual ? 'Other' : formData.qualifications}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'Other') {
+                                                        setShowOtherQual(true);
+                                                        setFormData({ ...formData, qualifications: '' });
+                                                    } else {
+                                                        setShowOtherQual(false);
+                                                        setFormData({ ...formData, qualifications: val });
+                                                    }
+                                                }}
+                                                className={`w-full bg-slate-50 border ${fieldErrors.qualifications ? 'border-rose-500' : 'border-slate-200'} rounded-xl px-4 py-2.5 outline-none focus:border-teal-500 transition-all appearance-none cursor-pointer`}
+                                            >
+                                                <option value="" disabled>Select Qualification</option>
+                                                {QUAL_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                <option value="Other">Other (Specify below)</option>
+                                            </select>
+                                            {showOtherQual && (
+                                                <input
+                                                    placeholder="Specify Qualifications (e.g. MD, MBBS)"
+                                                    value={formData.qualifications}
+                                                    onChange={(e) => setFormData({ ...formData, qualifications: e.target.value })}
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 mt-2 outline-none focus:border-teal-500 transition-all"
+                                                />
+                                            )}
                                             {fieldErrors.qualifications && <p className="text-rose-500 text-xs font-semibold mt-1 ml-1">{fieldErrors.qualifications}</p>}
                                         </div>
 
@@ -514,45 +678,47 @@ export default function DoctorSetupPage() {
                                         {/* Medical License */}
                                         <div
                                             onClick={() => licenseInputRef.current?.click()}
-                                            className={`flex p-4 border-2 ${licenseFile ? 'border-teal-500 bg-teal-50/50' : 'border-dashed border-slate-300 hover:bg-slate-50'} rounded-xl transition-colors cursor-pointer group items-center gap-4`}
+                                            className={`flex p-4 border-2 ${licenseFile || existingLicenseDocumentUrl ? 'border-teal-500 bg-teal-50/50' : 'border-dashed border-slate-300 hover:bg-slate-50'} rounded-xl transition-colors cursor-pointer group items-center gap-4`}
                                         >
                                             <input type="file" ref={licenseInputRef} onChange={(e) => handleFileSelect(e, 'license')} accept=".pdf,.jpg,.jpeg,.png" className="hidden" />
 
                                             <div className="flex-shrink-0">
-                                                <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${licenseFile ? 'bg-teal-100' : 'bg-slate-100 group-hover:bg-slate-200'} transition-colors`}>
-                                                    <FileText className={`w-6 h-6 ${licenseFile ? 'text-teal-600' : 'text-slate-400'}`} />
-                                                </div>
+                                                {/* Visual Preview logic for License */}
+                                                {licenseFile && licenseFile.type.startsWith('image/') ? (
+                                                    <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-white shadow-sm">
+                                                        <img src={URL.createObjectURL(licenseFile)} alt="Preview" className="w-full h-full object-cover" />
+                                                    </div>
+                                                ) : existingLicenseDocumentUrl ? (
+                                                    <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-white shadow-sm bg-white flex items-center justify-center">
+                                                        {existingLicenseDocumentUrl.toLowerCase().endsWith('.pdf') ? (
+                                                            <Image 
+                                                                src={existingLicenseDocumentUrl.replace(/\.pdf$/i, '.jpg')} 
+                                                                alt="PDF Preview" 
+                                                                width={64} 
+                                                                height={64} 
+                                                                className="w-full h-full object-cover opacity-80"
+                                                                unoptimized
+                                                            />
+                                                        ) : (
+                                                            <Image src={existingLicenseDocumentUrl} alt="License" width={64} height={64} className="w-full h-full object-cover" unoptimized />
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${licenseFile ? 'bg-teal-100' : 'bg-slate-100 group-hover:bg-slate-200'} transition-colors`}>
+                                                        <FileText className={`w-6 h-6 ${licenseFile ? 'text-teal-600' : 'text-slate-400'}`} />
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex-1 overflow-hidden">
                                                 <p className="text-slate-700 font-bold text-sm">Medical License Document *</p>
-                                                <p className="text-slate-500 text-xs mt-0.5 truncate">{licenseFile ? licenseFile.name : 'PDF, JPG, or PNG (Max 10MB)'}</p>
+                                                <p className="text-slate-500 text-xs mt-0.5 truncate">{licenseFile ? licenseFile.name : (existingLicenseDocumentUrl ? 'Update existing document' : 'PDF, JPG, or PNG (Max 10MB)')}</p>
                                             </div>
-                                            {licenseFile && <CheckCircle className="w-5 h-5 text-teal-500 flex-shrink-0 ml-2" />}
+                                            {(licenseFile || existingLicenseDocumentUrl) && <CheckCircle className="w-5 h-5 text-teal-500 flex-shrink-0 ml-2" />}
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="pt-6 border-t border-slate-100 flex justify-end gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFormData({
-                                                specialization: 'CARDIOLOGY',
-                                                qualifications: 'MD, MBBS (Mock)',
-                                                experience: '10',
-                                                licenseNumber: 'MOCK-LIC-' + Date.now(),
-                                                consultationFee: '150',
-                                                bio: 'This is a test doctor profile for automated verification.'
-                                            });
-                                            setPhotoPreview('https://res.cloudinary.com/dao7fkewx/image/upload/v1727000000/sample.jpg');
-                                            setExistingProfileImageUrl('https://res.cloudinary.com/dao7fkewx/image/upload/v1727000000/sample.jpg');
-                                            setExistingLicenseDocumentUrl('https://res.cloudinary.com/dao7fkewx/image/upload/v1727000000/sample_pdf.pdf');
-                                            toast.success('Fields filled with mock identities.');
-                                        }}
-                                        className="px-6 py-3 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all"
-                                    >
-                                        Dev: Auto-fill Mock Data
-                                    </button>
                                     <button
                                         type="submit"
                                         disabled={isLoading}

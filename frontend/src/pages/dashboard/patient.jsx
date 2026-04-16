@@ -275,11 +275,11 @@ const PatientDashboard = () => {
             setProfileForm(prev => ({ ...prev, profileImageUrl: imageUrl }));
             
             toast.dismiss();
-            toast.success('Clinical identity artifact updated.');
+            toast.success('Profile photo updated.');
         } catch (err) {
             toast.dismiss();
-            console.error("Artifact upload failed:", err);
-            toast.error('Identity artifact synchronization failed.');
+            console.error("Photo upload failed:", err);
+            toast.error('Failed to update profile photo.');
         }
     };
 
