@@ -764,12 +764,12 @@ const PatientDashboard = () => {
                                                                     <button 
                                                                         onClick={() => {
                                                                             setSelectedAppointmentIdForUpload(upcoming[0].id);
-                                                                            setUploadDescription(`Clinical artifacts for Dr. ${upcoming[0].doctorName}`);
+                                                                            setUploadDescription(`Medical records for consultation with Dr. ${upcoming[0].doctorName || 'Specialist'}`);
                                                                             setShowUploadModal(true);
                                                                         }}
                                                                         className="h-16 px-10 bg-white border-2 border-slate-100 text-slate-700 rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-slate-50 transition-all"
                                                                     >
-                                                                        <Plus size={18} /> Sync Artifacts
+                                                                        <Plus size={18} /> Share Medical Records
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -1253,10 +1253,10 @@ const PatientDashboard = () => {
                                                             </div>
                                                         )}
 
-                                                        {/* Independent Artifacts Shard */}
+                                                        {/* Independent Records Shard */}
                                                         {reports.filter(r => !r.appointmentId).length > 0 && (
                                                             <div className="pt-10 border-t border-white/5">
-                                                                <h5 className="text-[10px] font-bold uppercase tracking-[0.34em] text-slate-500 mb-8 px-2">Detached Clinical Artifacts</h5>
+                                                                <h5 className="text-[10px] font-bold uppercase tracking-[0.34em] text-slate-500 mb-8 px-2">Independent Medical Files</h5>
                                                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                                                     {reports.filter(r => !r.appointmentId).map((r, i) => (
                                                                         <div key={i} className="p-6 bg-slate-800/50 border border-white/5 rounded-3xl flex items-center gap-5 hover:bg-slate-800 transition-all cursor-pointer group/detached" onClick={() => handleDownloadReport(r)}>
@@ -1300,8 +1300,8 @@ const PatientDashboard = () => {
                                         
                                         <div className="flex justify-between items-center relative z-10">
                                             <div>
-                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 mb-2">Clinical Registry</p>
-                                                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Upload Assessment</h3>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 mb-2">Medical Records</p>
+                                                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Upload Document</h3>
                                             </div>
                                             <button onClick={() => { setShowUploadModal(false); setSelectedAppointmentIdForUpload(null); }} className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors">
                                                 <Plus size={24} className="rotate-45" />
@@ -1313,14 +1313,14 @@ const PatientDashboard = () => {
                                                 <AlertCircle size={20} className="text-amber-500 shrink-0 mt-1" />
                                                 <p className="text-xs font-bold text-amber-700 leading-relaxed">
                                                     {selectedAppointmentIdForUpload 
-                                                        ? `This artifact will be linked to Clinical Session Shard #${selectedAppointmentIdForUpload}.` 
-                                                        : 'This is an independent artifact. It will appear on your master clinical timeline.'}
+                                                        ? `This document will be shared with your practitioner for Session #${selectedAppointmentIdForUpload}.` 
+                                                        : 'This is an independent record. It will be added to your secure medical history.'}
                                                 </p>
                                             </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Report Category</label>
+                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Document Type</label>
                                                     <select
                                                         value={uploadReportType}
                                                         onChange={(e) => setUploadReportType(e.target.value)}
@@ -1329,11 +1329,11 @@ const PatientDashboard = () => {
                                                         <option value="LAB_RESULT">Laboratory Result</option>
                                                         <option value="IMAGING">Imaging / Radiology</option>
                                                         <option value="PRESCRIPTION">Historical Rx</option>
-                                                        <option value="OTHER">General Artifact</option>
+                                                        <option value="OTHER">Other Medical Document</option>
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Internal Shard ID</label>
+                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Session ID</label>
                                                     <div className="px-5 py-4 bg-slate-100/50 border border-slate-100 rounded-2xl font-black text-sm text-slate-400">
                                                         #{selectedAppointmentIdForUpload || 'NONE'}
                                                     </div>
@@ -1341,7 +1341,7 @@ const PatientDashboard = () => {
                                             </div>
 
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Clinical Context</label>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Notes / Context</label>
                                                 <input
                                                     type="text"
                                                     value={uploadDescription}
@@ -1355,7 +1355,7 @@ const PatientDashboard = () => {
                                                 onUpload={handleFileUpload}
                                                 accept=".pdf,.jpg,.jpeg,.png"
                                                 maxSize={10}
-                                                label="Drop Clinical Artifact"
+                                                label="Drop Medical Files"
                                                 description="Secure PDF, JPG, or PNG up to 10MB"
                                             />
                                         </div>
