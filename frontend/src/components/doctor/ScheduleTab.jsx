@@ -30,22 +30,30 @@ const normalizeDayKey = (value) => {
 
 const parseApptDate = (date) => {
     if (!date) return null;
+    let dStr = null;
     if (Array.isArray(date) && date.length >= 3) {
-        return `${date[0]}-${String(date[1]).padStart(2, '0')}-${String(date[2]).padStart(2, '0')}`;
+        dStr = `${date[0]}-${String(date[1]).padStart(2, '0')}-${String(date[2]).padStart(2, '0')}`;
+    } else if (typeof date === 'string') {
+        dStr = date.split('T')[0];
+    } else {
+        try {
+            dStr = format(new Date(date), 'yyyy-MM-dd');
+        } catch {
+            return null;
+        }
     }
-    if (typeof date === 'string') return date.split('T')[0];
-    try {
-        return format(new Date(date), 'yyyy-MM-dd');
-    } catch {
-        return null;
-    }
+    // Normalize to exact YYYY-MM-DD
+    return dStr;
 };
 
 const parseApptHour = (time) => {
     if (!time) return null;
-    if (Array.isArray(time)) return parseInt(time[0], 10);
-    if (typeof time === 'string') return parseInt(time.split(':')[0], 10);
-    return null;
+    let h = null;
+    if (Array.isArray(time)) h = parseInt(time[0], 10);
+    else if (typeof time === 'string') h = parseInt(time.split(':')[0], 10);
+    
+    if (h !== null && isNaN(h)) return null;
+    return h;
 };
 
 const parseTimeToMinutes = (value) => {
@@ -309,7 +317,8 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                                             if(!a.date || !a.time) return false;
                                             
                                             const apptDateStr = parseApptDate(a.date);
-                                            const isSameD = format(day, 'yyyy-MM-dd') === apptDateStr;
+                                            const targetDateStr = format(day, 'yyyy-MM-dd');
+                                            const isSameD = targetDateStr === apptDateStr;
                                             
                                             const apptHour = parseApptHour(a.time);
                                             const isSameH = apptHour === hour;

@@ -80,6 +80,7 @@ const SchedulePage = () => {
                     isOpen={isDrawerOpen} 
                     onClose={() => setIsDrawerOpen(false)} 
                     appointment={selectedAppointment} 
+                    doctorId={userData?.doctorId}
                 />
             </div>
         </DashboardLayout>

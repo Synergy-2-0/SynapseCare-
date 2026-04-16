@@ -2,25 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Activity, Heart, FileText, Brain, PlayCircle, PlusCircle, UploadCloud, ShieldCheck, Clock } from 'lucide-react';
 import { supabaseStorage } from '../../lib/supabase';
-import { patientApi, medicalHistoryApi } from '../../lib/api';
+import { patientApi, medicalHistoryApi, appointmentApi } from '../../lib/api';
 import FileUpload from '../ui/FileUpload';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 
-export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
+export default function PatientContextDrawer({ isOpen, onClose, appointment, doctorId: propDoctorId }) {
     const [patientData, setPatientData] = useState(null);
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const isBlocked = appointment?.status === 'BLOCKED';
-    const resolvedPatientId = isBlocked ? null : (appointment?.patientId || appointment?.id);
+    const isAvailable = appointment?.status === 'AVAILABLE';
+    const resolvedPatientId = (isBlocked || isAvailable) ? null : (appointment?.patientId || appointment?.id);
     const resolvedAppointmentId = appointment?.appointmentId || (appointment?.date && appointment?.time ? appointment?.id : null);
 
     const resolvedWeight = patientData?.weight ?? patientData?.weightKg ?? patientData?.weight_kg;
     const resolvedHeight = patientData?.height ?? patientData?.heightCm ?? patientData?.height_cm;
 
     useEffect(() => {
-        if (isOpen && resolvedPatientId && !isBlocked) {
+        if (isOpen && resolvedPatientId && !isBlocked && !isAvailable) {
             const fetchPatientContext = async () => {
                 setLoading(true);
                 try {
@@ -41,7 +42,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                 }
             };
             fetchPatientContext();
-        } else if (isBlocked) {
+        } else if (isBlocked || isAvailable) {
             setPatientData(null);
             setReports([]);
         }
@@ -73,11 +74,11 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                         <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <div>
                                 <div className="flex items-center gap-3 text-xs font-bold text-teal-600 uppercase tracking-widest mb-2">
-                                    {isBlocked ? <ShieldCheck className="w-4 h-4 text-slate-500" /> : <Activity className="w-4 h-4" />} 
-                                    {isBlocked ? 'Clinical Block Registry' : 'Clinical Case Management'}
+                                    {isBlocked ? <ShieldCheck className="w-4 h-4 text-slate-500" /> : isAvailable ? <PlusCircle className="w-4 h-4 text-emerald-600" /> : <Activity className="w-4 h-4" />} 
+                                    {isBlocked ? 'Clinical Block Registry' : isAvailable ? 'Extra Availability' : 'Clinical Case Management'}
                                 </div>
                                 <h2 className="text-3xl font-sans text-slate-900">
-                                    {isBlocked ? 'Blocked Slot' : (appointment.patientName || appointment.name || `Patient #${resolvedPatientId}`)}
+                                    {isBlocked ? 'Blocked Slot' : isAvailable ? 'Extra Availability' : (appointment.patientName || appointment.name || `Patient #${resolvedPatientId}`)}
                                 </h2>
                             </div>
                             <button onClick={onClose} className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 shadow-sm transition-all group">
@@ -87,7 +88,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
 
                         {/* Body content */}
                         <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50/20">
-                            {loading && !isBlocked ? (
+                            {loading && !isBlocked && !isAvailable ? (
                                 <div className="flex flex-col items-center justify-center py-20 space-y-4">
                                     <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Querying Cloud Identity...</p>
@@ -95,25 +96,27 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                             ) : (
                                 <>
                                     {/* AI Summary Block / Block Description */}
-                                    <div className={`p-6 rounded-[2rem] border ${isBlocked ? 'bg-slate-100 border-slate-200' : 'bg-gradient-to-br from-teal-50 to-slate-50 border-teal-100/50'}`}>
+                                    <div className={`p-6 rounded-[2rem] border ${isBlocked ? 'bg-slate-100 border-slate-200' : isAvailable ? 'bg-emerald-50 border-emerald-100' : 'bg-gradient-to-br from-teal-50 to-slate-50 border-teal-100/50'}`}>
                                         <div className="flex items-center gap-2 mb-4">
-                                            {isBlocked ? <Clock className="w-5 h-5 text-slate-500" /> : <Brain className="w-5 h-5 text-indigo-600" />}
-                                            <div className={`text-xs font-bold uppercase tracking-widest ${isBlocked ? 'text-slate-500' : 'text-indigo-600'}`}>
-                                                {isBlocked ? 'Temporal Lock Details' : 'Synapcare Clinical Insight'}
+                                            {isBlocked ? <Clock className="w-5 h-5 text-slate-500" /> : isAvailable ? <PlusCircle className="w-5 h-5 text-emerald-600" /> : <Brain className="w-5 h-5 text-indigo-600" />}
+                                            <div className={`text-xs font-bold uppercase tracking-widest ${isBlocked ? 'text-slate-500' : isAvailable ? 'text-emerald-600' : 'text-indigo-600'}`}>
+                                                {isBlocked ? 'Temporal Lock Details' : isAvailable ? 'Extra Availability' : 'Synapcare Clinical Insight'}
                                             </div>
                                         </div>
                                         <div className="text-slate-700 text-sm leading-relaxed font-bold">
                                             {isBlocked ? (
-                                                `This slot was manually blocked for clinical administrative reasons at ${appointment.time}. Patient bookings are restricted for this duration.`
+                                                `This slot was manually blocked for clinical administrative reasons at ${parseApptHour(appointment.time)}:00 ${parseApptHour(appointment.time) >= 12 ? 'PM' : 'AM'}. Patient bookings are restricted for this duration.`
+                                            ) : isAvailable ? (
+                                                `You have opened this slot for additional patient consultations at ${parseApptHour(appointment.time)}:00 ${parseApptHour(appointment.time) >= 12 ? 'PM' : 'AM'}. Patients can now book this time in your public profile.`
                                             ) : appointment.reason ? (
-                                                `Chief Complaint: "${appointment.reason}" recorded for session at ${appointment.time}.`
+                                                `Chief Complaint: "${appointment.reason}" recorded for session at ${parseApptHour(appointment.time)}:00 ${parseApptHour(appointment.time) >= 12 ? 'PM' : 'AM'}.`
                                             ) : (
-                                                `Patient scheduled for active consultation at ${appointment.time}. Initial triage suggests standard clinical review.`
+                                                `Patient scheduled for active consultation at ${parseApptHour(appointment.time)}:00 ${parseApptHour(appointment.time) >= 12 ? 'PM' : 'AM'}. Initial triage suggests standard clinical review.`
                                             )}
                                         </div>
                                     </div>
 
-                                    {!isBlocked && (
+                                    {!isBlocked && !isAvailable && (
                                         <>
                                      {/* Vitals Grid */}
                                      <div>
@@ -198,7 +201,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                         </>
                                     )}
 
-                                    {!isBlocked && (
+                                    {!isBlocked && !isAvailable && (
                                         <div className="space-y-4 p-6 bg-slate-900 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden">
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 blur-[50px] rounded-full pointer-events-none" />
                                             <div className="flex items-center gap-2 relative z-10">
@@ -243,11 +246,27 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                         </div>
 
                         {/* Action Footer */}
-                        <div className="p-6 border-t border-slate-100 bg-white grid grid-cols-2 gap-4">
-                            {isBlocked ? (
+                        <div className="p-6 border-t border-slate-100 bg-white flex flex-col gap-3">
+                            {isAvailable ? (
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const doctorId = propDoctorId || localStorage.getItem('user_id');
+                                            await appointmentApi.post(`/doctor/${doctorId}/extra-slots/${appointment.id}/block`);
+                                            onClose();
+                                            if (typeof window !== 'undefined') window.location.reload();
+                                        } catch (err) {
+                                            console.error("Failed to block slot", err);
+                                        }
+                                    }}
+                                    className="w-full py-4 rounded-[1.2rem] bg-slate-900 text-white font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 uppercase tracking-widest text-[10px]"
+                                >
+                                    <ShieldCheck className="w-4 h-4 text-emerald-400" /> Convert to Clinical Block
+                                </button>
+                            ) : isBlocked ? (
                                 <button
                                     onClick={onClose}
-                                    className="col-span-2 py-4 rounded-[1.2rem] bg-slate-100 text-slate-600 font-bold flex items-center justify-center gap-2 hover:bg-slate-200 transition-all border border-slate-200 uppercase tracking-widest text-[10px]"
+                                    className="w-full py-4 rounded-[1.2rem] bg-slate-100 text-slate-600 font-bold flex items-center justify-center gap-2 hover:bg-slate-200 transition-all border border-slate-200 uppercase tracking-widest text-[10px]"
                                 >
                                     Dismiss Record
                                 </button>
@@ -259,7 +278,7 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
                                         }
                                     }}
                                     disabled={!resolvedAppointmentId}
-                                    className="col-span-2 py-4 rounded-[1.2rem] bg-teal-600 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-teal-500/25 hover:bg-teal-700 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full py-4 rounded-[1.2rem] bg-teal-600 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-teal-500/25 hover:bg-teal-700 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <PlayCircle className="w-5 h-5" /> {resolvedAppointmentId ? 'Begin Appointment' : 'Select Appointment from Queue'}
                                 </button>
@@ -271,3 +290,20 @@ export default function PatientContextDrawer({ isOpen, onClose, appointment }) {
         </AnimatePresence>
     );
 }
+
+// Helper duplicates for internal drawer use if not passed via props
+const parseApptDate = (date) => {
+    if (!date) return null;
+    if (Array.isArray(date) && date.length >= 3) {
+        return `${date[0]}-${String(date[1]).padStart(2, '0')}-${String(date[2]).padStart(2, '0')}`;
+    }
+    if (typeof date === 'string') return date.split('T')[0];
+    return date;
+};
+
+const parseApptHour = (time) => {
+    if (!time) return 0;
+    if (Array.isArray(time)) return parseInt(time[0], 10);
+    if (typeof time === 'string') return parseInt(time.split(':')[0], 10);
+    return 0;
+};

@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@org.springframework.transaction.annotation.Transactional
 public class AppointmentService {
 
     private static final List<AppointmentStatus> OCCUPIED_STATUSES = List.of(
@@ -414,6 +415,36 @@ public class AppointmentService {
                 .reason("Clinician Defined Extra Availability")
                 .build();
         extraSlotRepository.save(extraSlot);
+    }
+
+    public void deleteExtraSlot(Long id, Long doctorId) {
+        log.info("Deleting extra slot {} for doctor {}", id, doctorId);
+        extraSlotRepository.findById(id).ifPresent(es -> {
+            if (es.getDoctorId().equals(doctorId)) {
+                extraSlotRepository.delete(es);
+                log.info("Extra slot {} deleted successfully", id);
+            } else {
+                log.warn("Unauthorized attempt to delete extra slot {} by doctor {}", id, doctorId);
+            }
+        });
+    }
+
+    public void convertExtraSlotToBlock(Long slotId, Long doctorId) {
+        log.info("Converting extra slot {} to clinical block for doctor {}", slotId, doctorId);
+        extraSlotRepository.findById(slotId).ifPresent(es -> {
+            if (es.getDoctorId().equals(doctorId)) {
+                // Create the block using existing business logic
+                BlockSlotRequest blockReq = new BlockSlotRequest();
+                blockReq.setDate(es.getDate());
+                blockReq.setTime(es.getStartTime());
+                blockReq.setReason("Clinical Administrative Block");
+                blockSlot(doctorId, null, blockReq);
+                
+                // Remove the extra slot record
+                extraSlotRepository.delete(es);
+                log.info("Successfully converted slot {} to block and removed extra_slot entry", slotId);
+            }
+        });
     }
 
     public void bulkReassign(List<Long> appointmentIds, Long targetDoctorId) {
