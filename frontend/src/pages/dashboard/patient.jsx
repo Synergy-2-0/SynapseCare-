@@ -773,6 +773,24 @@ const PatientDashboard = () => {
                                                                     </button>
                                                                 </div>
                                                             </div>
+                                                            
+                                                            {/* Shared Records Manifest for this session */}
+                                                            {reports.filter(r => r.appointmentId == upcoming[0].id).length > 0 && (
+                                                                <div className="mt-8 pt-8 border-t border-slate-50 relative z-10">
+                                                                    <div className="flex items-center gap-2 mb-4">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Shared Documents for this Visit</span>
+                                                                    </div>
+                                                                    <div className="flex flex-wrap gap-3">
+                                                                        {reports.filter(r => r.appointmentId == upcoming[0].id).map((r, rIdx) => (
+                                                                            <div key={rIdx} className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-white hover:border-teal-100 transition-all cursor-pointer group/file" onClick={() => handleDownloadReport(r)}>
+                                                                                <FileText size={14} className="text-teal-600 group-hover/file:scale-110 transition-transform" />
+                                                                                <span className="text-[11px] font-bold text-slate-600 line-clamp-1 max-w-[140px]">{r.fileName || 'Report'}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
 
                                                         {/* Remaining Registry */}
@@ -781,7 +799,6 @@ const PatientDashboard = () => {
                                                                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 ml-2 mb-8">Clinical Queue Registry</h4>
                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                                     {upcoming.slice(1).map((u, i) => (
-
                                                                         <div key={i} className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] hover:bg-white/[0.08] transition-all group/item">
                                                                             <div className="flex justify-between items-start mb-8">
                                                                                 <div className="w-12 h-12 rounded-[1.2rem] bg-teal-500/10 text-teal-400 flex items-center justify-center border border-teal-500/20">
@@ -815,6 +832,23 @@ const PatientDashboard = () => {
                                                                                     <Settings size={18} />
                                                                                 </button>
                                                                             </div>
+
+                                                                            {/* Quick Record Manifest for secondary visits */}
+                                                                            {reports.filter(r => r.appointmentId == u.id).length > 0 && (
+                                                                                <div className="mt-6 pt-6 border-t border-white/10">
+                                                                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2">
+                                                                                        <FileText size={10} className="text-teal-500" /> Documents Linked ({reports.filter(r => r.appointmentId == u.id).length})
+                                                                                    </p>
+                                                                                    <div className="flex flex-wrap gap-2">
+                                                                                        {reports.filter(r => r.appointmentId == u.id).slice(0, 2).map((r, rIdx) => (
+                                                                                            <div key={rIdx} className="px-2 py-1 bg-white/5 border border-white/5 rounded-lg text-[10px] font-medium text-slate-400 truncate max-w-[100px]">{r.fileName}</div>
+                                                                                        ))}
+                                                                                        {reports.filter(r => r.appointmentId == u.id).length > 2 && (
+                                                                                            <div className="px-2 py-1 bg-white/5 rounded-lg text-[10px] font-medium text-slate-500">+{reports.filter(r => r.appointmentId == u.id).length - 2} more</div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     ))}
                                                                 </div>
