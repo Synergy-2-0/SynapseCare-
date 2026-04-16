@@ -26,14 +26,9 @@ export const NotificationProvider = ({ children }) => {
 
     // Get user ID from localStorage
     const getUserId = () => {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) return null;
-        try {
-            const user = JSON.parse(userStr);
-            return user.id;
-        } catch (e) {
-            return null;
-        }
+        if (typeof window === 'undefined') return null;
+        const userId = localStorage.getItem('user_id');
+        return userId ? Number(userId) : null;
     };
 
     // Fetch notifications from API

@@ -152,7 +152,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: localhost:5000/healthcare-platform-notification-service:latest
+          image: localhost:5000/healthcare-platform-notification-service:v1.0.3
           imagePullPolicy: Never
           env:
             - name: SPRING_DATASOURCE_URL

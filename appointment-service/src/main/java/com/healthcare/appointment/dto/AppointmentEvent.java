@@ -20,6 +20,7 @@ public class AppointmentEvent {
     private Long patientId;
     private Long userId;
     private String patientEmail;
+    private String patientPhone;
     private Long doctorId;
     private LocalDate date;
     private LocalTime time;

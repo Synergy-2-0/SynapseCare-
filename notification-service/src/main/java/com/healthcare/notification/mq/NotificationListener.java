@@ -1,8 +1,6 @@
 package com.healthcare.notification.mq;
 
-import com.healthcare.notification.service.EmailService;
-import com.healthcare.notification.service.NotificationService;
-import com.healthcare.notification.service.SmsService;
+import com.healthcare.notification.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -21,6 +19,8 @@ public class NotificationListener {
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final SmsService smsService;
+    private final WhatsAppService whatsappService;
+    private final NotificationPreferenceService preferenceService;
 
     /**
      * Handle general notification events (Payment Success, Password Reset, etc.)
@@ -139,7 +139,13 @@ public class NotificationListener {
             String meetingLink = extractString(event, "meetingLink");
 
             // Use patientId as userId if userId not provided
-            if (userId == null) userId = patientId;
+            log.info("🔍 Notification Event Context - Type: {}, AppointmentId: {}, userId: {}, patientId: {}", 
+                    eventType, appointmentId, userId, patientId);
+
+            if (userId == null) {
+                log.warn("⚠️ userId is NULL in event! Falling back to patientId: {}", patientId);
+                userId = patientId;
+            }
 
             switch (eventType) {
                 case "APPOINTMENT_BOOKED" -> handleAppointmentBooked(
@@ -187,25 +193,40 @@ public class NotificationListener {
             message += " Meeting link: " + meetingLink;
         }
 
-        notificationService.sendNotification(userId, appointmentId, "APPOINTMENT_CONFIRMED", title, message, 
-                "ALL", email, phone, "/patient/appointments/" + appointmentId);
-
-        // Send formatted email
-        if (email != null && !email.isEmpty()) {
-            emailService.sendAppointmentConfirmationEmail(email, 
-                    patientName != null ? patientName : "Patient",
-                    doctorName != null ? doctorName : "Doctor",
-                    date, time, appointmentId);
+        // 1. Always send IN_APP (if enabled) record
+        if (preferenceService.shouldSendInApp(userId)) {
+            notificationService.sendNotification(userId, appointmentId, "APPOINTMENT_CONFIRMED", title, message, 
+                    "IN_APP", email, phone, "/patient/appointments/" + appointmentId);
         }
 
-        // Send SMS
-        if (phone != null && !phone.isEmpty()) {
-            smsService.sendAppointmentConfirmationSms(phone, 
-                    patientName != null ? patientName : "Patient",
-                    appointmentId, date, time);
+        // Get preferred channel for appointment confirmations
+        String preferredChannel = preferenceService.getPreferences(userId).getPreferredAppointmentChannel();
+        if (preferredChannel == null) preferredChannel = "EMAIL"; // Fallback to Email
+
+        log.info("Preferred channel for patient {}: {}", userId, preferredChannel);
+
+        // Exclusive delivery based on preferred channel
+        switch (preferredChannel.toUpperCase()) {
+            case "SMS":
+                if (phone != null && !phone.isEmpty() && preferenceService.shouldSendSms(userId, "APPOINTMENT_CONFIRMED")) {
+                    smsService.sendAppointmentConfirmationSms(phone, patientName, appointmentId, date, time);
+                }
+                break;
+            case "WHATSAPP":
+                if (phone != null && !phone.isEmpty() && preferenceService.shouldSendWhatsApp(userId, "APPOINTMENT_CONFIRMED")) {
+                    whatsappService.sendAppointmentConfirmation(phone, patientName, appointmentId, date, time);
+                }
+                break;
+            case "EMAIL":
+                if (email != null && !email.isEmpty() && preferenceService.shouldSendEmail(userId, "APPOINTMENT_CONFIRMED")) {
+                    emailService.sendAppointmentConfirmationEmail(email, patientName, doctorName, date, time, appointmentId);
+                }
+                break;
+            default:
+                log.warn("Invalid preferred channel '{}' for user {}, defaulting to logs only", preferredChannel, userId);
         }
 
-        log.info("✅ Appointment confirmed notification sent for appointment {}", appointmentId);
+        log.info("✅ Appointment confirmed notification processing complete for appointment {}", appointmentId);
     }
 
     private void handleAppointmentCancelled(Long appointmentId, Long userId, String email,

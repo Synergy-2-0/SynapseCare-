@@ -256,9 +256,9 @@ services:
       
       # WhatsApp Configuration (UltraMsg)
       - 'WHATSAPP_NOTIFICATIONS_ENABLED=${WHATSAPP_NOTIFICATIONS_ENABLED:-true}'
-      - 'ULTRAMSG_INSTANCE_ID=${ULTRAMSG_INSTANCE_ID:-instance168773}'
-      - 'ULTRAMSG_TOKEN=${ULTRAMSG_TOKEN:-vugvi2m21314s03x}'
-      - 'ULTRAMSG_API_URL=${ULTRAMSG_API_URL:-https://api.ultramsg.com/instance168773/}'
+      - 'ULTRAMSG_INSTANCE_ID=${ULTRAMSG_INSTANCE_ID:-instance170456}'
+      - 'ULTRAMSG_TOKEN=${ULTRAMSG_TOKEN:-ajti20mn7ce7k0kc}'
+      - 'ULTRAMSG_API_URL=${ULTRAMSG_API_URL:-https://api.ultramsg.com/instance170456/}'
     depends_on:
       rabbitmq:
         condition: service_healthy
