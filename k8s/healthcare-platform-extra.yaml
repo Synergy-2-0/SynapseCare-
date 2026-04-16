@@ -152,7 +152,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: localhost:5000/healthcare-platform-notification-service:v1.0.3
+          image: notification-service:v1.0.5
           imagePullPolicy: Never
           env:
             - name: SPRING_DATASOURCE_URL
@@ -188,11 +188,11 @@ spec:
             - name: WHATSAPP_NOTIFICATIONS_ENABLED
               value: "true"
             - name: ULTRAMSG_INSTANCE_ID
-              value: "instance168773"
+              value: "instance170456"
             - name: ULTRAMSG_TOKEN
-              value: "vugvi2m21314s03x"
+              value: "ajti20mn7ce7k0kc"
             - name: ULTRAMSG_API_URL
-              value: "https://api.ultramsg.com/instance168773/"
+              value: "https://api.ultramsg.com/instance170456/"
           ports:
             - containerPort: 8089
 ---
