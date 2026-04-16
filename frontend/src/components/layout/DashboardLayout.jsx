@@ -6,6 +6,7 @@ import Head from 'next/head';
 import Sidebar from './Sidebar';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import NotificationBell from '../ui/NotificationBell';
+import { doctorApi } from '../../lib/api';
 
 const DashboardLayout = ({ children, title = "" }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -35,36 +36,52 @@ const DashboardLayout = ({ children, title = "" }) => {
     useEffect(() => {
         setIsClient(true);
         const role = localStorage.getItem('user_role');
-        const allowedRoles = getAllowedRolesForPath(router.pathname);
         const verificationStatus = localStorage.getItem('user_verificationStatus');
+        
+        const syncUserData = async () => {
+            const allowedRoles = getAllowedRolesForPath(router.pathname);
 
-        if (!role) {
-            router.push('/login');
-            return;
-        }
+            if (!role) {
+                router.push('/login');
+                return;
+            }
 
-        if (role === 'DOCTOR' && verificationStatus === 'PENDING' && !router.pathname.startsWith('/doctor/setup')) {
-            router.push('/doctor/setup');
-            return;
-        }
+            // Sync with remote profile if doctor data is thin
+            if (role === 'DOCTOR' && !localStorage.getItem('user_profile_img')) {
+                try {
+                    const profileRes = await doctorApi.get('/profile/me');
+                    const profile = profileRes.data?.data || profileRes.data || profileRes;
+                    if (profile) {
+                        if (profile.profileImageUrl) localStorage.setItem('user_profile_img', profile.profileImageUrl);
+                        if (profile.specialization) localStorage.setItem('user_specialization', profile.specialization);
+                        if (profile.verificationStatus) {
+                            localStorage.setItem('user_verificationStatus', profile.verificationStatus);
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Global profile sync delayed:", e);
+                }
+            }
 
-        if (role === 'DOCTOR' && verificationStatus === 'APPROVED' && router.pathname.startsWith('/doctor/setup')) {
-            router.push('/dashboard/doctor');
-            return;
-        }
+            if (role === 'DOCTOR' && verificationStatus === 'PENDING' && !router.pathname.startsWith('/doctor/setup')) {
+                router.push('/doctor/setup');
+                return;
+            }
 
-        if (allowedRoles.includes(role)) {
-            setIsAuthorized(true);
-            setUserRole(role);
-            setUserData({
-                name: localStorage.getItem('user_name') || 'Practitioner',
-                specialization: localStorage.getItem('user_specialization') || (role === 'DOCTOR' ? 'General Physician' : 'Patient'),
-                profileImageUrl: localStorage.getItem('user_profile_img')
-            });
-            return;
-        }
+            if (allowedRoles.includes(role)) {
+                setIsAuthorized(true);
+                setUserRole(role);
+                setUserData({
+                    name: localStorage.getItem('user_name') || 'Practitioner',
+                    specialization: localStorage.getItem('user_specialization') || (role === 'DOCTOR' ? 'General Physician' : 'Patient'),
+                    profileImageUrl: localStorage.getItem('user_profile_img')
+                });
+            } else {
+                router.push(getFallbackRoute(role));
+            }
+        };
 
-        router.push(getFallbackRoute(role));
+        syncUserData();
     }, [router, router.pathname]);
 
     if (!isClient || !isAuthorized) {
