@@ -9,7 +9,7 @@ import NotificationBell from '../ui/NotificationBell';
 
 const DashboardLayout = ({ children, title = "" }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [userData, setUserData] = useState({ name: 'Practitioner', specialization: 'General Physician', profileImageUrl: null });
+    const [userData, setUserData] = useState({ name: 'Practitioner', specialization: 'General Physician' });
     const [userRole, setUserRole] = useState('PATIENT');
     const [isClient, setIsClient] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false);
@@ -49,7 +49,7 @@ const DashboardLayout = ({ children, title = "" }) => {
         }
 
         if (role === 'DOCTOR' && verificationStatus === 'APPROVED' && router.pathname.startsWith('/doctor/setup')) {
-            router.push('/doctor/dashboard');
+            router.push('/dashboard/doctor');
             return;
         }
 
@@ -59,7 +59,7 @@ const DashboardLayout = ({ children, title = "" }) => {
             setUserData({
                 name: localStorage.getItem('user_name') || 'Practitioner',
                 specialization: localStorage.getItem('user_specialization') || (role === 'DOCTOR' ? 'General Physician' : 'Patient'),
-                profileImageUrl: localStorage.getItem('user_image')
+                profileImageUrl: localStorage.getItem('user_profile_img')
             });
             return;
         }

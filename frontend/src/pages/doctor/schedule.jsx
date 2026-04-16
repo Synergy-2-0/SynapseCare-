@@ -40,6 +40,10 @@ const SchedulePage = () => {
                 throw new Error('Doctor profile ID is missing');
             }
 
+            if (doctorProfile?.profileImageUrl) {
+                localStorage.setItem('user_profile_img', doctorProfile.profileImageUrl);
+            }
+
             setUserData({ name, userId, doctorId });
 
             const apptRes = await appointmentApi.get(`/doctor/${doctorId}`);

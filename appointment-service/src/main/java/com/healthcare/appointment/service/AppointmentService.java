@@ -10,6 +10,7 @@ import com.healthcare.appointment.dto.client.AvailableSlotClientDto;
 import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
 import com.healthcare.appointment.entity.Appointment;
 import com.healthcare.appointment.entity.AppointmentStatus;
+import com.healthcare.appointment.entity.ExtraSlot;
 import com.healthcare.appointment.exception.ResourceNotFoundException;
 import com.healthcare.appointment.exception.SlotConflictException;
 import com.healthcare.appointment.repository.AppointmentRepository;
@@ -213,10 +214,30 @@ public class AppointmentService {
     }
 
     public List<AppointmentDto> getAppointmentsByDoctor(Long doctorId) {
-        return appointmentRepository.findByDoctorIdOrderByDateAscTimeAsc(doctorId)
+        List<AppointmentDto> appointments = new java.util.ArrayList<>(
+            appointmentRepository.findByDoctorIdOrderByDateAscTimeAsc(doctorId)
                 .stream()
                 .map(this::mapToDto)
+                .collect(Collectors.toList())
+        );
+
+        List<ExtraSlot> extraSlots = extraSlotRepository.findByDoctorId(doctorId);
+        log.info("Found {} extra availability slots for clinician {}", extraSlots.size(), doctorId);
+
+        List<AppointmentDto> extras = extraSlots.stream()
+                .map(es -> AppointmentDto.builder()
+                        .id(es.getId())
+                        .patientId(0L) // Virtual patient for tracking
+                        .doctorId(es.getDoctorId())
+                        .date(es.getDate())
+                        .time(es.getStartTime())
+                        .status(AppointmentStatus.AVAILABLE)
+                        .reason("Extra Availability")
+                        .build())
                 .collect(Collectors.toList());
+
+        appointments.addAll(extras);
+        return appointments;
     }
 
     public List<java.time.LocalTime> getBookedSlots(Long doctorId, java.time.LocalDate date) {

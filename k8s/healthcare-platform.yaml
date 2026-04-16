@@ -209,6 +209,10 @@ spec:
               value: admin
             - name: SPRING_RABBITMQ_PASSWORD
               value: admin123
+            - name: DOCTOR_SERVICE_URL
+              value: http://doctor-service:8082
+            - name: PATIENT_SERVICE_URL
+              value: http://patient-service:8084
           ports:
             - containerPort: 8083
 ---

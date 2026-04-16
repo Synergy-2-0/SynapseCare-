@@ -307,4 +307,3 @@ networks:
 
 volumes:
   rabbitmq-data:
-
