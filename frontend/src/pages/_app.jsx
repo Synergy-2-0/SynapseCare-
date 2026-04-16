@@ -7,7 +7,6 @@ import Head from "next/head";
 import { AuthProvider } from "../context/AuthContext";
 import { DoctorProvider } from "../context/DoctorContext";
 import { ToastProvider } from "../context/ToastContext";
-import { MockDataProvider } from "../context/MockDataContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from 'next/router';
@@ -22,24 +21,22 @@ function MyApp({ Component, pageProps }) {
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
       <DoctorProvider>
-        <MockDataProvider>
-          <ToastProvider>
-            <NotificationProvider>
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.div
-                  key={router.pathname}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="h-full w-full"
-                >
-                  <Component {...pageProps} />
-                </motion.div>
-              </AnimatePresence>
-            </NotificationProvider>
-          </ToastProvider>
-        </MockDataProvider>
+        <ToastProvider>
+          <NotificationProvider>
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.div
+                key={router.pathname}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="h-full w-full"
+              >
+                <Component {...pageProps} />
+              </motion.div>
+            </AnimatePresence>
+          </NotificationProvider>
+        </ToastProvider>
       </DoctorProvider>
     </AuthProvider>
   );

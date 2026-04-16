@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { Bell, SignOut } from '@phosphor-icons/react';
+import { SignOut } from '@phosphor-icons/react';
 import Head from 'next/head';
 import Image from 'next/image';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -29,8 +29,6 @@ const AdminLayout = ({ children, title = "" }) => {
             role: 'ADMIN'
         });
     }, [router]);
-
-
 
     const handleLogout = () => {
         localStorage.clear();
@@ -65,11 +63,6 @@ const AdminLayout = ({ children, title = "" }) => {
 
                     <div className="flex items-center gap-8">
                         <div className="flex items-center gap-2">
-                            <button className="relative w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-teal-600 transition-all">
-                                <Bell size={20} weight="light" />
-                                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white shadow-sm" />
-                            </button>
-                            
                             <button 
                                 onClick={handleLogout}
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all font-semibold text-xs uppercase tracking-wider"
