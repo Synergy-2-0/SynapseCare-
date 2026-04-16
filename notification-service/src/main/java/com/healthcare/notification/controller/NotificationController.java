@@ -101,26 +101,6 @@ public class NotificationController {
     }
 
     /**
-     * Get notification preferences for a user
-     */
-    @GetMapping("/preferences/{userId}")
-    public ResponseEntity<NotificationPreferenceDTO> getPreferences(@PathVariable Long userId) {
-        log.info("Getting notification preferences for user {}", userId);
-        return ResponseEntity.ok(preferenceService.getPreferences(userId));
-    }
-
-    /**
-     * Update notification preferences for a user
-     */
-    @PutMapping("/preferences/{userId}")
-    public ResponseEntity<NotificationPreferenceDTO> updatePreferences(
-            @PathVariable Long userId,
-            @RequestBody NotificationPreferenceDTO preferences) {
-        log.info("Updating notification preferences for user {}", userId);
-        return ResponseEntity.ok(preferenceService.updatePreferences(userId, preferences));
-    }
-
-    /**
      * Get notification status (for debugging)
      */
     @GetMapping("/status")

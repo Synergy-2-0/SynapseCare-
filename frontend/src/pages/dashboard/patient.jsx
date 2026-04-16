@@ -32,6 +32,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import FileUpload from '../../components/ui/FileUpload';
 import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
+import NotificationHub from '../../components/dashboard/NotificationHub';
 
 const PatientDashboard = () => {
     const [userData, setUserData] = useState(null);
@@ -53,6 +54,8 @@ const PatientDashboard = () => {
     const [showNotifications, setShowNotifications] = useState(false);
     const [profileForm, setProfileForm] = useState({
         name: '',
+        email: '',
+        phone: '',
         bloodGroup: '',
         height: '',
         weight: '',
@@ -132,6 +135,7 @@ const PatientDashboard = () => {
                     const safeNotifications = Array.isArray(notificationInfo) ? notificationInfo : [];
 
                     setUserData({ ...patientInfo, name: patientInfo.name || name, id, clinicalId });
+                    setProfileForm({ ...patientInfo, name: patientInfo.name || name });
                     setAllAppointments(safeAppts);
                     setUpcoming(safeAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)));
                     setClinicalHistory(safeHistory);
@@ -292,7 +296,16 @@ const PatientDashboard = () => {
 
         try {
             setLoading(true);
-            const res = await patientApi.put(`/${userData.clinicalId}`, profileForm);
+            
+            // Clean up payload: Convert empty strings to null for numeric/date fields
+            const payload = {
+                ...profileForm,
+                height: profileForm.height === "" ? null : parseFloat(profileForm.height),
+                weight: profileForm.weight === "" ? null : parseFloat(profileForm.weight),
+                dob: profileForm.dob === "" ? null : profileForm.dob
+            };
+
+            const res = await patientApi.put(`/${userData.clinicalId}`, payload);
             const updatedData = res.data?.data || res.data;
             setUserData(updatedData);
             setProfileForm(updatedData);
@@ -333,7 +346,8 @@ const PatientDashboard = () => {
         { id: 'payments', icon: CreditCard, label: 'Billing Nest' },
         { id: 'telemedicine', icon: Video, label: 'Virtual Clinic' },
         { id: 'chat', icon: MessageSquare, label: 'AI Diagnostic' },
-        { id: 'profile', icon: User, label: 'My Identity' }
+        { id: 'profile', icon: User, label: 'My Identity' },
+        { id: 'settings', icon: Settings, label: 'Notification Hub' }
     ];
 
     if (loading) return <LoadingSpinner size="fullscreen" message="Synchronizing Patient Data..." />;
@@ -1157,6 +1171,31 @@ const PatientDashboard = () => {
                                                         />
                                                     </div>
                                                     <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date of Birth</label>
+                                                        <input 
+                                                            type="date"
+                                                            value={profileForm.dob || ""} 
+                                                            onChange={(e) => setProfileForm({...profileForm, dob: e.target.value})}
+                                                            className="input-field h-14 bg-slate-50/50" 
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+                                                        <input 
+                                                            value={profileForm.phone} 
+                                                            onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
+                                                            className="input-field h-14 bg-slate-50/50" 
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email (Registry Locked)</label>
+                                                        <input 
+                                                            value={profileForm.email} 
+                                                            readOnly
+                                                            className="input-field h-14 bg-slate-100/50 text-slate-400 cursor-not-allowed" 
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
                                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Blood Registry Group</label>
                                                         <select 
                                                             value={profileForm.bloodGroup} 
@@ -1310,6 +1349,12 @@ const PatientDashboard = () => {
                                                 </div>
                                             )) : null}
                                         </div>
+                                    </motion.div>
+                                )}
+
+                                {activeTab === 'settings' && (
+                                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
+                                        <NotificationHub />
                                     </motion.div>
                                 )}
                             </AnimatePresence>

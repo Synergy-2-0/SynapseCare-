@@ -494,12 +494,14 @@ public class AppointmentService {
     private void publishEvent(String eventType, Appointment appointment) {
         Long userId = null;
         String patientEmail = null;
+        String patientPhone = null;
         try {
             com.healthcare.appointment.dto.client.PatientClientDto patient = 
                 patientServiceClient.getPatientById(appointment.getPatientId());
             if (patient != null) {
                 userId = patient.getUserId();
                 patientEmail = patient.getEmail();
+                patientPhone = patient.getPhone();
             }
         } catch (Exception e) {
             log.error("Could not fetch patient info for event: {}", e.getMessage());
@@ -512,6 +514,7 @@ public class AppointmentService {
                         .patientId(appointment.getPatientId())
                         .userId(userId)
                         .patientEmail(patientEmail)
+                        .patientPhone(patientPhone)
                         .doctorId(appointment.getDoctorId())
                         .date(appointment.getDate())
                         .time(appointment.getTime())
