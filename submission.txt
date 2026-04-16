@@ -1,0 +1,8 @@
+GitHub Repository Link:
+https://github.com/Synergy-2-0/SynapseCare-.git
+
+YouTube Presentation / Demo Link:
+[INSERT YOUR YOUTUBE VIDEO LINK HERE]
+
+---
+Note: The source code containing all backend microservices, the Next.js client, Kubernetes deployment files (YAML), and PostgreSQL database initializations are properly structured within the repository directories. The presentation video features all 4 members explaining their contributions for a maximum of 3 minutes each, keeping the total length under 12 minutes as requested.
