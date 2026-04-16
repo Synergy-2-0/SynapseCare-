@@ -114,6 +114,12 @@ public class AppointmentController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Patient appointments fetched", appointments));
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<List<AppointmentDto>>> getAllAppointments() {
+        List<AppointmentDto> appointments = appointmentService.getAllAppointments();
+        return ResponseEntity.ok(new ApiResponse<>(true, "All appointments fetched", appointments));
+    }
+
     @GetMapping("/doctor/{doctorId}")
     public ResponseEntity<ApiResponse<List<AppointmentDto>>> getAppointmentsByDoctor(@PathVariable("doctorId") Long doctorId) {
         List<AppointmentDto> appointments = appointmentService.getAppointmentsByDoctor(doctorId);

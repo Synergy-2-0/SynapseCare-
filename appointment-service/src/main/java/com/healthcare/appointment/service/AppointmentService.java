@@ -205,6 +205,13 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    public List<AppointmentDto> getAllAppointments() {
+        return appointmentRepository.findAll()
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
     public List<AppointmentDto> getAppointmentsByDoctor(Long doctorId) {
         return appointmentRepository.findByDoctorIdOrderByDateAscTimeAsc(doctorId)
                 .stream()
