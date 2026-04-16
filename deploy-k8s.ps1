@@ -15,13 +15,17 @@ $services = @(
 
 foreach ($service in $services) {
     echo "Building $($service.name)..."
+    $imageName = "localhost:5000/healthcare-platform-$($service.name):latest"
     if ($service.context -eq ".") {
-        docker build -t "localhost:5000/healthcare-platform-$($service.name):latest" -f $($service.path) .
+        docker build -t $imageName -f $($service.path) .
     } elseif ($service.name -eq "frontend") {
-        docker build -t "localhost:5000/healthcare-platform-$($service.name):latest" --build-arg NEXT_PUBLIC_API_GATEWAY_URL="http://api-gateway:8080/api" $service.context
+        $imageName = "localhost:5000/healthcare-platform-frontend:v10"
+        docker build -t $imageName --build-arg NEXT_PUBLIC_API_GATEWAY_URL="http://localhost:8080/api" $service.context
     } else {
-        docker build -t "localhost:5000/healthcare-platform-$($service.name):latest" $service.context
+        docker build -t $imageName $service.context
     }
+    echo "Pushing $imageName to local registry..."
+    docker push $imageName
 }
 
 echo "Applying Kubernetes manifests..."
@@ -41,6 +45,6 @@ kubectl rollout restart deployment telemedicine-service
 kubectl rollout restart deployment prescription-service
 kubectl rollout restart deployment notification-service
 kubectl rollout restart deployment ai-symptom-checker-service
-kubectl rollout restart deployment frontend
+kubectl set image deployment/frontend frontend=localhost:5000/healthcare-platform-frontend:v10
 
 echo "Deployment complete!"

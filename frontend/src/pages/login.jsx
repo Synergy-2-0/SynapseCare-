@@ -84,15 +84,15 @@ const LoginPage = () => {
                 <title>Secure Login | Clinical Identity | SynapsCare</title>
                 <meta name="description" content="Access your clinical dashboard and patient data securely" />
             </Head>
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 selection:bg-indigo-100 selection:text-indigo-900">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,70,229,0.05),transparent_500px)] pointer-events-none" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.05),transparent_500px)] pointer-events-none" />
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 selection:bg-teal-100 selection:text-teal-900">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(13,148,136,0.05),transparent_500px)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.05),transparent_500px)] pointer-events-none" />
 
             <div className="w-full max-w-5xl grid lg:grid-cols-2 bg-white rounded-[2.5rem] shadow-premium overflow-hidden border border-slate-200/50 relative z-10">
                 {/* Left Side: Branding & Info */}
                 <div className="hidden lg:flex flex-col justify-between p-16 bg-slate-900 text-white relative">
                     <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px]" />
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/20 rounded-full blur-[80px]" />
                     
                     <Link href="/" className="flex items-center gap-3 relative z-10 transition-transform hover:scale-105 active:scale-95 w-fit">
                         <Image 
@@ -102,13 +102,13 @@ const LoginPage = () => {
                             height={40} 
                             className="w-10 h-10 brightness-200" 
                         />
-                        <span className="text-2xl font-black tracking-tighter">Synapse<span className="text-indigo-400">Care</span></span>
+                        <span className="text-2xl font-black tracking-tighter">Synapse<span className="text-teal-400">Care</span></span>
                     </Link>
 
                     <div className="relative z-10 space-y-8">
-                        <h1 className="text-4xl font-black leading-tight tracking-tight text-white">
+                        <h1 className="text-4xl font-black leading-tight tracking-tight text-white font-['Open_Sans',sans-serif]">
                             Secure Access to <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-sky-300">Clinical Intelligence.</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-300">Clinical Intelligence.</span>
                         </h1>
                         <p className="text-slate-400 font-medium text-lg leading-relaxed max-w-sm">
                             Manage your healthcare journey with a platform designed for clinical precision and patient trust.
@@ -121,7 +121,7 @@ const LoginPage = () => {
                                 'Encrypted Health Records'
                             ].map((text, i) => (
                                 <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-300 tracking-wide">
-                                    <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                                    <div className="w-6 h-6 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
                                         <CheckCircle2 size={12} strokeWidth={3} />
                                     </div>
                                     {text}
@@ -155,7 +155,7 @@ const LoginPage = () => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 ml-1">Email Terminal</label>
                                 <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-teal-600 transition-colors">
                                         <Mail size={18} />
                                     </div>
                                     <input
@@ -163,7 +163,7 @@ const LoginPage = () => {
                                         placeholder="user@synapsecare.com"
                                         value={credentials.email}
                                         onChange={(e) => setCredentials({...credentials, email: e.target.value})}
-                                        className="input-field pl-12"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none pl-12"
                                         required
                                     />
                                 </div>
@@ -173,11 +173,11 @@ const LoginPage = () => {
                                 <div className="flex justify-between px-1">
                                     <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Security Key</label>
                                     <Link href="/forgot-password">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 hover:text-indigo-700 cursor-pointer">Forgot?</span>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600 hover:text-teal-700 cursor-pointer">Forgot?</span>
                                     </Link>
                                 </div>
                                 <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-teal-600 transition-colors">
                                         <Lock size={18} />
                                     </div>
                                     <input
@@ -185,7 +185,7 @@ const LoginPage = () => {
                                         placeholder="••••••••••••"
                                         value={credentials.password}
                                         onChange={(e) => setCredentials({...credentials, password: e.target.value})}
-                                        className="input-field pl-12"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none pl-12"
                                         required
                                     />
                                 </div>
@@ -193,7 +193,7 @@ const LoginPage = () => {
 
                             <button
                                 disabled={loading}
-                                className="btn-primary w-full flex items-center justify-center gap-3 py-4 text-base font-bold group"
+                                className="w-full bg-teal-600 text-white rounded-2xl py-4 flex items-center justify-center gap-3 text-base font-bold shadow-xl shadow-teal-100 hover:bg-teal-700 hover:shadow-teal-200 transition-all group"
                             >
                                 {loading ? (
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -209,7 +209,7 @@ const LoginPage = () => {
                         <div className="mt-12 text-center">
                             <p className="text-slate-500 font-bold text-sm">
                                 New to the ecosystem? <br className="sm:hidden" />
-                                <Link href="/register" className="text-indigo-600 hover:text-indigo-700 transition-colors ml-1 uppercase tracking-wider text-xs">Create Clinical Identity</Link>
+                                <Link href="/register" className="text-teal-600 hover:text-teal-700 transition-colors ml-1 uppercase tracking-wider text-xs">Create Clinical Identity</Link>
                             </p>
                         </div>
                     </motion.div>

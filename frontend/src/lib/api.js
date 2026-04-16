@@ -15,7 +15,7 @@ const createApiInstance = (baseURL, isPublic = false) => {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
-        timeout: 10000,
+        timeout: 30000,
         withCredentials: false  // Don't send cookies for CORS
     });
 

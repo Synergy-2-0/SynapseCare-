@@ -158,28 +158,28 @@ const RegisterPage = () => {
                 <meta name="description" content="Register as a patient or doctor on SynapseCare" />
             </Head>
             <Toaster position="top-right" />
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 selection:bg-indigo-100 selection:text-indigo-900">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,70,229,0.05),transparent_500px)] pointer-events-none" />
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 selection:bg-teal-100 selection:text-teal-900">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(13,148,136,0.05),transparent_500px)] pointer-events-none" />
 
                 <div className="w-full max-w-6xl grid lg:grid-cols-[0.8fr_1.2fr] bg-white rounded-[2.5rem] shadow-premium overflow-hidden border border-slate-200/50 relative z-10 min-h-[85vh]">
                     {/* Left Side: Onboarding Info */}
                     <div className="hidden lg:flex flex-col justify-between p-16 bg-slate-900 text-white relative overflow-hidden">
                         <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px]" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-500/20 rounded-full blur-[80px]" />
 
                         <Link href="/" className="flex items-center gap-3 relative z-10 transition-transform hover:scale-105 active:scale-95 w-fit">
                             <img src="/logo.png" alt="Logo" className="w-10 h-10 brightness-200" />
-                            <span className="text-2xl font-black tracking-tighter text-white">Synapse<span className="text-indigo-400">Care</span></span>
+                            <span className="text-2xl font-black tracking-tighter text-white">Synapse<span className="text-teal-400">Care</span></span>
                         </Link>
 
                         <div className="relative z-10 space-y-10">
                             <div className="space-y-4">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-widest">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-500/30 text-teal-300 text-[10px] font-black uppercase tracking-widest font-['Open_Sans',sans-serif]">
                                     <Sparkles size={12} /> Smart Registration
                                 </div>
-                                <h1 className="text-4xl font-bold leading-tight tracking-tight">
+                                <h1 className="text-4xl font-bold leading-tight tracking-tight font-['Open_Sans',sans-serif]">
                                     Set up your <br />
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-sky-300">Health Profile.</span>
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-300">Health Profile.</span>
                                 </h1>
                             </div>
 
@@ -194,7 +194,7 @@ const RegisterPage = () => {
                                     'Instant access to telemedicine grid'
                                 ].map((text, i) => (
                                     <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-300 tracking-wide">
-                                        <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                                        <div className="w-6 h-6 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
                                             <CheckCircle2 size={12} strokeWidth={3} />
                                         </div>
                                         {text}
@@ -203,8 +203,8 @@ const RegisterPage = () => {
                             </div>
                         </div>
 
-                        <div className="relative z-10 pt-10 border-t border-white/10 flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                            <ShieldCheck size={16} className="text-indigo-500" />
+                        <div className="relative z-10 pt-10 border-t border-white/10 flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 font-['Open_Sans',sans-serif]">
+                            <ShieldCheck size={16} className="text-teal-500" />
                             <span>HIPAA & SOC2 Compliant Ecosystem</span>
                         </div>
                     </div>
@@ -213,7 +213,7 @@ const RegisterPage = () => {
                     <div className="p-8 md:p-14 lg:p-16 flex flex-col">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                             <div className="mb-10">
-                                <h2 className="text-4xl font-bold text-slate-900 tracking-tighter mb-4">Create Account</h2>
+                                <h2 className="text-4xl font-bold text-slate-900 tracking-tighter mb-4 font-['Open_Sans',sans-serif]">Create Account</h2>
                                 <p className="copy-description font-medium">Select your role to start your setup.</p>
                             </div>
 
@@ -227,20 +227,20 @@ const RegisterPage = () => {
                                         key={r.id}
                                         onClick={() => setRole(r.id)}
                                         className={`relative p-6 rounded-3xl border-2 transition-all flex flex-col items-start gap-4 group ${role === r.id
-                                                ? 'border-indigo-600 bg-indigo-50/30 shadow-lg shadow-indigo-100'
+                                                ? 'border-teal-600 bg-teal-50/30 shadow-lg shadow-teal-100'
                                                 : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50'
                                             }`}
                                     >
-                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${role === r.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${role === r.id ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'
                                             }`}>
                                             <r.icon size={22} />
                                         </div>
                                         <div>
-                                            <div className={`font-black text-sm uppercase tracking-wider ${role === r.id ? 'text-indigo-900' : 'text-slate-600'}`}>{r.label}</div>
+                                            <div className={`font-black text-sm uppercase tracking-wider ${role === r.id ? 'text-teal-900' : 'text-slate-600'}`}>{r.label}</div>
                                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{r.desc}</div>
                                         </div>
                                         {role === r.id && (
-                                            <div className="absolute top-4 right-4 text-indigo-600">
+                                            <div className="absolute top-4 right-4 text-teal-600">
                                                 <CheckCircle2 size={16} fill="currentColor" className="text-white" />
                                             </div>
                                         )}
@@ -255,7 +255,7 @@ const RegisterPage = () => {
                                 </div>
                             )}
 
-                            <form onSubmit={(e) => { e.preventDefault(); handleNextStep(); }} className="space-y-8">
+                            <form onSubmit={(e) => { e.preventDefault(); handleNextStep(); }} className="space-y-8 font-['Open_Sans',sans-serif]">
                                 {step === 1 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
@@ -264,7 +264,7 @@ const RegisterPage = () => {
                                                 placeholder="John"
                                                 value={formData.firstName}
                                                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                                className={`input-field ${fieldErrors.firstName ? 'border-rose-500' : ''}`}
+                                                className={`w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none ${fieldErrors.firstName ? 'border-rose-500' : ''}`}
                                             />
                                             {fieldErrors.firstName && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.firstName}</p>}
                                         </div>
@@ -274,7 +274,7 @@ const RegisterPage = () => {
                                                 placeholder="Doe"
                                                 value={formData.lastName}
                                                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                                className={`input-field ${fieldErrors.lastName ? 'border-rose-500' : ''}`}
+                                                className={`w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none ${fieldErrors.lastName ? 'border-rose-500' : ''}`}
                                             />
                                             {fieldErrors.lastName && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.lastName}</p>}
                                         </div>
@@ -284,7 +284,7 @@ const RegisterPage = () => {
                                                 placeholder="johndoe_123"
                                                 value={formData.username}
                                                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                                className={`input-field ${fieldErrors.username ? 'border-rose-500' : ''}`}
+                                                className={`w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none ${fieldErrors.username ? 'border-rose-500' : ''}`}
                                             />
                                             {fieldErrors.username && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.username}</p>}
                                         </div>
@@ -295,7 +295,7 @@ const RegisterPage = () => {
                                                 placeholder="+15550000000"
                                                 value={formData.phoneNumber}
                                                 onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                                                className={`input-field ${fieldErrors.phoneNumber ? 'border-rose-500' : ''}`}
+                                                className={`w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none ${fieldErrors.phoneNumber ? 'border-rose-500' : ''}`}
                                             />
                                             {fieldErrors.phoneNumber && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.phoneNumber}</p>}
                                         </div>
@@ -306,7 +306,7 @@ const RegisterPage = () => {
                                                 placeholder="user@synapsecare.com"
                                                 value={formData.email}
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                className={`input-field ${fieldErrors.email ? 'border-rose-500' : ''}`}
+                                                className={`w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none ${fieldErrors.email ? 'border-rose-500' : ''}`}
                                             />
                                             {fieldErrors.email && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.email}</p>}
                                         </div>
@@ -317,7 +317,7 @@ const RegisterPage = () => {
                                                 placeholder="••••••••••••"
                                                 value={formData.password}
                                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                                className={`input-field ${fieldErrors.password ? 'border-rose-500' : ''}`}
+                                                className={`w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none ${fieldErrors.password ? 'border-rose-500' : ''}`}
                                             />
                                             {fieldErrors.password && <p className="text-rose-500 text-xs font-semibold ml-1">{fieldErrors.password}</p>}
                                         </div>
@@ -329,7 +329,7 @@ const RegisterPage = () => {
                                             <select
                                                 value={formData.bloodGroup}
                                                 onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
-                                                className="input-field"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
                                             >
                                                 <option value="">Select Group</option>
                                                 {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => (
@@ -343,7 +343,7 @@ const RegisterPage = () => {
                                                 type="date"
                                                 value={formData.dob}
                                                 onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                                                className="input-field"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -353,7 +353,7 @@ const RegisterPage = () => {
                                                 placeholder="175"
                                                 value={formData.height}
                                                 onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                                                className="input-field"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -363,7 +363,7 @@ const RegisterPage = () => {
                                                 placeholder="70"
                                                 value={formData.weight}
                                                 onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                                                className="input-field"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -371,7 +371,7 @@ const RegisterPage = () => {
                                             <select
                                                 value={formData.gender}
                                                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                                                className="input-field"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
                                             >
                                                 <option value="">Select Gender</option>
                                                 <option value="MALE">Male</option>
@@ -385,7 +385,7 @@ const RegisterPage = () => {
                                                 placeholder="Name or Phone Number"
                                                 value={formData.emergencyContact}
                                                 onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
-                                                className="input-field"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
                                             />
                                         </div>
                                         <div className="md:col-span-2 space-y-2">
@@ -401,7 +401,7 @@ const RegisterPage = () => {
                                                         setFormData({ ...formData, allergies: val });
                                                     }
                                                 }}
-                                                className="input-field"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
                                             >
                                                 <option value="">Select Allergy</option>
                                                 {ALLERGY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -412,7 +412,7 @@ const RegisterPage = () => {
                                                     placeholder="Specify Allergy"
                                                     value={formData.allergies}
                                                     onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-                                                    className="input-field mt-2"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none mt-2"
                                                 />
                                             )}
                                         </div>
@@ -429,7 +429,7 @@ const RegisterPage = () => {
                                                         setFormData({ ...formData, chronicIllnesses: val });
                                                     }
                                                 }}
-                                                className="input-field"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
                                             >
                                                 <option value="">Select Condition</option>
                                                 {ILLNESS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -440,7 +440,7 @@ const RegisterPage = () => {
                                                     placeholder="Specify Condition"
                                                     value={formData.chronicIllnesses}
                                                     onChange={(e) => setFormData({ ...formData, chronicIllnesses: e.target.value })}
-                                                    className="input-field mt-2"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-sm font-medium focus:bg-white focus:border-teal-500 transition-all outline-none mt-2"
                                                 />
                                             )}
                                         </div>
@@ -459,7 +459,7 @@ const RegisterPage = () => {
                                     )}
                                     <button
                                         disabled={loading}
-                                        className="btn-primary flex-1 flex items-center justify-center gap-3 py-4 text-base font-bold group"
+                                        className="bg-teal-600 text-white flex-1 flex items-center justify-center gap-3 py-4 text-base font-bold rounded-2xl shadow-xl shadow-teal-100 hover:bg-teal-700 transition-all group"
                                     >
                                         {loading ? (
                                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -476,7 +476,7 @@ const RegisterPage = () => {
                             <div className="mt-10 text-center">
                                 <p className="text-slate-500 font-bold text-sm">
                                     Already have an account? <br className="sm:hidden" />
-                                    <Link href="/login" className="text-indigo-600 hover:text-indigo-700 transition-colors ml-1 uppercase tracking-wider text-xs">Sign In</Link>
+                                    <Link href="/login" className="text-teal-600 hover:text-teal-700 transition-colors ml-1 uppercase tracking-wider text-xs">Sign In</Link>
                                 </p>
                             </div>
                         </motion.div>
