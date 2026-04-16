@@ -11,7 +11,7 @@ import {
     CaretRight,
     CurrencyCircleDollar
 } from '@phosphor-icons/react';
-import { adminApi, paymentApi, doctorApi, patientApi } from '../../lib/api';
+import { adminApi, paymentApi, doctorApi, patientApi, appointmentApi } from '../../lib/api';
 import AdminLayout from '../../components/layout/AdminLayout';
 
 // Premium Admin Components
@@ -65,6 +65,7 @@ const AdminDashboard = () => {
         total: 0, success: 0, failed: 0, pending: 0, refunded: 0, totalRevenue: 0
     });
     
+    const [appointmentsCount, setAppointmentsCount] = useState(0);
     const [activeTab, setActiveTab] = useState('overview');
     const [processingId, setProcessingId] = useState(null);
     const [isVerificationOpen, setIsVerificationOpen] = useState(false);
@@ -92,13 +93,14 @@ const AdminDashboard = () => {
         if (initialLoad) setLoading(true);
         try {
             setError('');
-            const [usersRes, pendingRes, paymentRes, doctorDirectoryRes, patientProfilesRes, allPaymentsRes] = await Promise.allSettled([
+            const [usersRes, pendingRes, paymentRes, doctorDirectoryRes, patientProfilesRes, allPaymentsRes, appointmentsRes] = await Promise.allSettled([
                 adminApi.get('/users'),
                 adminApi.get('/doctors/pending'),
                 paymentApi.get('/admin/summary'),
                 doctorApi.get('/all'),
                 patientApi.get('/'),
-                paymentApi.get('/admin/ledger')
+                paymentApi.get('/admin/ledger'),
+                appointmentApi.get('/all')
             ]);
 
             const nextUsers = usersRes.status === 'fulfilled' ? extractListData(usersRes.value) : [];
@@ -107,11 +109,13 @@ const AdminDashboard = () => {
             const nextPatientProfiles = patientProfilesRes.status === 'fulfilled' ? extractListData(patientProfilesRes.value) : [];
             const nextTransactions = allPaymentsRes.status === 'fulfilled' ? extractListData(allPaymentsRes.value) : [];
             const nextPaymentSummary = paymentRes.status === 'fulfilled' ? extractObjectData(paymentRes.value) : {};
+            const nextAppointments = appointmentsRes.status === 'fulfilled' ? extractListData(appointmentsRes.value) : [];
 
             setUsers(nextUsers);
             setPendingDoctors(nextPending);
             setDoctorDirectory(nextDoctorDirectory);
             setTransactions(nextTransactions);
+            setAppointmentsCount(nextAppointments.length);
             
             // Critical Sync: Joining Auth records with Clinical Profile records
             const patientUsers = nextUsers.filter(u => u.role === 'PATIENT');
@@ -316,7 +320,7 @@ const AdminDashboard = () => {
                                         <div className="grid grid-cols-1 gap-4">
                                             <MiniSparkline title="Patient Growth" value={stats.totalPatients} percentage="16" color="#0D9488" data={[{value: 30}, {value: 45}, {value: 32}, {value: 50}, {value: 48}, {value: 65}, {value: 52}]} />
                                             <MiniSparkline title="Available Clinicians" value={stats.totalDoctors} percentage="4" color="#10B981" data={[{value: 20}, {value: 22}, {value: 21}, {value: 25}, {value: 24}, {value: 28}, {value: 27}]} />
-                                            <MiniSparkline title="Active Appointments" value="163" percentage="21" color="#8B5CF6" data={[{value: 100}, {value: 120}, {value: 115}, {value: 140}, {value: 135}, {value: 160}, {value: 158}]} />
+                                            <MiniSparkline title="Active Appointments" value={appointmentsCount.toString()} percentage="21" color="#8B5CF6" data={[{value: 100}, {value: 120}, {value: 115}, {value: 140}, {value: 135}, {value: 160}, {value: 158}]} />
                                         </div>
                                     </div>
                                     <div className="bg-white rounded-2xl p-6 border border-slate-50 shadow-sm flex items-center justify-center min-h-[300px]">

@@ -10,6 +10,7 @@ import com.healthcare.appointment.dto.client.AvailableSlotClientDto;
 import com.healthcare.appointment.dto.client.DoctorProfileClientDto;
 import com.healthcare.appointment.entity.Appointment;
 import com.healthcare.appointment.entity.AppointmentStatus;
+import com.healthcare.appointment.entity.ExtraSlot;
 import com.healthcare.appointment.exception.ResourceNotFoundException;
 import com.healthcare.appointment.exception.SlotConflictException;
 import com.healthcare.appointment.repository.AppointmentRepository;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@org.springframework.transaction.annotation.Transactional
 public class AppointmentService {
 
     private static final List<AppointmentStatus> OCCUPIED_STATUSES = List.of(
@@ -205,11 +207,38 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
-    public List<AppointmentDto> getAppointmentsByDoctor(Long doctorId) {
-        return appointmentRepository.findByDoctorIdOrderByDateAscTimeAsc(doctorId)
+    public List<AppointmentDto> getAllAppointments() {
+        return appointmentRepository.findAll()
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<AppointmentDto> getAppointmentsByDoctor(Long doctorId) {
+        List<AppointmentDto> appointments = new java.util.ArrayList<>(
+            appointmentRepository.findByDoctorIdOrderByDateAscTimeAsc(doctorId)
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList())
+        );
+
+        List<ExtraSlot> extraSlots = extraSlotRepository.findByDoctorId(doctorId);
+        log.info("Found {} extra availability slots for clinician {}", extraSlots.size(), doctorId);
+
+        List<AppointmentDto> extras = extraSlots.stream()
+                .map(es -> AppointmentDto.builder()
+                        .id(es.getId())
+                        .patientId(0L) // Virtual patient for tracking
+                        .doctorId(es.getDoctorId())
+                        .date(es.getDate())
+                        .time(es.getStartTime())
+                        .status(AppointmentStatus.AVAILABLE)
+                        .reason("Extra Availability")
+                        .build())
+                .collect(Collectors.toList());
+
+        appointments.addAll(extras);
+        return appointments;
     }
 
     public List<java.time.LocalTime> getBookedSlots(Long doctorId, java.time.LocalDate date) {
@@ -386,6 +415,36 @@ public class AppointmentService {
                 .reason("Clinician Defined Extra Availability")
                 .build();
         extraSlotRepository.save(extraSlot);
+    }
+
+    public void deleteExtraSlot(Long id, Long doctorId) {
+        log.info("Deleting extra slot {} for doctor {}", id, doctorId);
+        extraSlotRepository.findById(id).ifPresent(es -> {
+            if (es.getDoctorId().equals(doctorId)) {
+                extraSlotRepository.delete(es);
+                log.info("Extra slot {} deleted successfully", id);
+            } else {
+                log.warn("Unauthorized attempt to delete extra slot {} by doctor {}", id, doctorId);
+            }
+        });
+    }
+
+    public void convertExtraSlotToBlock(Long slotId, Long doctorId) {
+        log.info("Converting extra slot {} to clinical block for doctor {}", slotId, doctorId);
+        extraSlotRepository.findById(slotId).ifPresent(es -> {
+            if (es.getDoctorId().equals(doctorId)) {
+                // Create the block using existing business logic
+                BlockSlotRequest blockReq = new BlockSlotRequest();
+                blockReq.setDate(es.getDate());
+                blockReq.setTime(es.getStartTime());
+                blockReq.setReason("Clinical Administrative Block");
+                blockSlot(doctorId, null, blockReq);
+                
+                // Remove the extra slot record
+                extraSlotRepository.delete(es);
+                log.info("Successfully converted slot {} to block and removed extra_slot entry", slotId);
+            }
+        });
     }
 
     public void bulkReassign(List<Long> appointmentIds, Long targetDoctorId) {

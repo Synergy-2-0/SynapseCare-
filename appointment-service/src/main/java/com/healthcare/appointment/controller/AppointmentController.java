@@ -76,6 +76,22 @@ public class AppointmentController {
                 .body(new ApiResponse<>(true, "Extra slot added successfully", "SUCCESS"));
         }
 
+        @DeleteMapping("/doctor/{doctorId}/extra-slots/{slotId}")
+        public ResponseEntity<ApiResponse<String>> deleteExtraSlot(
+                @PathVariable("doctorId") Long doctorId,
+                @PathVariable("slotId") Long slotId) {
+            appointmentService.deleteExtraSlot(slotId, doctorId);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Extra slot removed", "REMOVED"));
+        }
+
+        @PostMapping("/doctor/{doctorId}/extra-slots/{slotId}/block")
+        public ResponseEntity<ApiResponse<String>> convertToBlock(
+                @PathVariable("doctorId") Long doctorId,
+                @PathVariable("slotId") Long slotId) {
+            appointmentService.convertExtraSlotToBlock(slotId, doctorId);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Converted to clinical block", "SUCCESS"));
+        }
+
     @PutMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<AppointmentDto>> cancelAppointment(@PathVariable("id") Long id) {
         AppointmentDto cancelled = appointmentService.cancelAppointment(id);
@@ -112,6 +128,12 @@ public class AppointmentController {
     public ResponseEntity<ApiResponse<List<AppointmentDto>>> getAppointmentsByPatient(@PathVariable("patientId") Long patientId) {
         List<AppointmentDto> appointments = appointmentService.getAppointmentsByPatient(patientId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Patient appointments fetched", appointments));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<List<AppointmentDto>>> getAllAppointments() {
+        List<AppointmentDto> appointments = appointmentService.getAllAppointments();
+        return ResponseEntity.ok(new ApiResponse<>(true, "All appointments fetched", appointments));
     }
 
     @GetMapping("/doctor/{doctorId}")

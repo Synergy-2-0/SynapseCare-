@@ -10,29 +10,50 @@ import SlotQuickActionModal from './SlotQuickActionModal';
 import { appointmentApi } from '@/lib/api';
 
 const getStatusColor = (status) => {
-    switch (status) {
-        case 'PENDING_PAYMENT':
-            return 'bg-amber-50 border-amber-200 text-amber-800 hover:border-amber-400';
-        case 'CONFIRMED':
-        case 'PAID':
-            return 'bg-blue-100 border-blue-300 text-blue-800 hover:border-blue-400 shadow-sm';
-        case 'IN_PROGRESS':
-            return 'bg-green-50 border-green-400 text-green-900 border-2 animate-pulse';
-        case 'COMPLETED':
-            return 'bg-gray-100 border-gray-300 text-gray-600';
-        case 'BLOCKED':
-            return 'bg-slate-100 border-slate-200 text-slate-500';
-        case 'MISSED':
-        case 'CANCELLED':
-            return 'bg-red-50 border-red-200 text-red-700';
-        default: 
-            return 'bg-indigo-50 border-indigo-100 text-indigo-700';
-    }
+    const colors = {
+        'PENDING': 'bg-amber-100 text-amber-700 border-amber-200',
+        'PENDING_PAYMENT': 'bg-amber-100 text-amber-700 border-amber-200',
+        'CONFIRMED': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        'IN_PROGRESS': 'bg-indigo-100 text-indigo-700 border-indigo-200',
+        'COMPLETED': 'bg-slate-100 text-slate-500 border-slate-200',
+        'CANCELLED': 'bg-rose-100 text-rose-700 border-rose-200 opacity-60',
+        'BLOCKED': 'bg-slate-800 text-slate-100 border-slate-900 shadow-inner',
+        'AVAILABLE': 'bg-emerald-600 text-white border-emerald-700 shadow-md font-bold'
+    };
+    return colors[status] || 'bg-indigo-50 border-indigo-100 text-indigo-700';
 };
 
 const normalizeDayKey = (value) => {
     if (!value) return '';
     return String(value).trim().toUpperCase().slice(0, 3);
+};
+
+const parseApptDate = (date) => {
+    if (!date) return null;
+    let dStr = null;
+    if (Array.isArray(date) && date.length >= 3) {
+        dStr = `${date[0]}-${String(date[1]).padStart(2, '0')}-${String(date[2]).padStart(2, '0')}`;
+    } else if (typeof date === 'string') {
+        dStr = date.split('T')[0];
+    } else {
+        try {
+            dStr = format(new Date(date), 'yyyy-MM-dd');
+        } catch {
+            return null;
+        }
+    }
+    // Normalize to exact YYYY-MM-DD
+    return dStr;
+};
+
+const parseApptHour = (time) => {
+    if (!time) return null;
+    let h = null;
+    if (Array.isArray(time)) h = parseInt(time[0], 10);
+    else if (typeof time === 'string') h = parseInt(time.split(':')[0], 10);
+    
+    if (h !== null && isNaN(h)) return null;
+    return h;
 };
 
 const parseTimeToMinutes = (value) => {
@@ -153,7 +174,13 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
     const renderAppt = (appt) => {
         const colorClasses = getStatusColor(appt.status);
         const isBlocked = appt.status === 'BLOCKED';
-        const label = isBlocked ? 'Blocked Slot' : `Pt #${appt.patientId}`;
+        const isExtra = appt.status === 'AVAILABLE';
+        
+        let label = `Pt #${appt.patientId}`;
+        if (isBlocked) label = 'Blocked Slot';
+        if (isExtra) label = 'Extra Availability';
+
+        const timeLabel = appt.time ? appt.time.substring(0, 5) : '--:--';
 
         return (
             <div 
@@ -162,12 +189,12 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                 className={`w-full rounded-xl p-2.5 cursor-pointer shadow-sm border transition-all hover:scale-[1.02] hover:shadow-md mb-2 ${colorClasses}`}
             >
                 <div className="flex items-center gap-1.5 justify-between mb-1.5">
-                    <span className="text-[10px] font-semibold opacity-70">{appt.time}</span>
+                    <span className="text-[10px] font-semibold opacity-70">{timeLabel}</span>
                 </div>
                 <div className="text-xs font-bold leading-tight line-clamp-2">
                     {label}
                 </div>
-                <div className="text-[9px] mt-1 font-semibold uppercase opacity-80">{appt.status}</div>
+                {!isExtra && <div className="text-[9px] mt-1 font-semibold uppercase opacity-80">{appt.status}</div>}
             </div>
         );
     };
@@ -288,9 +315,14 @@ const ScheduleTab = ({ appointments = [], onAppointmentClick, doctorId, onRefres
                                         const cellAvailable = isHourWithinAvailability(dayAvailability, hour);
                                         const slotAppts = appointments.filter(a => {
                                             if(!a.date || !a.time) return false;
-                                            const isSameD = isSameDay(day, new Date(a.date));
-                                            const hStr = hour > 12 ? (hour-12).toString() : hour.toString();
-                                            const isSameH = a.time.startsWith(hStr + ':');
+                                            
+                                            const apptDateStr = parseApptDate(a.date);
+                                            const targetDateStr = format(day, 'yyyy-MM-dd');
+                                            const isSameD = targetDateStr === apptDateStr;
+                                            
+                                            const apptHour = parseApptHour(a.time);
+                                            const isSameH = apptHour === hour;
+                                            
                                             return isSameD && isSameH;
                                         });
 

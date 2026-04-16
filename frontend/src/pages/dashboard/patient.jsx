@@ -764,15 +764,33 @@ const PatientDashboard = () => {
                                                                     <button 
                                                                         onClick={() => {
                                                                             setSelectedAppointmentIdForUpload(upcoming[0].id);
-                                                                            setUploadDescription(`Clinical artifacts for Dr. ${upcoming[0].doctorName}`);
+                                                                            setUploadDescription(`Medical records for consultation with Dr. ${upcoming[0].doctorName || 'Specialist'}`);
                                                                             setShowUploadModal(true);
                                                                         }}
                                                                         className="h-16 px-10 bg-white border-2 border-slate-100 text-slate-700 rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-slate-50 transition-all"
                                                                     >
-                                                                        <Plus size={18} /> Sync Artifacts
+                                                                        <Plus size={18} /> Share Medical Records
                                                                     </button>
                                                                 </div>
                                                             </div>
+                                                            
+                                                            {/* Shared Records Manifest for this session */}
+                                                            {reports.filter(r => r.appointmentId == upcoming[0].id).length > 0 && (
+                                                                <div className="mt-8 pt-8 border-t border-slate-50 relative z-10">
+                                                                    <div className="flex items-center gap-2 mb-4">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Shared Documents for this Visit</span>
+                                                                    </div>
+                                                                    <div className="flex flex-wrap gap-3">
+                                                                        {reports.filter(r => r.appointmentId == upcoming[0].id).map((r, rIdx) => (
+                                                                            <div key={rIdx} className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl hover:bg-white hover:border-teal-100 transition-all cursor-pointer group/file" onClick={() => handleDownloadReport(r)}>
+                                                                                <FileText size={14} className="text-teal-600 group-hover/file:scale-110 transition-transform" />
+                                                                                <span className="text-[11px] font-bold text-slate-600 line-clamp-1 max-w-[140px]">{r.fileName || 'Report'}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
 
                                                         {/* Remaining Registry */}
@@ -781,7 +799,6 @@ const PatientDashboard = () => {
                                                                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 ml-2 mb-8">Clinical Queue Registry</h4>
                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                                     {upcoming.slice(1).map((u, i) => (
-
                                                                         <div key={i} className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] hover:bg-white/[0.08] transition-all group/item">
                                                                             <div className="flex justify-between items-start mb-8">
                                                                                 <div className="w-12 h-12 rounded-[1.2rem] bg-teal-500/10 text-teal-400 flex items-center justify-center border border-teal-500/20">
@@ -815,6 +832,23 @@ const PatientDashboard = () => {
                                                                                     <Settings size={18} />
                                                                                 </button>
                                                                             </div>
+
+                                                                            {/* Quick Record Manifest for secondary visits */}
+                                                                            {reports.filter(r => r.appointmentId == u.id).length > 0 && (
+                                                                                <div className="mt-6 pt-6 border-t border-white/10">
+                                                                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2">
+                                                                                        <FileText size={10} className="text-teal-500" /> Documents Linked ({reports.filter(r => r.appointmentId == u.id).length})
+                                                                                    </p>
+                                                                                    <div className="flex flex-wrap gap-2">
+                                                                                        {reports.filter(r => r.appointmentId == u.id).slice(0, 2).map((r, rIdx) => (
+                                                                                            <div key={rIdx} className="px-2 py-1 bg-white/5 border border-white/5 rounded-lg text-[10px] font-medium text-slate-400 truncate max-w-[100px]">{r.fileName}</div>
+                                                                                        ))}
+                                                                                        {reports.filter(r => r.appointmentId == u.id).length > 2 && (
+                                                                                            <div className="px-2 py-1 bg-white/5 rounded-lg text-[10px] font-medium text-slate-500">+{reports.filter(r => r.appointmentId == u.id).length - 2} more</div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     ))}
                                                                 </div>
@@ -1253,10 +1287,10 @@ const PatientDashboard = () => {
                                                             </div>
                                                         )}
 
-                                                        {/* Independent Artifacts Shard */}
+                                                        {/* Independent Records Shard */}
                                                         {reports.filter(r => !r.appointmentId).length > 0 && (
                                                             <div className="pt-10 border-t border-white/5">
-                                                                <h5 className="text-[10px] font-bold uppercase tracking-[0.34em] text-slate-500 mb-8 px-2">Detached Clinical Artifacts</h5>
+                                                                <h5 className="text-[10px] font-bold uppercase tracking-[0.34em] text-slate-500 mb-8 px-2">Independent Medical Files</h5>
                                                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                                                     {reports.filter(r => !r.appointmentId).map((r, i) => (
                                                                         <div key={i} className="p-6 bg-slate-800/50 border border-white/5 rounded-3xl flex items-center gap-5 hover:bg-slate-800 transition-all cursor-pointer group/detached" onClick={() => handleDownloadReport(r)}>
@@ -1300,8 +1334,8 @@ const PatientDashboard = () => {
                                         
                                         <div className="flex justify-between items-center relative z-10">
                                             <div>
-                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 mb-2">Clinical Registry</p>
-                                                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Upload Assessment</h3>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 mb-2">Medical Records</p>
+                                                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Upload Document</h3>
                                             </div>
                                             <button onClick={() => { setShowUploadModal(false); setSelectedAppointmentIdForUpload(null); }} className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors">
                                                 <Plus size={24} className="rotate-45" />
@@ -1313,14 +1347,14 @@ const PatientDashboard = () => {
                                                 <AlertCircle size={20} className="text-amber-500 shrink-0 mt-1" />
                                                 <p className="text-xs font-bold text-amber-700 leading-relaxed">
                                                     {selectedAppointmentIdForUpload 
-                                                        ? `This artifact will be linked to Clinical Session Shard #${selectedAppointmentIdForUpload}.` 
-                                                        : 'This is an independent artifact. It will appear on your master clinical timeline.'}
+                                                        ? `This document will be shared with your practitioner for Session #${selectedAppointmentIdForUpload}.` 
+                                                        : 'This is an independent record. It will be added to your secure medical history.'}
                                                 </p>
                                             </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Report Category</label>
+                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Document Type</label>
                                                     <select
                                                         value={uploadReportType}
                                                         onChange={(e) => setUploadReportType(e.target.value)}
@@ -1329,11 +1363,11 @@ const PatientDashboard = () => {
                                                         <option value="LAB_RESULT">Laboratory Result</option>
                                                         <option value="IMAGING">Imaging / Radiology</option>
                                                         <option value="PRESCRIPTION">Historical Rx</option>
-                                                        <option value="OTHER">General Artifact</option>
+                                                        <option value="OTHER">Other Medical Document</option>
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Internal Shard ID</label>
+                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Session ID</label>
                                                     <div className="px-5 py-4 bg-slate-100/50 border border-slate-100 rounded-2xl font-black text-sm text-slate-400">
                                                         #{selectedAppointmentIdForUpload || 'NONE'}
                                                     </div>
@@ -1341,7 +1375,7 @@ const PatientDashboard = () => {
                                             </div>
 
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Clinical Context</label>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Notes / Context</label>
                                                 <input
                                                     type="text"
                                                     value={uploadDescription}
@@ -1355,7 +1389,7 @@ const PatientDashboard = () => {
                                                 onUpload={handleFileUpload}
                                                 accept=".pdf,.jpg,.jpeg,.png"
                                                 maxSize={10}
-                                                label="Drop Clinical Artifact"
+                                                label="Drop Medical Files"
                                                 description="Secure PDF, JPG, or PNG up to 10MB"
                                             />
                                         </div>

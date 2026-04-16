@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface ExtraSlotRepository extends JpaRepository<ExtraSlot, Long> {
     List<ExtraSlot> findByDoctorIdAndDate(Long doctorId, LocalDate date);
+    List<ExtraSlot> findByDoctorId(Long doctorId);
 }
