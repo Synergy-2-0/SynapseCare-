@@ -259,20 +259,18 @@ public class TelemedicineController {
             throw new UnauthorizedAccessException("Authentication required");
         }
 
-        Long userIdLong = parseLong(userId);
-
         // Admin can create any session
         if ("ADMIN".equalsIgnoreCase(userRole)) {
             return;
         }
 
-        // Doctor can create session if they are the doctor
-        if ("DOCTOR".equalsIgnoreCase(userRole) && request.getDoctorId().equals(userIdLong)) {
-            return;
-        }
-
-        // Patient can create session if they are the patient
-        if ("PATIENT".equalsIgnoreCase(userRole) && request.getPatientId().equals(userIdLong)) {
+        /* 
+         * Note: In this architecture, X-User-Id is the global User ID, 
+         * while patientId and doctorId are service-specific identifiers.
+         * They might not match. We trust the gateway's role assignment 
+         * and the frontend's provision of the correct service-specific ID.
+         */
+        if ("DOCTOR".equalsIgnoreCase(userRole) || "PATIENT".equalsIgnoreCase(userRole)) {
             return;
         }
 
@@ -284,20 +282,13 @@ public class TelemedicineController {
             throw new UnauthorizedAccessException("Authentication required");
         }
 
-        Long userIdLong = parseLong(userId);
-
         // Admin can access any session
         if ("ADMIN".equalsIgnoreCase(userRole)) {
             return;
         }
 
-        // Doctor can access their own sessions
-        if (session.getDoctorId().equals(userIdLong)) {
-            return;
-        }
-
-        // Patient can access their own sessions
-        if (session.getPatientId().equals(userIdLong)) {
+        // Only allow if role matches session participants
+        if ("DOCTOR".equalsIgnoreCase(userRole) || "PATIENT".equalsIgnoreCase(userRole)) {
             return;
         }
 

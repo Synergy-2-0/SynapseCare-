@@ -35,7 +35,7 @@ const PaymentPage = () => {
             const createRes = await paymentApi.post('/create', {
                 appointmentId: cleanAppointmentId,
                 patientId: patientId,
-                amount: amount || 1500,
+                amount: amount || 2000,
                 doctorId: doctorId,
                 method: 'PAYHERE',
                 currency: 'LKR'

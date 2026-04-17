@@ -32,16 +32,21 @@ const PrescriptionsPage = () => {
                     const dbId = profileRes.data?.id || id;
                     setDoctorId(dbId);
 
-                    const [presRes, apptRes] = await Promise.all([
+                    const [presRes, apptRes, patRes] = await Promise.all([
                         prescriptionApi.get(`/doctor/${dbId}`),
-                        appointmentApi.get(`/doctor/${dbId}`)
+                        appointmentApi.get(`/doctor/${dbId}`),
+                        appointmentApi.get(`/doctor/${dbId}/patients`)
                     ]);
 
                     const allPres = presRes.data?.data || presRes.data || [];
                     const allAppts = apptRes.data?.data || apptRes.data || [];
+                    const patList = patRes.data?.data || patRes.data || [];
 
-                    setPrescriptions(allPres);
-                    setPendingAppointments(allAppts.filter(a => a.status === 'COMPLETED').filter(a => !allPres.some(p => p.appointmentId === a.id)));
+                    const map = {};
+                    patList.forEach(p => { if (p.id) map[p.id] = p; });
+
+                    setPrescriptions(allPres.map(p => ({ ...p, patientName: map[p.patientId]?.name || `Patient #${p.patientId}` })));
+                    setPendingAppointments(allAppts.filter(a => a.status === 'COMPLETED').filter(a => !allPres.some(p => p.appointmentId === a.id)).map(a => ({ ...a, patientName: map[a.patientId]?.name || `Patient #${a.patientId}` })));
                 } catch (err) {
                     console.error("Failed to fetch prescriptions context", err);
                 } finally {
@@ -111,8 +116,8 @@ const PrescriptionsPage = () => {
                                                     #{appt.patientId}
                                                 </div>
                                                 <div>
-                                                    <p className="font-black text-slate-800 text-sm">Patient Record #{appt.patientId}</p>
-                                                    <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Consultation Closed</p>
+                                                    <p className="font-black text-slate-800 text-sm">{appt.patientName}</p>
+                                                    <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Consultation Reference #{appt.id}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -171,8 +176,9 @@ const PrescriptionsPage = () => {
                                         </td>
                                         <td className="bg-slate-50 group-hover:bg-white border-y border-slate-100 group-hover:border-indigo-200 p-5 group-hover:shadow-xl group-hover:shadow-indigo-500/5">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
-                                                    #{px.patientId}
+                                                <div className="flex flex-col">
+                                                    <p className="font-black text-slate-800 text-sm">{px.patientName}</p>
+                                                    <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase">ID #{px.patientId}</p>
                                                 </div>
                                             </div>
                                         </td>

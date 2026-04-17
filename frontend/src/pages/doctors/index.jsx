@@ -98,7 +98,7 @@ const DoctorsList = () => {
                     reviews: 50 + (doc.id * 7) % 200,
                     experience: doc.experience ? `${doc.experience}+ Years` : "Senior Practitioner",
                     availableToday: doc.isAvailable,
-                    fee: doc.consultationFee || 1500
+                    fee: doc.consultationFee || 2000
                 }));
                 setDoctors(mappedDoctors);
             } catch (error) {

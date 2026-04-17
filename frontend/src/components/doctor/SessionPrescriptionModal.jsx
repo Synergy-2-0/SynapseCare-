@@ -79,7 +79,7 @@ const SessionPrescriptionModal = ({ session, onClose, doctorId }) => {
                             </div>
                             <div>
                                 <h2 className="text-xl font-serif text-slate-900 font-semibold tracking-tight">Post-Session Context & e-Rx</h2>
-                                <p className="text-xs text-slate-500 font-medium tracking-wider uppercase mt-0.5">Patient #{session.patientId} • Visit #{session.id}</p>
+                                <p className="text-xs text-slate-500 font-medium tracking-wider uppercase mt-0.5">{session.patientName || `Patient #${session.patientId}`} • Visit #{session.id}</p>
                             </div>
                         </div>
                         <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all">

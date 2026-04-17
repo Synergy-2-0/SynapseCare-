@@ -155,7 +155,13 @@ const AppointmentsPage = () => {
     const hasDots = (date) =>
         appointments.some(a => {
             const d = parseLocalDate(a.date);
-            return d && isSameDay(d, date) && a.status !== 'CANCELLED' && a.status !== 'REJECTED';
+            const status = a.status;
+            return d && isSameDay(d, date) && 
+                   status !== 'CANCELLED' && 
+                   status !== 'REJECTED' && 
+                   status !== 'AVAILABLE' && 
+                   status !== 'BLOCKED' && 
+                   status !== 'PENDING';
         });
 
     // Timeline = non-pending appts for the selected day, sorted by time
@@ -165,7 +171,9 @@ const AppointmentsPage = () => {
             a.date === selectedDateStr &&
             a.status !== 'PENDING' &&
             a.status !== 'REJECTED' &&
-            a.status !== 'CANCELLED'
+            a.status !== 'CANCELLED' &&
+            a.status !== 'AVAILABLE' &&
+            a.status !== 'BLOCKED'
         )
         .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
@@ -345,7 +353,7 @@ const AppointmentsPage = () => {
                                                     <div className="flex items-center justify-between mt-1">
                                                         <span className="text-[10px] text-slate-400 font-medium">
                                                             Token #{appt.tokenNumber ?? '–'}
-                                                            {appt.fee ? ` · ₹${appt.fee}` : ''}
+                                                            {appt.fee ? ` · LKR ${appt.fee}` : ''}
                                                         </span>
                                                         <div className="flex gap-4 items-center">
                                                             {appt.consultationType === 'TELEMEDICINE' && (
@@ -473,7 +481,7 @@ const AppointmentsPage = () => {
                                             )}
                                             {appt.fee && (
                                                 <span className="text-[10px] font-bold text-slate-500">
-                                                    ₹{appt.fee}
+                                                    LKR {appt.fee}
                                                 </span>
                                             )}
                                         </div>
@@ -521,7 +529,7 @@ const AppointmentsPage = () => {
             {/* Modals */}
             {activePostSession && (
                 <EncounterWorkspace
-                    session={activePostSession}
+                    session={{ ...activePostSession, patientName: patientsMap[activePostSession.patientId]?.name }}
                     doctorId={doctorDbId}
                     onClose={() => {
                         setActivePostSession(null);
