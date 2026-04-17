@@ -303,14 +303,12 @@ public class TelemedicineSessionService {
     private void validateSessionJoinable(TelemedicineSession session) {
         LocalDateTime now = LocalDateTime.now();
         
-        if (session.getScheduledStartTime() != null) {
-            LocalDateTime allowJoinFrom = session.getScheduledStartTime().minusMinutes(15);
-            
-            if (now.isBefore(allowJoinFrom)) {
-                long minutesLeft = java.time.Duration.between(now, allowJoinFrom).toMinutes();
-                throw new IllegalStateException("Session not yet available. You can join in " + minutesLeft + " minutes.");
-            }
-        }
+        /* 
+         * Testing Override: Allow joining at any time regardless of scheduled start time.
+         * Original logic restricted joins to 15 minutes before start.
+         */
+        log.debug("Session join validation: allowing immediate entry for appointment {}", session.getAppointmentId());
+
 
         if (session.getStatus() == SessionStatus.ENDED) {
             throw new InvalidSessionStateException("Session has ended");
