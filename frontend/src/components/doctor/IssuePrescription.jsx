@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, PlusCircle, Trash2, FileText, Calculator, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
