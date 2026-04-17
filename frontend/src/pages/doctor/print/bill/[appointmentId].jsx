@@ -8,16 +8,46 @@ const PrintBill = () => {
     const { appointmentId } = router.query;
     const [prescriptions, setPrescriptions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [patientName, setPatientName] = useState('');
+    const [doctorName, setDoctorName] = useState('');
 
     useEffect(() => {
         if (!appointmentId) return;
 
         const fetchBill = async () => {
             try {
+                const { patientApi, doctorApi } = await import('@/lib/api');
                 const response = await prescriptionApi.get(`/appointment/${appointmentId}`);
-                setPrescriptions(response.data);
+                const rxData = response.data || [];
+                setPrescriptions(rxData);
+
+                if (rxData.length > 0) {
+                    const patId = rxData[0].patientId;
+                    const docId = rxData[0].doctorId;
+
+                    // Parallel name resolution
+                    const [patRes, docRes] = await Promise.allSettled([
+                        patientApi.get(`/${patId}`),
+                        doctorApi.get(`/${docId}`)
+                    ]);
+
+                    if (patRes.status === 'fulfilled') {
+                        const p = patRes.value.data?.data || patRes.value.data;
+                        setPatientName(p.name || `${p.firstName} ${p.lastName}`);
+                    } else {
+                        setPatientName(`Patient #${patId}`);
+                    }
+
+                    if (docRes.status === 'fulfilled') {
+                        const d = docRes.value.data?.data || docRes.value.data;
+                        const fullName = d.name || (d.firstName ? `${d.firstName} ${d.lastName || ''}` : null);
+                        setDoctorName(fullName || `Dr. ${d.id}`);
+                    } else {
+                        setDoctorName(`Doctor #${docId}`);
+                    }
+                }
             } catch (error) {
-                console.error("Failed to load bill", error);
+                console.error("Failed to load bill context", error);
             } finally {
                 setLoading(false);
             }
@@ -77,13 +107,13 @@ const PrintBill = () => {
                 <div className="grid grid-cols-2 gap-12 border-b border-slate-200 pb-8 mb-8">
                     <div>
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Patient Details</h3>
-                        <p className="text-xl font-bold text-slate-800">Patient #{patId}</p>
-                        <p className="text-sm text-slate-500">Registered Patient ID</p>
+                        <p className="text-xl font-bold text-slate-800">{patientName || `Patient #${patId}`}</p>
+                        <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest leading-none">Registered Patient ID: {patId}</p>
                     </div>
                     <div className="text-right">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Prescribing Doctor</h3>
-                        <p className="text-xl font-bold text-slate-800">Doctor #{docId}</p>
-                        <p className="text-sm text-slate-500">Verified Clinical ID</p>
+                        <p className="text-xl font-bold text-slate-800">{doctorName || `Dr. ${docId}`}</p>
+                        <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest leading-none">Council Registration: {docId}</p>
                     </div>
                 </div>
 

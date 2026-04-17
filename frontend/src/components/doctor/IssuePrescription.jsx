@@ -7,6 +7,7 @@ import { prescriptionApi } from '@/lib/api';
 const IssuePrescription = ({ session, onClose, doctorId }) => {
     const [submitting, setSubmitting] = useState(false);
     const [consultationNotes, setConsultationNotes] = useState('');
+    const [doctorName, setDoctorName] = useState(typeof window !== 'undefined' ? localStorage.getItem('user_name') : 'Practitioner');
     const [medications, setMedications] = useState([
         { name: '', dosage: '', duration: '', instructions: '', unitPrice: 0, quantity: 1, unitDiscount: 0 }
     ]);
@@ -20,19 +21,32 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
     ];
 
     useEffect(() => {
-        const fetchNotes = async () => {
+        const fetchContext = async () => {
             try {
-                const { telemedicineApi } = await import('@/lib/api');
+                const { telemedicineApi, doctorApi } = await import('@/lib/api');
+                
+                // Fetch Notes
                 const res = await telemedicineApi.get(`/appointments/${session.id}/session`);
                 if (res.data?.data?.notes) {
                     setConsultationNotes(res.data.data.notes);
                 }
+
+                // Fetch Doctor Name if not in storage or is generic
+                if (!doctorName || doctorName === 'Practitioner') {
+                    const docRes = await doctorApi.get('/profile/me');
+                    const d = docRes.data?.data || docRes.data;
+                    const name = d.name || (d.firstName ? `${d.firstName} ${d.lastName || ''}` : null);
+                    if (name) {
+                        setDoctorName(name);
+                        localStorage.setItem('user_name', name);
+                    }
+                }
             } catch (e) {
-                console.warn("No telemedicine notes found for this session.");
+                console.warn("Clinical context fetch partially failed.");
             }
         };
-        if (session?.id) fetchNotes();
-    }, [session?.id]);
+        if (session?.id) fetchContext();
+    }, [session?.id, doctorName]);
 
     const totals = useMemo(() => {
         return medications.reduce((acc, med) => {
@@ -137,15 +151,20 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                 <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight leading-none mb-2">Prescription Invoice</h2>
                                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-slate-200 pl-3">Reference: APPT-{session.id}</p>
                                 <div className="mt-4 flex items-center gap-6">
-                                   <div>
-                                       <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Patient Reference</span>
-                                       <span className="text-sm font-bold text-slate-800">#{session.patientId || 'Unlinked'}</span>
-                                   </div>
-                                   <div className="w-px h-6 bg-slate-100" />
-                                   <div>
-                                       <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Billing Date</span>
-                                       <span className="text-sm font-bold text-slate-800">{new Date().toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
-                                   </div>
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Patient Identity</span>
+                                        <span className="text-sm font-bold text-slate-800">{session.patientName || `Patient #${session.patientId}`}</span>
+                                    </div>
+                                    <div className="w-px h-6 bg-slate-100" />
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Prescribing Doctor</span>
+                                        <span className="text-sm font-bold text-slate-800">Dr. {doctorName}</span>
+                                    </div>
+                                    <div className="w-px h-6 bg-slate-100" />
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Billing Date</span>
+                                        <span className="text-sm font-bold text-slate-800">{new Date().toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
