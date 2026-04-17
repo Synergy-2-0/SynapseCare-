@@ -24,7 +24,7 @@ export const DOCTOR_ROUTES = {
     PRESCRIPTIONS: '/doctor/prescriptions',
     TELEMEDICINE: '/doctor/consultations',
     ANALYTICS: '/doctor/analytics',
-    SETTINGS: '/doctor/settings',
+    SETTINGS: '/doctor/dashboard?tab=profile',
 };
 
 // Patient routes
@@ -41,4 +41,10 @@ export const PATIENT_ROUTES = {
 // Admin routes
 export const ADMIN_ROUTES = {
     DASHBOARD: '/dashboard/admin',
+};
+
+// Notification routes (accessible by all roles)
+export const NOTIFICATION_ROUTES = {
+    LIST: '/notifications',
+    SETTINGS: '/notification-settings',
 };

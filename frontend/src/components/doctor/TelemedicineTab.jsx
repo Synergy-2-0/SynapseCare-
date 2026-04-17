@@ -3,16 +3,21 @@ import { telemedicineApi, appointmentApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Video, Clock, PhoneOff, FileText, CheckCircle, UploadCloud, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
 
 const TelemedicineTab = ({ appointments = [], userData, onCompleteSession, onEndSession }) => {
     const [activeSession, setActiveSession] = useState(null);
     const [jitsiUrl, setJitsiUrl] = useState('');
     const [notes, setNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const doctorAuthId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+    const doctorId = doctorAuthId || userData?.doctorDbId || userData?.id;
+
+    const toLocalDateTime = (date) => format(date, "yyyy-MM-dd'T'HH:mm:ss");
 
     // Filter to only telemedicine type
     const videoAppointments = appointments.filter(a => 
-        (a.type === 'TELEMEDICINE' || a.mode === 'TELEMEDICINE') && 
+        (a.consultationType === 'TELEMEDICINE' || a.type === 'TELEMEDICINE' || a.mode === 'TELEMEDICINE') && 
         (a.status === 'CONFIRMED' || a.status === 'PAID')
     );
 
@@ -22,24 +27,24 @@ const TelemedicineTab = ({ appointments = [], userData, onCompleteSession, onEnd
             toast.loading("Connecting to secure room...", { id: 'join-session' });
             // 1. Try to get existing session
             try {
-                const getRes = await telemedicineApi.get(`/sessions/appointment/${appt.id}`);
+                const getRes = await telemedicineApi.get(`/appointments/${appt.id}/session`);
                 sessionData = getRes.data?.data;
             } catch (e) {
                 // If it doesn't exist, create a new session
                 const now = new Date();
                 const end = new Date(now.getTime() + 30 * 60000); // 30 mins later
-                const createRes = await telemedicineApi.post(`/sessions`, {
+                const createRes = await telemedicineApi.post(`/appointments/${appt.id}/session`, {
                     appointmentId: appt.id,
-                    doctorId: userData?.id,
+                    doctorId: parseInt(doctorId, 10),
                     patientId: appt.patientId,
-                    scheduledStartTime: now.toISOString(),
-                    scheduledEndTime: end.toISOString()
+                    scheduledStartTime: toLocalDateTime(now),
+                    scheduledEndTime: toLocalDateTime(end)
                 });
                 sessionData = createRes.data?.data;
             }
 
             // JOIN via doctor role
-            const joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/doctor?doctorId=${userData?.id}`);
+            const joinRes = await telemedicineApi.post(`/sessions/${sessionData.sessionId}/join/doctor`);
             const joinedData = joinRes.data?.data;
             
             setActiveSession({ ...joinedData, appointment: appt });
@@ -47,7 +52,14 @@ const TelemedicineTab = ({ appointments = [], userData, onCompleteSession, onEnd
             toast.success('Connected via Medical Gateway', { id: 'join-session' });
         } catch (err) {
             console.error("Session init failed:", err);
-            // Fallback for UI demonstration
+            const apiMessage = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+
+            if (err?.response) {
+                toast.error(apiMessage || 'Unable to join consultation at this time.', { id: 'join-session', duration: 4000 });
+                return;
+            }
+
+            // Fallback only for network/runtime failures where the backend is unreachable.
             const roomName = `synapcare-app-${appt.id}`;
             setJitsiUrl(`https://meet.jit.si/${roomName}`);
             setActiveSession({ appointment: appt, roomName, sessionId: 'LOCAL-FALLBACK' });
@@ -61,13 +73,22 @@ const TelemedicineTab = ({ appointments = [], userData, onCompleteSession, onEnd
         toast.loading("Encrypting and uploading notes...", { id: 'end-session' });
         try {
             if (activeSession.sessionId !== 'LOCAL-FALLBACK') {
-                await telemedicineApi.post(`/sessions/${activeSession.sessionId}/end?doctorId=${userData?.id}&notes=${encodeURIComponent(notes)}`);
+                await telemedicineApi.post(`/sessions/${activeSession.sessionId}/end`, {
+                    notes
+                });
             }
             
             // Mark appointment complete
             try { await appointmentApi.patch(`/${activeSession.appointment.id}/status?status=COMPLETED`); } catch(e){}
             
             toast.success('Consultation ended safely.', { id: 'end-session' });
+            
+            // State reset to clear UI hang
+            setSubmitting(false);
+            setActiveSession(null);
+            setJitsiUrl('');
+            setNotes('');
+
             onCompleteSession && onCompleteSession(activeSession.appointment.id);
             onEndSession && onEndSession(activeSession.appointment, notes);
         } catch (err) {
@@ -108,7 +129,7 @@ const TelemedicineTab = ({ appointments = [], userData, onCompleteSession, onEnd
                     <div className="p-6 xl:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                         <div>
                             <h3 className="text-xl xl:text-3xl font-serif text-slate-900 tracking-tight flex items-center gap-3">
-                                Patient #{activeSession.appointment?.patientId}
+                                {userData?.patientsMap?.[activeSession.appointment?.patientId]?.name || `Patient #${activeSession.appointment?.patientId}`}
                             </h3>
                             <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
                                 <Video className="w-3 h-3" /> Telemedicine Consult
@@ -129,34 +150,12 @@ const TelemedicineTab = ({ appointments = [], userData, onCompleteSession, onEnd
                             <textarea 
                                 value={notes} 
                                 onChange={(e) => setNotes(e.target.value)}
-                                className="w-full h-56 lg:h-64 bg-white border border-slate-200 rounded-[1.5rem] p-5 text-[15px] font-medium text-slate-700 leading-relaxed focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400 outline-none transition-all resize-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+                                className="w-full h-96 bg-white border border-slate-200 rounded-[1.5rem] p-6 text-[15px] font-medium text-slate-700 leading-relaxed focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400 outline-none transition-all resize-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
                                 placeholder="Subjective, Objective, Assessment, Plan..."
                             ></textarea>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4">
-                            <div 
-                                onClick={() => onEndSession && onEndSession(activeSession.appointment, notes)}
-                                className="surface-card bg-white p-5 border-dashed border-2 border-slate-200 cursor-pointer hover:border-indigo-400 transition-colors group flex flex-col items-center justify-center text-center"
-                            >
-                                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm mb-3">
-                                    <CheckCircle className="w-5 h-5" />
-                                </div>
-                                <div className="text-sm font-bold text-slate-800">Issue e-Rx</div>
-                                <div className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-semibold">Post-call draft</div>
-                            </div>
-                            
-                            <div 
-                                onClick={() => toast("Lab interface not linked yet", { icon: "🧪" })}
-                                className="surface-card bg-white p-5 border-dashed border-2 border-slate-200 cursor-pointer hover:border-emerald-400 transition-colors group flex flex-col items-center justify-center text-center"
-                            >
-                                <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm mb-3">
-                                    <UploadCloud className="w-5 h-5" />
-                                </div>
-                                <div className="text-sm font-bold text-slate-800">Order Labs</div>
-                                <div className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-semibold">Diagnostic forms</div>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </motion.div>
@@ -196,7 +195,9 @@ const TelemedicineTab = ({ appointments = [], userData, onCompleteSession, onEnd
                                             <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-emerald-500 rounded-full animate-pulse border-2 border-white"></div>
                                         </div>
                                         <div>
-                                            <div className="text-xl font-serif font-bold text-slate-900">Patient #{appt.patientId}</div>
+                                            <div className="text-xl font-serif font-bold text-slate-900">
+                                                {userData?.patientsMap?.[appt.patientId]?.name || `Patient #${appt.patientId}`}
+                                            </div>
                                             <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1.5">
                                                 <Clock className="w-3.5 h-3.5 text-amber-500" /> {appt.date} {appt.time}
                                             </div>

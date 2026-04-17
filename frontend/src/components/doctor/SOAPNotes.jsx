@@ -9,11 +9,13 @@ import { FileText, User, Stethoscope, Brain, Clipboard } from 'lucide-react';
  */
 const SOAPNotes = ({
     initialData = {},
+    initialNotes = '',
     onChange,
-    className = ''
+    className = '',
+    readOnly = false
 }) => {
     const [soapData, setSoapData] = useState({
-        subjective: initialData.subjective || '',
+        subjective: initialData.subjective || initialNotes || '',
         objective: initialData.objective || '',
         assessment: initialData.assessment || '',
         plan: initialData.plan || '',
@@ -111,8 +113,9 @@ const SOAPNotes = ({
                         <textarea
                             value={soapData[section.key]}
                             onChange={(e) => handleChange(section.key, e.target.value)}
-                            placeholder={section.placeholder}
-                            className="w-full h-40 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 text-sm font-mono leading-relaxed resize-none bg-white"
+                            placeholder={readOnly ? '' : section.placeholder}
+                            readOnly={readOnly}
+                            className={`w-full h-40 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 text-sm font-mono leading-relaxed resize-none bg-white ${readOnly ? 'cursor-default opacity-80' : ''}`}
                             style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", monospace' }}
                         />
 

@@ -7,7 +7,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/synapscare}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:1234}
+    password: ${SPRING_DATASOURCE_PASSWORD:Luqa}
   jpa:
     hibernate:
       ddl-auto: update
@@ -17,3 +17,50 @@ spring:
     port: ${SPRING_RABBITMQ_PORT:5672}
     username: ${SPRING_RABBITMQ_USERNAME:admin}
     password: ${SPRING_RABBITMQ_PASSWORD:admin123}
+  
+  # Email configuration (Gmail SMTP example)
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+# Application-specific notification settings
+app:
+  notification:
+    email:
+      enabled: ${EMAIL_NOTIFICATIONS_ENABLED:true}
+      mock: ${EMAIL_MOCK_MODE:false}
+    sms:
+      enabled: ${SMS_NOTIFICATIONS_ENABLED:true}
+      mock: ${SMS_MOCK_MODE:false}
+    whatsapp:
+      enabled: ${WHATSAPP_NOTIFICATIONS_ENABLED:true}
+      mock: ${WHATSAPP_MOCK_MODE:false}
+
+# UltraMsg Configuration
+ultramsg:
+  instance-id: ${ULTRAMSG_INSTANCE_ID:instance168773}
+  token: ${ULTRAMSG_TOKEN:vugvi2m21314s03x}
+  api-url: ${ULTRAMSG_API_URL:https://api.ultramsg.com/instance168773/}
+
+# TextBee Configuration
+textbee:
+  api-key: ${TEXTBEE_API_KEY:d2a26f3a-2636-4c70-be28-8aaa41167de2}
+  device-id: ${TEXTBEE_DEVICE_ID:67f226c61cd68b248a391cb4}
+
+# Logging
+logging:
+  level:
+    com.healthcare.notification: DEBUG
+    org.springframework.amqp: INFO

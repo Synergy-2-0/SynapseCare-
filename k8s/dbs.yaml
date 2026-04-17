@@ -1,0 +1,426 @@
+# Persistent Volume Claims for separate Databases
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: auth-db-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: doctor-db-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: appointment-db-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: patient-db-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: payment-db-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: telemedicine-db-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prescription-db-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: notification-db-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Mi
+
+---
+# Database Deployments and Services
+# AUTH DB
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-auth
+  template:
+    metadata:
+      labels:
+        app: postgres-auth
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: "1234"
+        - name: POSTGRES_DB
+          value: auth_db
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: auth-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-auth
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres-auth
+---
+# DOCTOR DB
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-doctor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-doctor
+  template:
+    metadata:
+      labels:
+        app: postgres-doctor
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: "1234"
+        - name: POSTGRES_DB
+          value: doctor_db
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: doctor-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-doctor
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres-doctor
+---
+# APPOINTMENT DB
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-appointment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-appointment
+  template:
+    metadata:
+      labels:
+        app: postgres-appointment
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: "1234"
+        - name: POSTGRES_DB
+          value: appointment_db
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: appointment-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-appointment
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres-appointment
+---
+# PATIENT DB
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-patient
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-patient
+  template:
+    metadata:
+      labels:
+        app: postgres-patient
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: "1234"
+        - name: POSTGRES_DB
+          value: patient_db
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: patient-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-patient
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres-patient
+---
+# PAYMENT DB
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-payment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-payment
+  template:
+    metadata:
+      labels:
+        app: postgres-payment
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: "1234"
+        - name: POSTGRES_DB
+          value: payment_db
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: payment-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-payment
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres-payment
+---
+# TELEMEDICINE DB
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-telemedicine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-telemedicine
+  template:
+    metadata:
+      labels:
+        app: postgres-telemedicine
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: "1234"
+        - name: POSTGRES_DB
+          value: telemedicine_db
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: telemedicine-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-telemedicine
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres-telemedicine
+---
+# PRESCRIPTION DB
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-prescription
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-prescription
+  template:
+    metadata:
+      labels:
+        app: postgres-prescription
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: "1234"
+        - name: POSTGRES_DB
+          value: prescription_db
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: prescription-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-prescription
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres-prescription
+---
+# NOTIFICATION DB
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-notification
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-notification
+  template:
+    metadata:
+      labels:
+        app: postgres-notification
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: "1234"
+        - name: POSTGRES_DB
+          value: notification_db
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: notification-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-notification
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres-notification

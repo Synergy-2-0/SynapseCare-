@@ -36,6 +36,47 @@ const DoctorsList = () => {
     const [doctors, setDoctors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('ALL');
+    const [aiSpecialties, setAiSpecialties] = useState([]);
+    const [brokenDoctorImages, setBrokenDoctorImages] = useState({});
+
+    const getFallbackImage = (seed) => `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}`;
+
+    const getDoctorImage = (doc) => {
+        if (brokenDoctorImages[doc.id]) return getFallbackImage(doc.id);
+        return doc.image || getFallbackImage(doc.id);
+    };
+
+    const normalizeToken = (value) => String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+
+    const matchesSpecialty = (doctorSpecialization, specialty) => {
+        const doc = normalizeToken(doctorSpecialization);
+        const spec = normalizeToken(specialty);
+        if (!doc || !spec) return false;
+        return doc.includes(spec) || spec.includes(doc);
+    };
+
+    useEffect(() => {
+        if (!router.isReady) return;
+
+        const qParam = typeof router.query.q === 'string' ? router.query.q : '';
+        const specialtiesParam = typeof router.query.specialties === 'string' ? router.query.specialties : '';
+
+        if (qParam) {
+            setSearchTerm(qParam);
+        }
+
+        if (specialtiesParam) {
+            const parsed = specialtiesParam
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean);
+            setAiSpecialties(parsed);
+        } else {
+            setAiSpecialties([]);
+        }
+    }, [router.isReady, router.query.q, router.query.specialties]);
 
     useEffect(() => {
         const fetchDoctors = async () => {
@@ -44,19 +85,20 @@ const DoctorsList = () => {
                 const response = await publicDoctorApi.get('/search');
                 // Map the new backend fields to the UI card structure
                 const mappedDoctors = response.data.map(doc => ({
-                    id: doc.userId, // Standardized to clinical identity across microservices
-                    dbId: doc.id,
+                    // Use doctor-service primary key for routing to avoid userId/id collisions.
+                    id: doc.id,
+                    userId: doc.userId,
                     name: (doc.firstName && doc.lastName)
                         ? `${doc.firstName} ${doc.lastName}`
-                        : `Specialist Node #${doc.userId}`,
+                        : `Specialist Node #${doc.id}`,
                     specialization: doc.specialization || "Clinical Practice",
-                    image: doc.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doc.userId}`,
+                    image: doc.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doc.id}`,
                     location: "SynapseCare Global Hub",
-                    rating: 4.8 + (doc.userId % 5) * 0.05,
-                    reviews: 50 + (doc.userId * 7) % 200,
+                    rating: 4.8 + (doc.id % 5) * 0.05,
+                    reviews: 50 + (doc.id * 7) % 200,
                     experience: doc.experience ? `${doc.experience}+ Years` : "Senior Practitioner",
                     availableToday: doc.isAvailable,
-                    fee: doc.consultationFee || 1500
+                    fee: doc.consultationFee || 2000
                 }));
                 setDoctors(mappedDoctors);
             } catch (error) {
@@ -71,11 +113,17 @@ const DoctorsList = () => {
         fetchDoctors();
     }, []);
 
-    const filteredDoctors = doctors.filter(doc =>
-        (doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doc.specialization.toLowerCase().includes(searchTerm.toLowerCase())) &&
-        (activeFilter === 'ALL' || doc.specialization.toUpperCase() === activeFilter)
-    );
+    const filteredDoctors = doctors.filter(doc => {
+        const searchMatch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            doc.specialization.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const activeFilterMatch = activeFilter === 'ALL' || doc.specialization.toUpperCase() === activeFilter;
+
+        const aiSpecialtyMatch = aiSpecialties.length === 0 ||
+            aiSpecialties.some(spec => matchesSpecialty(doc.specialization, spec));
+
+        return searchMatch && activeFilterMatch && aiSpecialtyMatch;
+    });
 
     const specializationFilters = ['ALL', ...SPECIALIZATIONS];
 
@@ -85,12 +133,12 @@ const DoctorsList = () => {
                 <title>Specialist Registry | Find Top Medical Practitioners | SynapsCare</title>
                 <meta name="description" content="Search and discover elite medical specialists across cardiology, neurology, pediatrics, and more" />
             </Head>
-            <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-teal-100 overflow-x-hidden">
+            <div className="min-h-screen bg-slate-50 font-['Open_Sans',sans-serif] text-slate-700 selection:bg-teal-100 overflow-x-hidden">
                 {/* Global Registry Header */}
                 <nav className="h-20 bg-white/70 backdrop-blur-2xl border-b border-slate-200/50 px-6 sm:px-10 flex items-center justify-between sticky top-0 z-[60] shadow-sm">
                     <Link href="/" className="flex items-center gap-4 group cursor-pointer active:scale-95 transition-transform">
-                        <img src="/logo.png" alt="logo" className="w-9 h-9 drop-shadow-sm group-hover:rotate-12 transition-transform" />
-                        <span className="text-xl font-black text-slate-800 tracking-tighter leading-none">Synapse<span className="text-teal-600">Care</span></span>
+                        <img src="/logo.png" alt="logo" className="w-8 h-8 transition-transform group-hover:rotate-6" />
+                        <span className="text-xl font-bold text-slate-800 tracking-tight leading-none">Synapse<span className="text-teal-600 font-semibold">Care</span></span>
                     </Link>
 
                     <div className="hidden lg:flex items-center bg-slate-100/80 rounded-2xl px-4 py-2.5 w-full max-w-md border border-transparent focus-within:border-teal-400 focus-within:bg-white transition-all shadow-inner group">
@@ -105,9 +153,9 @@ const DoctorsList = () => {
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <div className="hidden lg:flex items-center gap-3 px-5 py-2 bg-slate-900 rounded-2xl text-white shadow-xl shadow-slate-200">
-                            <ShieldCheck size={14} className="text-teal-400" />
-                            <span className="text-[10px] font-black uppercase tracking-widest leading-none">Security Node Sync: OK</span>
+                        <div className="hidden lg:flex items-center gap-3 px-5 py-2 bg-slate-100 rounded-2xl text-slate-600 border border-slate-200">
+                            <ShieldCheck size={14} className="text-teal-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest leading-none">Verified Network Connection</span>
                         </div>
                     </div>
                 </nav>
@@ -116,10 +164,15 @@ const DoctorsList = () => {
                     {/* Hero Section */}
                     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5 mb-6 relative">
                         <div className="space-y-3 relative z-10">
-                            <Badge variant="success" size="md" pulse>GLOBAL MEDICAL REGISTRY</Badge>
-                            <h1 className="text-4xl sm:text-[2.8rem] font-black tracking-tighter text-slate-900 leading-[0.98]">Authorized <br /> <span className="text-teal-600">Specialists.</span></h1>
+                            <button 
+                                onClick={() => router.push('/dashboard/patient')}
+                                className="inline-flex items-center gap-2.5 px-6 py-3 bg-slate-900 border border-slate-800 rounded-full text-[11px] font-bold uppercase tracking-wider text-white shadow-xl hover:bg-slate-800 transition-all active:scale-95 mb-6 group"
+                            >
+                                <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
+                            </button>
+                            <h1 className="text-4xl sm:text-[2.8rem] font-bold tracking-tight text-slate-900 leading-[1.1]">Find Your <br /> <span className="text-teal-600">Specialist.</span></h1>
                             <p className="copy-description text-sm sm:text-[15px] font-medium text-slate-400 max-w-2xl leading-relaxed">
-                                "Strategic access to high-tier medical nodes. Synchronized with the global clinical intelligence network for verified practitioners."
+                                Access our global network of verified medical professionals. Each practitioner is rigorously vetted for quality and clinical excellence.
                             </p>
                         </div>
                         <div className="hidden lg:flex flex-col items-end text-right space-y-4">
@@ -144,10 +197,10 @@ const DoctorsList = () => {
                     </div>
 
                     {/* Tactical Selection Filters */}
-                    <div className="flex flex-col sm:flex-row items-center gap-3 mb-6 overflow-x-auto pb-2 scroll-smooth custom-scrollbar">
-                        <div className="flex items-center gap-3 px-5 py-2.5 bg-slate-900 rounded-2xl text-teal-400 shrink-0">
+                    <div className="flex flex-col sm:flex-row items-center gap-3 mb-8 overflow-x-auto pb-2 scroll-smooth custom-scrollbar">
+                        <div className="flex items-center gap-3 px-5 py-2.5 bg-slate-100 border border-slate-200 rounded-2xl text-slate-500 shrink-0">
                             <Filter size={16} />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-white leading-none">Domain Select</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest leading-none">Filter by Specialty</span>
                         </div>
                         <div className="flex gap-3">
                             {specializationFilters.map((spec) => (
@@ -164,6 +217,23 @@ const DoctorsList = () => {
                             ))}
                         </div>
                     </div>
+
+                    {aiSpecialties.length > 0 && (
+                        <div className="mb-6 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-teal-700">
+                                AI Referral Active: {aiSpecialties.join(' • ')}
+                            </p>
+                            <button
+                                onClick={() => {
+                                    setAiSpecialties([]);
+                                    router.push('/doctors');
+                                }}
+                                className="px-4 py-2 bg-white border border-teal-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-teal-700 hover:bg-teal-100 transition-colors"
+                            >
+                                Show All Doctors
+                            </button>
+                        </div>
+                    )}
 
                     {loading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -188,16 +258,21 @@ const DoctorsList = () => {
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="w-20 h-20 bg-slate-50 rounded-[1.5rem] border-2 border-slate-100 shadow-inner overflow-hidden p-2 group-hover:border-teal-500/20 transition-all duration-500">
                                                 <div className="w-full h-full rounded-[1.5rem] overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
-                                                    <img src={doc.image} alt={doc.name} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
+                                                    <img
+                                                        src={getDoctorImage(doc)}
+                                                        alt={doc.name}
+                                                        onError={() => setBrokenDoctorImages(prev => ({ ...prev, [doc.id]: true }))}
+                                                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="flex flex-col items-end gap-2 text-right">
                                                 {doc.availableToday ? (
-                                                    <Badge variant="success" size="sm">NODE ACTIVE</Badge>
+                                                    <Badge variant="success" size="sm">AVAILABLE NOW</Badge>
                                                 ) : (
-                                                    <Badge variant="warning" size="sm">SYNC: TMRW</Badge>
+                                                    <Badge variant="warning" size="sm">NEXT SYNC: TMRW</Badge>
                                                 )}
-                                                <div className="flex items-center gap-1.5 text-xs text-slate-400 font-black uppercase tracking-widest">
+                                                <div className="flex items-center gap-1.5 text-xs text-slate-400 font-bold uppercase tracking-widest">
                                                     <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> {doc.rating}
                                                 </div>
                                             </div>
@@ -205,7 +280,7 @@ const DoctorsList = () => {
 
                                         <div className="space-y-3 mb-4">
                                             <Badge variant="success" size="sm">{doc.specialization.toUpperCase()}</Badge>
-                                            <h2 className="text-xl font-black text-slate-900 tracking-tighter leading-none group-hover:text-teal-600 transition-colors">Dr. {doc.name}</h2>
+                                            <h2 className="text-xl font-bold text-slate-900 tracking-tighter leading-none group-hover:text-teal-600 transition-colors">Dr. {doc.name}</h2>
                                             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-2 border-t border-slate-100">
                                                 <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
                                                     <MapPin className="w-3.5 h-3.5 text-slate-400" /> {doc.location.split(',')[1] || doc.location}
@@ -233,7 +308,7 @@ const DoctorsList = () => {
                             <div className="w-20 h-20 bg-slate-50 rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 border border-slate-100 text-slate-300">
                                 <Search size={34} />
                             </div>
-                            <h3 className="text-2xl font-black text-slate-900 tracking-tighter">No Node Signal</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 tracking-tighter">No Node Signal</h3>
                             <p className="text-slate-400 font-medium mt-2">Try adjusting your spectral filters or medical domain search criteria.</p>
                             <button onClick={() => { setSearchTerm(''); setActiveFilter('ALL'); }} className="mt-7 px-7 py-2.5 bg-teal-600 text-white rounded-2xl font-bold text-sm tracking-tight hover:scale-105 transition-transform shadow-xl shadow-teal-100">Reset Search Matrix</button>
                         </motion.div>
@@ -246,7 +321,7 @@ const DoctorsList = () => {
                         </div>
                         <div className="relative z-10 max-w-xl">
                             <Badge variant="success" className="mb-4">ADVANCED RECRUITMENT NODE</Badge>
-                            <h4 className="text-xl sm:text-lg font-black tracking-tighter mb-3">Can&apos;t Find Your <br /> <span className="text-teal-400">Specialist Node?</span></h4>
+                            <h4 className="text-xl sm:text-lg font-bold tracking-tighter mb-3">Can&apos;t Find Your <br /> <span className="text-teal-400">Specialist Node?</span></h4>
                             <p className="copy-description text-slate-400 font-medium text-sm mb-5 leading-relaxed">Our platform uses autonomous intelligence to identify medical professionals globally. If you require a custom search cluster, deploy a request to our infrastructure team.</p>
                             <Button variant="secondary" size="md" icon={Zap} className="px-8 normal-case tracking-tight font-bold">Deploy Custom Search Cluster</Button>
                         </div>

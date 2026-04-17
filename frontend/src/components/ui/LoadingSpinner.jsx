@@ -2,229 +2,113 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 /**
- * LoadingSpinner Component - Medical Heartbeat Pulse Design
- *
+ * LoadingSpinner Component - Premium Heartbeat ECG Design
+ * 
  * Features:
- * - Medical heartbeat pulse animation (ECG-style)
- * - Healthcare-themed design
- * - Professional and memorable loading experience
- * - Accessibility support
- *
- * @param {string} size - 'sm' | 'md' | 'lg' | 'fullscreen'
- * @param {string} variant - 'pulse' | 'dots' | 'ring' (default: 'pulse')
- * @param {string} message - Loading message
+ * - High-fidelity clinical heartbeat (ECG) pulse
+ * - SynapCare themed teal/indigo gradient path
+ * - Premium executive typography with minimalist tracking
  */
 const LoadingSpinner = ({
     size = 'md',
-    variant = 'pulse',
-    message = 'Loading...'
+    message = 'Synchronizing Clinical Shards...'
 }) => {
-    const sizeConfig = {
-        sm: {
-            dotSize: 'w-2 h-2',
-            container: 'gap-1',
-            ecgHeight: 'h-6',
-            messageSize: 'text-xs'
-        },
-        md: {
-            dotSize: 'w-3 h-3',
-            container: 'gap-2',
-            ecgHeight: 'h-10',
-            messageSize: 'text-sm'
-        },
-        lg: {
-            dotSize: 'w-4 h-4',
-            container: 'gap-3',
-            ecgHeight: 'h-14',
-            messageSize: 'text-base'
-        },
-        fullscreen: {
-            dotSize: 'w-5 h-5',
-            container: 'gap-4',
-            ecgHeight: 'h-16',
-            messageSize: 'text-xl'
-        }
-    };
+    const isFullscreen = size === 'fullscreen';
 
-    const config = sizeConfig[size] || sizeConfig.md;
+    const ecgWidth = {
+        sm: 120,
+        md: 200,
+        lg: 280,
+        fullscreen: 360
+    }[size] || 200;
 
-    // Medical Heartbeat Pulse Variant (PRIMARY - User's choice)
-    const PulseVariant = () => (
-        <>
-            {/* Three pulsing dots simulating heartbeat */}
-            <div className={`flex items-center ${config.container}`}>
-                <motion.div
-                    className={`${config.dotSize} rounded-full bg-[var(--color-primary)]`}
-                    animate={{
-                        scale: [1, 1.2, 1, 1.4, 1],
-                        opacity: [1, 0.8, 1, 0.6, 1]
-                    }}
-                    transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                    }}
-                />
-                <motion.div
-                    className={`${config.dotSize} rounded-full bg-[var(--color-primary)]`}
-                    animate={{
-                        scale: [1, 1.2, 1, 1.4, 1],
-                        opacity: [1, 0.8, 1, 0.6, 1]
-                    }}
-                    transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.15
-                    }}
-                />
-                <motion.div
-                    className={`${config.dotSize} rounded-full bg-[var(--color-primary)]`}
-                    animate={{
-                        scale: [1, 1.2, 1, 1.4, 1],
-                        opacity: [1, 0.8, 1, 0.6, 1]
-                    }}
-                    transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.3
-                    }}
-                />
-            </div>
+    const ecgHeight = {
+        sm: 40,
+        md: 60,
+        lg: 80,
+        fullscreen: 100
+    }[size] || 60;
 
-            {/* ECG Line Visual (optional, subtle) */}
-            <svg
-                className={`mt-3 ${config.ecgHeight} w-32 opacity-30`}
-                viewBox="0 0 128 40"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                <motion.path
-                    d="M0,20 L30,20 L35,10 L40,30 L45,20 L50,20 L55,15 L60,25 L65,20 L128,20"
-                    stroke="var(--color-primary)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 0.5 }}
-                    transition={{
-                        pathLength: {
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "linear"
-                        },
-                        opacity: { duration: 0.3 }
-                    }}
-                />
-            </svg>
-        </>
-    );
+    const textSize = {
+        sm: 'text-[8px]',
+        md: 'text-[10px]',
+        lg: 'text-xs',
+        fullscreen: 'text-sm'
+    }[size] || 'text-[10px]';
 
-    // Wave Dots Variant (Alternative)
-    const DotsVariant = () => (
-        <div className={`flex items-center ${config.container}`}>
-            {[0, 0.2, 0.4].map((delay, index) => (
-                <motion.div
-                    key={index}
-                    className={`${config.dotSize} rounded-full bg-[var(--color-primary)]`}
-                    animate={{
-                        y: [0, -8, 0],
-                        opacity: [1, 0.5, 1]
-                    }}
-                    transition={{
-                        duration: 0.8,
-                        repeat: Infinity,
-                        delay,
-                        ease: "easeInOut"
-                    }}
-                />
-            ))}
-        </div>
-    );
-
-    // Gradient Ring Variant (Alternative)
-    const RingVariant = () => {
-        const ringSize = size === 'sm' ? 24 : size === 'md' ? 40 : size === 'lg' ? 56 : 64;
-
-        return (
-            <motion.div
-                className="relative"
-                style={{ width: ringSize, height: ringSize }}
-            >
-                <svg width={ringSize} height={ringSize} viewBox="0 0 50 50">
+    return (
+        <div className={`${isFullscreen ? 'fixed inset-0 bg-white z-[9999]' : 'p-8'} flex flex-col items-center justify-center gap-12 overflow-hidden`}>
+            {/* High-Fidelity Heartbeat (ECG) Shard */}
+            <div className="relative flex items-center justify-center">
+                <svg
+                    width={ecgWidth}
+                    height={ecgHeight}
+                    viewBox="0 0 200 60"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="relative z-10"
+                >
                     <defs>
-                        <linearGradient id="spinnerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="1" />
-                            <stop offset="100%" stopColor="var(--color-secondary)" stopOpacity="0.4" />
+                        <linearGradient id="heartbeatGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#0d9488" stopOpacity="0.2" />
+                            <stop offset="50%" stopColor="#0d9488" />
+                            <stop offset="100%" stopColor="#6366f1" stopOpacity="0.2" />
                         </linearGradient>
                     </defs>
-                    <motion.circle
-                        cx="25"
-                        cy="25"
-                        r="20"
-                        fill="none"
-                        stroke="url(#spinnerGradient)"
-                        strokeWidth="4"
+                    
+                    {/* Background Static Path Shard */}
+                    <path
+                        d="M0,30 L40,30 L45,10 L50,50 L55,30 L100,30 L105,20 L110,40 L115,30 L200,30"
+                        stroke="#f1f5f9"
+                        strokeWidth="3"
                         strokeLinecap="round"
-                        animate={{ rotate: 360 }}
-                        transition={{
-                            duration: 1.5,
+                    />
+
+                    {/* Animated Heartbeat Path Shard */}
+                    <motion.path
+                        d="M0,30 L40,30 L45,10 L50,50 L55,30 L100,30 L105,20 L110,40 L115,30 L200,30"
+                        stroke="url(#heartbeatGradient)"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        animate={{ 
+                            pathLength: [0, 1, 1],
+                            pathOffset: [0, 0, 1],
+                            opacity: [0, 1, 0.5, 0]
+                        }}
+                        transition={{ 
+                            duration: 2.5,
                             repeat: Infinity,
                             ease: "linear"
                         }}
-                        strokeDasharray="80 120"
                     />
                 </svg>
-            </motion.div>
-        );
-    };
 
-    const variants = {
-        pulse: <PulseVariant />,
-        dots: <DotsVariant />,
-        ring: <RingVariant />
-    };
+                {/* Subtle Clinical Glow */}
+                <motion.div 
+                    className="absolute inset-0 bg-teal-500/5 blur-3xl rounded-full"
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.5, 0.2] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                />
+            </div>
 
-    const SpinnerContent = variants[variant] || variants.pulse;
-
-    // Fullscreen variant
-    if (size === 'fullscreen') {
-        return (
-            <div
-                className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-900"
-                role="status"
-                aria-live="polite"
-                aria-busy="true"
-                aria-label={message}
-            >
-                {SpinnerContent}
-                {message && (
-                    <motion.div
-                        className={`mt-6 ${config.messageSize} text-slate-600 font-medium`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
+            {/* Premium Message Shard */}
+            {message && (
+                <div className="flex flex-col items-center gap-4">
+                    <motion.p 
+                        className={`${textSize} font-black text-slate-900 uppercase tracking-[0.4em] pl-[0.4em] text-center max-w-xs`}
+                        animate={{ opacity: [0.4, 1, 0.4] }}
+                        transition={{ duration: 2.5, repeat: Infinity }}
                     >
                         {message}
-                    </motion.div>
-                )}
-            </div>
-        );
-    }
-
-    // Inline variant
-    return (
-        <div
-            className="flex flex-col items-center justify-center p-8"
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-            aria-label={message}
-        >
-            {SpinnerContent}
-            {message && (
-                <div className={`mt-4 ${config.messageSize} text-slate-500 font-medium`}>
-                    {message}
+                    </motion.p>
+                    <div className="w-16 h-[2px] bg-slate-50 relative overflow-hidden">
+                        <motion.div 
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-teal-500 to-transparent"
+                            animate={{ x: [-80, 80] }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                        />
+                    </div>
                 </div>
             )}
         </div>

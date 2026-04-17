@@ -17,12 +17,10 @@ public class MedicalReport {
     private Long id;
 
     private Long patientId;
+    private Long appointmentId; // Optional link to a specific appointment
 
     @Column(length = 512)
     private String fileName;
-
-    @Column(length = 512)
-    private String objectName; // MinIO object key
 
     @Column(length = 128)
     private String fileType; // MIME type

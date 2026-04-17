@@ -2,6 +2,7 @@ package com.healthcare.patient.controller;
 
 import com.healthcare.patient.dto.ApiResponse;
 import com.healthcare.patient.dto.PatientDto;
+import com.healthcare.patient.service.FileStorageService;
 import com.healthcare.patient.service.PatientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,12 +12,43 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/patients")
 @RequiredArgsConstructor
 public class PatientController {
 
     private final PatientService patientService;
+    private final FileStorageService fileStorageService;
+
+    @PostMapping(value = "/profile/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Map<String, String>>> uploadProfileImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "userId", required = false) Long userId) {
+        
+        System.out.println("[PatientController] Received profile upload request for user: " + userId);
+        
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "File is empty", null));
+        }
+        
+        try {
+            String targetId = (userId != null) ? String.valueOf(userId) : "temp_reg_" + System.currentTimeMillis();
+            String subFolder = "patients/" + targetId + "/profile";
+            
+            String imageUrl = fileStorageService.storeFile(file, subFolder);
+            System.out.println("[PatientController] File stored successfully: " + imageUrl);
+            
+            return ResponseEntity.ok(new ApiResponse<>(true, "Image uploaded", Map.of("url", imageUrl)));
+        } catch (Exception e) {
+            System.err.println("[PatientController] Upload failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, "Upload failed: " + e.getMessage(), null));
+        }
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<PatientDto>> createPatient(@Valid @RequestBody PatientDto patientDto) {

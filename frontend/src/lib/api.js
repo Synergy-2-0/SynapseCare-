@@ -1,11 +1,11 @@
 import axios from 'axios';
 
 const defaultGatewayBase = typeof window === 'undefined'
-    ? 'http://localhost:8080/api'
+    ? (process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://api-gateway:8080/api')
     : '/backend-api';
 
 const CONFIG = {
-    API_GATEWAY: process.env.NEXT_PUBLIC_API_GATEWAY_BASE || defaultGatewayBase
+    API_GATEWAY: process.env.NEXT_PUBLIC_API_GATEWAY_URL || process.env.NEXT_PUBLIC_API_GATEWAY_BASE || defaultGatewayBase
 };
 
 const createApiInstance = (baseURL, isPublic = false) => {
@@ -25,9 +25,11 @@ const createApiInstance = (baseURL, isPublic = false) => {
         // Don't add auth headers for public endpoints
         if (!isPublic && typeof window !== 'undefined') {
             const userId = localStorage.getItem('user_id');
+            const userRole = localStorage.getItem('user_role');
             const token = localStorage.getItem('auth_token');
             if (token) config.headers.Authorization = `Bearer ${token}`;
             if (userId) config.headers['X-User-Id'] = userId;
+            if (userRole) config.headers['X-User-Role'] = userRole;
         }
         return config;
     });
@@ -50,6 +52,13 @@ const createApiInstance = (baseURL, isPublic = false) => {
                 headers: error.response?.headers
             });
 
+            if (status === 401 && typeof window !== 'undefined') {
+                if (!window.location.pathname.startsWith('/login')) {
+                    localStorage.clear();
+                    window.location.href = '/login?expired=true';
+                }
+            }
+
             return Promise.reject(error);
         }
     );
@@ -69,8 +78,10 @@ export const createFileUploadInstance = (baseURL) => {
         if (typeof window !== 'undefined') {
             const token = localStorage.getItem('auth_token');
             const userId = localStorage.getItem('user_id');
+            const userRole = localStorage.getItem('user_role');
             if (token) config.headers.Authorization = `Bearer ${token}`;
             if (userId) config.headers['X-User-Id'] = userId;
+            if (userRole) config.headers['X-User-Role'] = userRole;
         }
         return config;
     });
@@ -78,7 +89,12 @@ export const createFileUploadInstance = (baseURL) => {
     instance.interceptors.response.use(
         response => response,
         error => {
-            console.error('[File Upload Error]', error.response?.data || error.message);
+            if (error.response?.status === 401 && typeof window !== 'undefined') {
+                if (!window.location.pathname.startsWith('/login')) {
+                    localStorage.clear();
+                    window.location.href = '/login?expired=true';
+                }
+            }
             return Promise.reject(error);
         }
     );

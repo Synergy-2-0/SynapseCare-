@@ -53,8 +53,12 @@ const PatientsPage = () => {
             <div className="relative">
                 <PatientRosterTab 
                     userData={userData}
-                    onViewPatient={(appt) => {
-                        setSelectedAppointment(appt);
+                    onViewPatient={(patient) => {
+                        setSelectedAppointment({
+                            ...patient,
+                            patientId: patient?.patientId || patient?.id,
+                            patientName: patient?.patientName || patient?.name,
+                        });
                         setIsDrawerOpen(true);
                     }} 
                 />

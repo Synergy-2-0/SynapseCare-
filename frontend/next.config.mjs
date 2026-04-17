@@ -1,11 +1,16 @@
 const gatewayUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:8080/api';
 
 const nextConfig = {
+  output: 'standalone',
   async rewrites() {
     return [
       {
         source: '/backend-api/:path*',
         destination: `${gatewayUrl}/:path*`
+      },
+      {
+        source: '/uploads/:path*',
+        destination: `http://localhost:8080/uploads/:path*`
       }
     ];
   }

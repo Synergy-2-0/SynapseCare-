@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { motion, AnimatePresence } from 'framer-motion';
 import Head from 'next/head';
-import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, ShieldCheck, CheckCircle2, LayoutDashboard } from 'lucide-react';
+import Image from 'next/image';
+import { Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { authApi } from '../lib/api';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const LoginPage = () => {
     const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const router = useRouter();
+
+    React.useEffect(() => {
+        if (router.query.expired === 'true') {
+            setError('Your clinical session has expired. Please re-authenticate to continue.');
+        }
+    }, [router.query.expired]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -60,6 +68,18 @@ const LoginPage = () => {
 
     return (
         <>
+            <AnimatePresence>
+                {loading && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[10000]"
+                    >
+                        <LoadingSpinner size="fullscreen" message="Synchronizing Clinical Identity..." />
+                    </motion.div>
+                )}
+            </AnimatePresence>
             <Head>
                 <title>Secure Login | Clinical Identity | SynapsCare</title>
                 <meta name="description" content="Access your clinical dashboard and patient data securely" />
@@ -75,7 +95,13 @@ const LoginPage = () => {
                     <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px]" />
                     
                     <Link href="/" className="flex items-center gap-3 relative z-10 transition-transform hover:scale-105 active:scale-95 w-fit">
-                        <img src="/logo.png" alt="Logo" className="w-10 h-10 brightness-200" />
+                        <Image 
+                            src="/logo.png" 
+                            alt="Logo" 
+                            width={40} 
+                            height={40} 
+                            className="w-10 h-10 brightness-200" 
+                        />
                         <span className="text-2xl font-black tracking-tighter">Synapse<span className="text-indigo-400">Care</span></span>
                     </Link>
 
@@ -146,7 +172,9 @@ const LoginPage = () => {
                             <div className="space-y-2">
                                 <div className="flex justify-between px-1">
                                     <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Security Key</label>
-                                    <button type="button" className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 hover:text-indigo-700">Forgot?</button>
+                                    <Link href="/forgot-password">
+                                        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 hover:text-indigo-700 cursor-pointer">Forgot?</span>
+                                    </Link>
                                 </div>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">

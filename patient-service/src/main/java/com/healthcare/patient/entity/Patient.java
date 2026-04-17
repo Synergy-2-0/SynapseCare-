@@ -27,5 +27,9 @@ public class Patient {
     private String address;
     private String bloodGroup;
     private String allergies;
+    private String chronicIllnesses;
+    private Double height; // in cm
+    private Double weight; // in kg
     private String emergencyContact;
+    private String profileImageUrl;
 }

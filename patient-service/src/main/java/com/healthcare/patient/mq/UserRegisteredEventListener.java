@@ -9,6 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -25,14 +28,34 @@ public class UserRegisteredEventListener {
             return;
         }
 
-        Patient patient = Patient.builder()
+        Patient.PatientBuilder patientBuilder = Patient.builder()
                 .userId(event.getUserId())
                 .name(event.getFirstName() + " " + event.getLastName())
                 .email(event.getEmail())
                 .phone(event.getPhoneNumber())
-                .build();
+                .bloodGroup(event.getBloodGroup())
+                .allergies(event.getAllergies())
+                .chronicIllnesses(event.getChronicIllnesses())
+                .gender(event.getGender())
+                .profileImageUrl(event.getProfileImageUrl())
+                .emergencyContact(event.getEmergencyContact());
 
-        patientRepository.save(patient);
+        // Safe Metric Parsing Shards
+        try {
+            if (event.getHeight() != null && !event.getHeight().isEmpty()) {
+                patientBuilder.height(Double.parseDouble(event.getHeight()));
+            }
+            if (event.getWeight() != null && !event.getWeight().isEmpty()) {
+                patientBuilder.weight(Double.parseDouble(event.getWeight()));
+            }
+            if (event.getDob() != null && !event.getDob().isEmpty()) {
+                patientBuilder.dob(LocalDate.parse(event.getDob()));
+            }
+        } catch (NumberFormatException | DateTimeParseException e) {
+            log.warn("Clinical metric shard parsing failed for userId {}: {}", event.getUserId(), e.getMessage());
+        }
+
+        patientRepository.save(patientBuilder.build());
         log.info("Successfully created patient profile for userId: {}", event.getUserId());
     }
 }

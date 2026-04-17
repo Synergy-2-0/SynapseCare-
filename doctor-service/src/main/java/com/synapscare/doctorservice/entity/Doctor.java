@@ -63,6 +63,12 @@ public class Doctor {
     @Column(nullable = false)
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
+    @Column(nullable = true)
+    private Integer slotDuration = 30; // Minutes
+
+    @Column(nullable = true)
+    private Integer bufferTime = 0; // Minutes
+
     @Column(length = 500)
     private String verificationRejectionReason; // Synced from auth-service
 

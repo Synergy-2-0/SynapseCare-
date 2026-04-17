@@ -44,6 +44,14 @@ export default function DoctorProfile() {
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [bookingMode, setBookingMode] = useState('TELEMEDICINE');
     const [bookingInProgress, setBookingInProgress] = useState(false);
+    const [redirectingToPayment, setRedirectingToPayment] = useState(false);
+    const [bookingNotice, setBookingNotice] = useState('');
+    const [profileImageFailed, setProfileImageFailed] = useState(false);
+
+    const getFallbackImage = (seed) => `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}`;
+    const currentDoctorImage = profileImageFailed
+        ? getFallbackImage(doctor?.dbId || doctor?.id || 'doctor')
+        : (doctor?.image || getFallbackImage(doctor?.dbId || doctor?.id || 'doctor'));
 
     useEffect(() => {
         if (!id) return;
@@ -61,8 +69,10 @@ export default function DoctorProfile() {
                 const doc = response.data;
 
                 const richDoctor = {
-                    id: doc.userId || doc.id, // Used for URL routing ONLY — the auth userId
-                    dbId: doc.id,             // Internal DB PK — used for all API payload calls
+                    // Route IDs now use doctor-service DB id to avoid collisions.
+                    id: doc.id,
+                    userId: doc.userId,
+                    dbId: doc.id,
                     name: (doc.firstName && doc.lastName) ? `${doc.firstName} ${doc.lastName}` : `Dr. Specialist`,
                     specialization: doc.specialization || "Clinical Practice",
                     image: doc.profileImageUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${doc.id}`,
@@ -80,10 +90,11 @@ export default function DoctorProfile() {
                         "Personalized Neural Protocols",
                         "Strategic Health Monitoring"
                     ],
-                    fee: doc.consultationFee || 1500,
+                    fee: doc.consultationFee || 2000,
                     verificationStatus: doc.verificationStatus
                 };
                 setDoctor(richDoctor);
+                setProfileImageFailed(false);
 
                 // Fetch slots using dbId (internal pk) — this is what appointment service
                 // stores as doctorId in the appointments table, ensuring consistent conflict checks.
@@ -95,8 +106,20 @@ export default function DoctorProfile() {
                         });
                         setSlots(slotsRes.data || []);
                     } catch (err) {
-                        console.error("Failed to fetch available slots:", err);
-                        setSlots([]);
+                        if (err.response?.status === 403) {
+                            try {
+                                const fallbackRes = await publicDoctorApi.get(`/${doc.id}/available-slots`, {
+                                    params: { date: selectedDate }
+                                });
+                                setSlots(fallbackRes.data || []);
+                            } catch (fallbackErr) {
+                                console.error("Failed to fetch available slots from fallback endpoint:", fallbackErr);
+                                setSlots([]);
+                            }
+                        } else {
+                            console.error("Failed to fetch available slots:", err);
+                            setSlots([]);
+                        }
                     } finally {
                         setSlotsLoading(false);
                     }
@@ -123,6 +146,8 @@ export default function DoctorProfile() {
         }
 
         setBookingInProgress(true);
+        setRedirectingToPayment(false);
+        setBookingNotice('');
         try {
             let patientId;
             try {
@@ -174,27 +199,34 @@ export default function DoctorProfile() {
                 const response = await appointmentApi.post('/book', appointmentPayload);
                 const newAppointment = response.data?.data || response.data;
 
+                setBookingNotice('Booking confirmed. Redirecting to payment...');
+                setRedirectingToPayment(true);
+
                 // Redirect to payment — use 'appointmentId' NOT 'id' to avoid
                 // colliding with the /doctors/[id] dynamic route param, which
                 // would cause this page's useEffect to re-fire with appointment.id.
-                router.push({
-                    pathname: '/payment',
-                    query: {
-                        appointmentId: newAppointment.id,
-                        amount: doctor.fee,
-                        patientId: patientId,
-                        doctorId: doctor.dbId || doctor.id  // DB pk, consistent with booking payload
-                    }
-                });
+                setTimeout(() => {
+                    router.push({
+                        pathname: '/payment',
+                        query: {
+                            appointmentId: newAppointment.id,
+                            amount: doctor.fee,
+                            patientId: patientId,
+                            doctorId: doctor.dbId || doctor.id  // DB pk, consistent with booking payload
+                        }
+                    });
+                }, 1400);
             } catch (apiErr) {
                 console.error("Clinical Node Synchronizer failure:", apiErr);
                 const errorMsg = apiErr.response?.data?.message || apiErr.message;
                 alert(`Tactical failure in booking registry: ${errorMsg}. Please verify your parameters and re-synchronize.`);
                 setBookingInProgress(false);
+                setRedirectingToPayment(false);
             }
         } catch (error) {
             console.error("Critical Failure: Could not initialize booking record", error);
             alert("Clinical Sync Failure: This slot might have just been booked. Please choose another node.");
+            setRedirectingToPayment(false);
         } finally {
             setBookingInProgress(false);
         }
@@ -207,8 +239,8 @@ export default function DoctorProfile() {
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
                 <Card className="max-w-md w-full text-center p-12">
                     <Search size={48} className="mx-auto text-slate-300 mb-6" />
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Practitioner Not Found</h2>
-                    <p className="text-slate-500 font-medium mt-2 mb-10">We couldn't synchronize the requested clinical profile.</p>
+                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Practitioner Not Found</h2>
+                    <p className="text-slate-500 font-medium mt-2 mb-10">We couldn&apos;t locate the requested clinical profile.</p>
                     <Button variant="primary" onClick={() => router.push('/doctors')}>Back to Registry</Button>
                 </Card>
             </div>
@@ -221,7 +253,7 @@ export default function DoctorProfile() {
                 <title>{doctor?.name ? `Dr. ${doctor.name} | ${SPECIALIZATION_LABELS[doctor.specialization] || doctor.specialization}` : 'Specialist Profile'} | SynapsCare</title>
                 <meta name="description" content={doctor?.about ? doctor.about.substring(0, 160) : "View expert medical profile and book appointments with top-tier specialists"} />
             </Head>
-            <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-teal-100 overflow-x-hidden">
+            <div className="min-h-screen bg-slate-50 font-['Open_Sans',sans-serif] text-slate-700 selection:bg-teal-100 overflow-x-hidden">
                 {/* High-End Navigation Header */}
                 <nav className="h-20 bg-white/70 backdrop-blur-2xl border-b border-slate-200/50 px-8 sm:px-16 flex items-center justify-between sticky top-0 z-[60] shadow-sm">
                     <div className="flex items-center gap-4">
@@ -233,17 +265,22 @@ export default function DoctorProfile() {
                         </button>
                         <div className="hidden sm:flex flex-col">
                             <div className="flex items-center gap-2">
-                                <span className="text-sm font-black text-slate-900 tracking-tight leading-none">Practitioner Dossier</span>
+                                <span className="text-sm font-bold text-slate-900 tracking-tight leading-none">Practitioner Profile</span>
                                 <Verified size={12} className="text-teal-500" />
                             </div>
-                            <p className="text-[9px] font-bold text-slate-400 tracking-tight mt-1">ID: {doctor.id} • Synced securely</p>
+                            <p className="text-[9px] font-bold text-slate-400 tracking-tight mt-1">Verified Clinical Identification</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-6">
                         <Badge variant="success" size="sm" pulse>AVAILABLE</Badge>
                         <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden relative group cursor-pointer">
-                            <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
+                            <img
+                                src={currentDoctorImage}
+                                alt={doctor.name}
+                                onError={() => setProfileImageFailed(true)}
+                                className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+                            />
                         </div>
                     </div>
                 </nav>
@@ -257,7 +294,12 @@ export default function DoctorProfile() {
                                 <div className="aspect-square bg-white rounded-[3rem] p-6 border-2 border-slate-100 shadow-2xl shadow-teal-100/30 relative group overflow-hidden">
                                     <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-teal-50/50 to-transparent pointer-events-none" />
                                     <div className="w-full h-full bg-slate-50 rounded-[2.5rem] overflow-hidden border border-slate-100 relative z-10">
-                                        <img src={doctor.image} alt={doctor.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        <img
+                                            src={currentDoctorImage}
+                                            alt={doctor.name}
+                                            onError={() => setProfileImageFailed(true)}
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        />
                                     </div>
                                     <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-teal-200 z-20 group-hover:rotate-12 transition-transform">
                                         <Zap size={24} fill="white" />
@@ -269,13 +311,13 @@ export default function DoctorProfile() {
                             <div className="md:col-span-8 lg:col-span-9 space-y-6">
                                 <div>
                                     <div className="flex items-center gap-3 mb-3">
-                                        <Badge variant="success" size="md">Senior specialist</Badge>
+                                        <Badge variant="teal" size="md">Experienced Specialist</Badge>
                                         <div className="flex items-center gap-1.5 text-xs text-slate-400 font-bold tracking-tight">
                                             <Globe size={12} /> {doctor.location}
                                         </div>
                                     </div>
-                                    <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter leading-none mb-3">Dr. {doctor.name}</h1>
-                                    <h2 className="text-2xl font-black text-teal-600 tracking-tight flex items-center gap-3">
+                                    <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-none mb-3">Dr. {doctor.name}</h1>
+                                    <h2 className="text-2xl font-bold text-teal-600 tracking-tight flex items-center gap-3">
                                         {SPECIALIZATION_LABELS[doctor.specialization] || doctor.specialization} <div className="h-0.5 w-12 bg-teal-200" />
                                     </h2>
                                 </div>
@@ -283,15 +325,15 @@ export default function DoctorProfile() {
                                 <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-100">
                                     {[
                                         { label: 'Rating', val: doctor.rating, icon: Star, color: 'text-amber-500' },
-                                        { label: 'Seniority', val: doctor.experience.split(' ')[0], icon: Award, color: 'text-teal-500' },
-                                        { label: 'Feed', val: doctor.reviews, icon: User, color: 'text-emerald-500' }
+                                        { label: 'Experience', val: doctor.experience.split(' ')[0], icon: Award, color: 'text-teal-500' },
+                                        { label: 'Patients', val: doctor.reviews, icon: User, color: 'text-emerald-500' }
                                     ].map((stat, i) => (
                                         <div key={i} className="space-y-2">
                                             <div className="flex items-center gap-2">
                                                 <stat.icon size={16} className={stat.color} />
-                                                <span className="text-xl font-black text-slate-900 tracking-tighter">{stat.val}</span>
+                                                <span className="text-xl font-bold text-slate-900 tracking-tight">{stat.val}</span>
                                             </div>
-                                            <p className="text-[10px] font-bold text-slate-400 tracking-tight">{stat.label}</p>
+                                            <p className="text-[10px] font-bold text-slate-400 tracking-tight uppercase tracking-widest">{stat.label}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -301,8 +343,8 @@ export default function DoctorProfile() {
                         {/* Extended Dossier Information */}
                         <div className="space-y-10">
                             <div className="surface-card p-8 bg-white relative overflow-hidden group border border-slate-100">
-                                <h3 className="text-lg font-black text-slate-900 tracking-tight mb-6 flex items-center gap-3">
-                                    <BookOpen size={18} className="text-teal-600" /> Clinical Statement
+                                <h3 className="text-lg font-bold text-slate-900 tracking-tight mb-6 flex items-center gap-3">
+                                    <BookOpen size={18} className="text-teal-600" /> About Practitioner
                                 </h3>
                                 <p className="copy-description text-base font-medium text-slate-500 leading-relaxed max-w-3xl">
                                     &quot;{doctor.about}&quot;
@@ -415,10 +457,10 @@ export default function DoctorProfile() {
                                                         disabled={!slot.isAvailable}
                                                         onClick={() => setSelectedSlot(slot)}
                                                         className={`p-4 rounded-2xl font-bold text-sm tracking-tight border transition-all flex items-center justify-center gap-2 ${!slot.isAvailable
-                                                                ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
-                                                                : selectedSlot === slot
-                                                                    ? 'bg-teal-600 text-white border-teal-600 shadow-xl scale-[1.05]'
-                                                                    : 'bg-white border-slate-100 text-slate-500 hover:border-teal-400 hover:text-teal-600'
+                                                            ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                                                            : selectedSlot === slot
+                                                                ? 'bg-teal-600 text-white border-teal-600 shadow-xl scale-[1.05]'
+                                                                : 'bg-white border-slate-100 text-slate-500 hover:border-teal-400 hover:text-teal-600'
                                                             }`}
                                                     >
                                                         {selectedSlot === slot && <Check size={12} className="text-white" />}
@@ -452,12 +494,18 @@ export default function DoctorProfile() {
                                     variant="primary"
                                     size="xl"
                                     className="w-full normal-case tracking-tight font-bold"
-                                    disabled={!selectedSlot || bookingInProgress}
+                                    disabled={!selectedSlot || bookingInProgress || redirectingToPayment}
                                     onClick={handleBooking}
                                     icon={Zap}
                                 >
-                                    {bookingInProgress ? 'Synchronizing Archive...' : selectedSlot ? 'Finalize Booking Protocol' : 'Select Command Node'}
+                                    {bookingInProgress ? 'Synchronizing Archive...' : redirectingToPayment ? 'Redirecting To Payment...' : selectedSlot ? 'Finalize Booking Protocol' : 'Select Command Node'}
                                 </Button>
+
+                                {bookingNotice && (
+                                    <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-bold tracking-tight text-center">
+                                        {bookingNotice}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Infrastructure Footer */}

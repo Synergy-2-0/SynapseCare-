@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, PlusCircle, Trash2, FileText, Calculator, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -6,9 +6,47 @@ import { prescriptionApi } from '@/lib/api';
 
 const IssuePrescription = ({ session, onClose, doctorId }) => {
     const [submitting, setSubmitting] = useState(false);
+    const [consultationNotes, setConsultationNotes] = useState('');
+    const [doctorName, setDoctorName] = useState(typeof window !== 'undefined' ? localStorage.getItem('user_name') : 'Practitioner');
     const [medications, setMedications] = useState([
-        { name: '', instructions: '', unitPrice: 0, quantity: 1, unitDiscount: 0 }
+        { name: '', dosage: '', duration: '', instructions: '', unitPrice: 0, quantity: 1, unitDiscount: 0 }
     ]);
+
+    const frequencyOptions = [
+        { label: '1', value: 'Once daily' },
+        { label: '2', value: 'Twice daily' },
+        { label: '3', value: 'Three times daily' },
+        { label: '4', value: 'Four times daily' },
+        { label: 'PRN', value: 'As needed' },
+    ];
+
+    useEffect(() => {
+        const fetchContext = async () => {
+            try {
+                const { telemedicineApi, doctorApi } = await import('@/lib/api');
+                
+                // Fetch Notes
+                const res = await telemedicineApi.get(`/appointments/${session.id}/session`);
+                if (res.data?.data?.notes) {
+                    setConsultationNotes(res.data.data.notes);
+                }
+
+                // Fetch Doctor Name if not in storage or is generic
+                if (!doctorName || doctorName === 'Practitioner') {
+                    const docRes = await doctorApi.get('/profile/me');
+                    const d = docRes.data?.data || docRes.data;
+                    const name = d.name || (d.firstName ? `${d.firstName} ${d.lastName || ''}` : null);
+                    if (name) {
+                        setDoctorName(name);
+                        localStorage.setItem('user_name', name);
+                    }
+                }
+            } catch (e) {
+                console.warn("Clinical context fetch partially failed.");
+            }
+        };
+        if (session?.id) fetchContext();
+    }, [session?.id, doctorName]);
 
     const totals = useMemo(() => {
         return medications.reduce((acc, med) => {
@@ -24,7 +62,7 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
     if (!session) return null;
 
     const addMedication = () => {
-        setMedications([...medications, { name: '', instructions: '', unitPrice: 0, quantity: 1, unitDiscount: 0 }]);
+        setMedications([...medications, { name: '', dosage: '', duration: '', instructions: '', unitPrice: 0, quantity: 1, unitDiscount: 0 }]);
     };
 
     const updateMedication = (index, field, value) => {
@@ -64,10 +102,13 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                     doctorId: docId,
                     patientId: patId,
                     medicineName: med.name,
+                    dosage: med.dosage || '',
+                    duration: med.duration || '',
                     instructions: med.instructions || '',
                     unitPrice: parseFloat(med.unitPrice || 0),
                     quantity: parseInt(med.quantity || 1),
-                    unitDiscount: parseFloat(med.unitDiscount || 0)
+                    unitDiscount: parseFloat(med.unitDiscount || 0),
+                    createdDate: new Date().toISOString()
                 };
 
                 await prescriptionApi.post('/create', payload);
@@ -98,7 +139,7 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                     initial={{ scale: 0.95, opacity: 0, y: 10 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                    className="relative w-full max-w-5xl bg-slate-50 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border border-white"
+                    className="relative w-full max-w-7xl bg-slate-50 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border border-white"
                 >
                     {/* INVOICE HEADER */}
                     <div className="p-10 border-b border-slate-200 bg-white flex justify-between items-start">
@@ -110,15 +151,20 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                 <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight leading-none mb-2">Prescription Invoice</h2>
                                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-slate-200 pl-3">Reference: APPT-{session.id}</p>
                                 <div className="mt-4 flex items-center gap-6">
-                                   <div>
-                                       <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Patient Reference</span>
-                                       <span className="text-sm font-bold text-slate-800">#{session.patientId || 'Unlinked'}</span>
-                                   </div>
-                                   <div className="w-px h-6 bg-slate-100" />
-                                   <div>
-                                       <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Billing Date</span>
-                                       <span className="text-sm font-bold text-slate-800">{new Date().toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
-                                   </div>
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Patient Identity</span>
+                                        <span className="text-sm font-bold text-slate-800">{session.patientName || `Patient #${session.patientId}`}</span>
+                                    </div>
+                                    <div className="w-px h-6 bg-slate-100" />
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Prescribing Doctor</span>
+                                        <span className="text-sm font-bold text-slate-800">Dr. {doctorName}</span>
+                                    </div>
+                                    <div className="w-px h-6 bg-slate-100" />
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase text-slate-400 block mb-0.5">Billing Date</span>
+                                        <span className="text-sm font-bold text-slate-800">{new Date().toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -133,7 +179,8 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/50 border-b border-slate-100">
-                                        <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500 w-[35%]">Item / Medication</th>
+                                        <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500 w-[28%]">Medication & Strength</th>
+                                        <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500 w-[18%] text-center">Schedule</th>
                                         <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Unit Price</th>
                                         <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Qty</th>
                                         <th className="p-6 text-[10px] font-black uppercase tracking-widest text-slate-500">Discount</th>
@@ -144,23 +191,45 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                     {medications.map((med, i) => (
                                         <tr key={i} className="group border-b border-slate-50 last:border-none">
                                             <td className="p-6">
-                                                <div className="space-y-2 relative">
-                                                    <input 
-                                                        value={med.name}
-                                                        onChange={e => updateMedication(i, 'name', e.target.value)}
-                                                        placeholder="Medication Name"
-                                                        className="w-full bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all"
-                                                    />
-                                                    <input 
-                                                        value={med.instructions}
-                                                        onChange={e => updateMedication(i, 'instructions', e.target.value)}
-                                                        placeholder="E.g., 500mg - 1 tab BID"
-                                                        className="w-full bg-transparent text-[10px] text-slate-500 italic px-4 focus:outline-none"
-                                                    />
+                                                <div className="space-y-3 relative">
+                                                    <div className="flex gap-2">
+                                                        <input 
+                                                            value={med.name}
+                                                            onChange={e => updateMedication(i, 'name', e.target.value)}
+                                                            placeholder="Drug Name"
+                                                            className="flex-1 bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all"
+                                                        />
+                                                        <input 
+                                                            value={med.dosage}
+                                                            onChange={e => updateMedication(i, 'dosage', e.target.value)}
+                                                            placeholder="500mg"
+                                                            className="w-24 bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all text-center"
+                                                        />
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {frequencyOptions.map(opt => (
+                                                            <button
+                                                                key={opt.label}
+                                                                type="button"
+                                                                onClick={() => updateMedication(i, 'instructions', opt.value)}
+                                                            className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all flex items-center justify-center ${med.instructions === opt.value ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-white border border-slate-200 text-slate-500 hover:border-indigo-300'}`}
+                                                        >
+                                                            {opt.label}
+                                                        </button>
+                                                    ))}
+                                                    </div>
+                                                    <div className="relative">
+                                                        <textarea 
+                                                            value={med.instructions}
+                                                            onChange={e => updateMedication(i, 'instructions', e.target.value)}
+                                                            placeholder="Instructions (e.g. After meals)"
+                                                            className="w-full bg-slate-50/50 border border-transparent focus:border-indigo-100 rounded-xl px-4 py-2 text-[10px] font-medium text-slate-600 outline-none transition-all resize-none h-12"
+                                                        />
+                                                    </div>
                                                     {medications.length > 1 && (
                                                         <button 
                                                             onClick={() => removeMedication(i)}
-                                                            className="absolute -left-8 top-3 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            className="absolute -left-8 top-1 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>
@@ -168,32 +237,43 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                                 </div>
                                             </td>
                                             <td className="p-6">
-                                                <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 group-focus-within:bg-white border border-transparent focus-within:border-indigo-200 transition-all">
-                                                    <span className="text-slate-400 text-xs">$</span>
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-black uppercase text-slate-400">Duration</label>
                                                     <input 
-                                                        type="number"
-                                                        value={med.unitPrice}
-                                                        onChange={e => updateMedication(i, 'unitPrice', e.target.value)}
-                                                        className="w-full bg-transparent border-none focus:ring-0 text-sm font-black text-slate-800 p-2"
+                                                        value={med.duration}
+                                                        onChange={e => updateMedication(i, 'duration', e.target.value)}
+                                                        placeholder="7 Days"
+                                                        className="w-full bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 outline-none transition-all"
                                                     />
                                                 </div>
                                             </td>
                                             <td className="p-6">
-                                                <input 
-                                                    type="number"
-                                                    value={med.quantity}
-                                                    onChange={e => updateMedication(i, 'quantity', e.target.value)}
-                                                    className="w-16 bg-slate-50 border border-transparent focus:border-slate-200 rounded-xl px-3 py-2 text-sm font-black text-center outline-none"
-                                                />
+                                                <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-4 min-w-[120px] group-focus-within:bg-white border border-transparent focus-within:border-indigo-200 transition-all">
+                                                    <span className="text-slate-400 text-[10px] font-black shrink-0">LKR</span>
+                                                    <input 
+                                                        type="number"
+                                                        value={med.unitPrice}
+                                                        onChange={e => updateMedication(i, 'unitPrice', e.target.value)}
+                                                        className="w-full bg-transparent border-none focus:ring-0 text-sm font-black text-slate-800 py-3 px-0 outline-none"
+                                                    />
+                                                </div>
                                             </td>
                                             <td className="p-6">
-                                                <div className="flex items-center gap-2 bg-rose-50 rounded-xl px-3 border border-transparent focus-within:border-rose-200 transition-all">
-                                                    <span className="text-rose-400 text-xs">-</span>
+                                                    <input 
+                                                        type="number"
+                                                        value={med.quantity}
+                                                        onChange={e => updateMedication(i, 'quantity', e.target.value)}
+                                                        className="w-20 bg-slate-50 border border-transparent focus:bg-white focus:border-slate-200 rounded-xl px-3 py-3 text-sm font-black text-center outline-none transition-all"
+                                                    />
+                                            </td>
+                                            <td className="p-6">
+                                                <div className="flex items-center gap-2 bg-rose-50 rounded-xl px-4 min-w-[100px] border border-transparent focus-within:border-rose-200 transition-all">
+                                                    <span className="text-rose-400 text-[10px] font-black shrink-0">-</span>
                                                     <input 
                                                         type="number"
                                                         value={med.unitDiscount}
                                                         onChange={e => updateMedication(i, 'unitDiscount', e.target.value)}
-                                                        className="w-full bg-transparent border-none focus:ring-0 text-sm font-black text-rose-600 p-2"
+                                                        className="w-full bg-transparent border-none focus:ring-0 text-sm font-black text-rose-600 py-3 px-0 outline-none"
                                                     />
                                                 </div>
                                             </td>
@@ -219,6 +299,17 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
 
                         {/* BILL SUMMARY */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            {consultationNotes && (
+                                <div className="bg-indigo-50/50 p-8 rounded-[2rem] border border-indigo-100 flex flex-col gap-4">
+                                    <div className="flex items-center gap-3 text-indigo-700">
+                                        <FileText size={18} />
+                                        <h4 className="text-[10px] font-black uppercase tracking-widest">Clinical Session Notes</h4>
+                                    </div>
+                                    <div className="text-sm font-medium text-indigo-900 leading-relaxed italic whitespace-pre-wrap">
+                                        "{consultationNotes}"
+                                    </div>
+                                </div>
+                            )}
                             <div className="bg-white p-8 rounded-[2rem] border border-slate-200 h-fit">
                                 <div className="flex items-center gap-3 mb-6 text-indigo-600">
                                     <Info size={18} />

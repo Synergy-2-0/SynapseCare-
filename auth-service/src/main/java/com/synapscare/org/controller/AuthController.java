@@ -60,4 +60,20 @@ public class AuthController {
         authService.logout(currentUser.getId());
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
+
+    // POST /api/auth/forgot-password
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(
+            @Valid @RequestBody com.synapscare.org.dto.request.ForgotPasswordRequest request) {
+        authService.forgotPassword(request.getEmail());
+        return ResponseEntity.ok(Map.of("message", "Recovery email sent successfully if the user exists"));
+    }
+
+    // POST /api/auth/reset-password
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @Valid @RequestBody com.synapscare.org.dto.request.ResetPasswordRequest request) {
+        authService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+    }
 }

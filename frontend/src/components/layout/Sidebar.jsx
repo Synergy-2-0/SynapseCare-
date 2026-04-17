@@ -8,14 +8,12 @@ import {
     FileText,
     Video,
     LogOut,
-    User,
-    Activity,
+    UserCog,
+    Clock,
+    ClipboardList,
     ShieldCheck,
     Search,
-    UserCog,
-    Settings,
-    Clock,
-    ClipboardList
+    Activity
 } from 'lucide-react';
 import { DOCTOR_ROUTES, PATIENT_ROUTES, ADMIN_ROUTES } from '../../constants/routes';
 
@@ -46,13 +44,14 @@ const Sidebar = ({ onClose }) => {
         { id: 'consultations', icon: Video, label: 'Consultations', path: DOCTOR_ROUTES.TELEMEDICINE },
         { id: 'prescriptions', icon: ClipboardList, label: 'Prescriptions', path: DOCTOR_ROUTES.PRESCRIPTIONS },
         { id: 'schedule', icon: Clock, label: 'Schedule', path: DOCTOR_ROUTES.SCHEDULE },
+        { id: 'profile', icon: UserCog, label: 'My Settings', path: DOCTOR_ROUTES.SETTINGS },
     ];
 
     const patientNav = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: PATIENT_ROUTES.DASHBOARD },
         { id: 'appointments', icon: Calendar, label: 'My Appointments', path: PATIENT_ROUTES.APPOINTMENTS },
         { id: 'find-doctors', icon: Search, label: 'Find Doctors', path: PATIENT_ROUTES.FIND_DOCTORS },
-        { id: 'telemedicine', icon: Video, label: 'Consultations', path: PATIENT_ROUTES.TELEMEDICINE },
+        { id: 'telemedicine', icon: Video, label: 'Consultations', path: `${PATIENT_ROUTES.DASHBOARD}?tab=telemedicine` },
         { id: 'records', icon: FileText, label: 'Medical Records', path: PATIENT_ROUTES.MEDICAL_RECORDS },
         { id: 'symptom-checker', icon: Activity, label: 'AI Health Checker', path: PATIENT_ROUTES.SYMPTOM_CHECKER },
     ];

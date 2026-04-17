@@ -1,0 +1,241 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: localhost:5000/healthcare-platform-payment-service:latest
+          imagePullPolicy: Never
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-payment:5432/payment_db
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "1234"
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: admin
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: admin123
+          ports:
+            - containerPort: 8086
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+spec:
+  ports:
+    - port: 8086
+  selector:
+    app: payment-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemedicine-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemedicine-service
+  template:
+    metadata:
+      labels:
+        app: telemedicine-service
+    spec:
+      containers:
+        - name: telemedicine-service
+          image: localhost:5000/healthcare-platform-telemedicine-service:latest
+          imagePullPolicy: Never
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-telemedicine:5432/telemedicine_db
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "1234"
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: admin
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: admin123
+          ports:
+            - containerPort: 8087
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemedicine-service
+spec:
+  ports:
+    - port: 8087
+  selector:
+    app: telemedicine-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prescription-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prescription-service
+  template:
+    metadata:
+      labels:
+        app: prescription-service
+    spec:
+      containers:
+        - name: prescription-service
+          image: localhost:5000/healthcare-platform-prescription-service:latest
+          imagePullPolicy: Never
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-prescription:5432/prescription_db
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "1234"
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: admin
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: admin123
+          ports:
+            - containerPort: 8088
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prescription-service
+spec:
+  ports:
+    - port: 8088
+  selector:
+    app: prescription-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: notification-service:v1.0.5
+          imagePullPolicy: Never
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-notification:5432/notification_db
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "1234"
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq
+            - name: SPRING_RABBITMQ_PORT
+              value: "5672"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: admin
+            - name: SPRING_RABBITMQ_PASSWORD
+              value: admin123
+            - name: MAIL_HOST
+              value: "smtp.gmail.com"
+            - name: MAIL_PORT
+              value: "587"
+            - name: MAIL_USERNAME
+              value: "luqmanbooso@gmail.com"
+            - name: MAIL_PASSWORD
+              value: "zmqegzlwtywughrk"
+            - name: EMAIL_NOTIFICATIONS_ENABLED
+              value: "true"
+            - name: SMS_NOTIFICATIONS_ENABLED
+              value: "true"
+            - name: TEXTBEE_API_KEY
+              value: "d2a26f3a-2636-4c70-be28-8aaa41167de2"
+            - name: TEXTBEE_DEVICE_ID
+              value: "67f226c61cd68b248a391cb4"
+            - name: WHATSAPP_NOTIFICATIONS_ENABLED
+              value: "true"
+            - name: ULTRAMSG_INSTANCE_ID
+              value: "instance170456"
+            - name: ULTRAMSG_TOKEN
+              value: "ajti20mn7ce7k0kc"
+            - name: ULTRAMSG_API_URL
+              value: "https://api.ultramsg.com/instance170456/"
+          ports:
+            - containerPort: 8089
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+spec:
+  ports:
+    - port: 8089
+  selector:
+    app: notification-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-symptom-checker-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-symptom-checker-service
+  template:
+    metadata:
+      labels:
+        app: ai-symptom-checker-service
+    spec:
+      containers:
+        - name: ai-symptom-checker-service
+          image: localhost:5000/healthcare-platform-ai-symptom-checker-service:latest
+          imagePullPolicy: Never
+          env:
+            - name: MISTRAL_API_KEY
+              value: yAgB9m01JEg3YaFmT2OMa9iAuowSkhkA
+          ports:
+            - containerPort: 8085
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-symptom-checker-service
+spec:
+  ports:
+    - port: 8085
+  selector:
+    app: ai-symptom-checker-service

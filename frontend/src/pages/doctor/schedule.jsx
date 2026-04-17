@@ -28,7 +28,7 @@ const SchedulePage = () => {
 
         try {
             const profileRes = await doctorApi.get('/profile/me');
-            const doctorProfile = profileRes?.data;
+            const doctorProfile = profileRes.data?.data || profileRes.data || profileRes;
 
             if (!isDoctorApproved(doctorProfile?.verificationStatus)) {
                 router.replace('/doctor/setup');
@@ -37,13 +37,15 @@ const SchedulePage = () => {
 
             const doctorId = doctorProfile?.id;
             if (!doctorId) {
-                throw new Error('Doctor profile ID is missing');
+                console.error('Doctor profile ID is missing', doctorProfile);
+                return;
             }
 
             setUserData({ name, userId, doctorId });
 
             const apptRes = await appointmentApi.get(`/doctor/${doctorId}`);
-            setAppointments(Array.isArray(apptRes.data?.data || apptRes.data || []) ? (apptRes.data?.data || apptRes.data || []) : []);
+            const apptList = apptRes.data?.data || apptRes.data || [];
+            setAppointments(Array.isArray(apptList) ? apptList : []);
         } catch (err) {
             console.error("Failed to fetch schedule data", err);
         } finally {
@@ -76,6 +78,7 @@ const SchedulePage = () => {
                     isOpen={isDrawerOpen} 
                     onClose={() => setIsDrawerOpen(false)} 
                     appointment={selectedAppointment} 
+                    doctorId={userData?.doctorId}
                 />
             </div>
         </DashboardLayout>

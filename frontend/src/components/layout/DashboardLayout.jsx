@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Search, Bell, User, LayoutDashboard, Command } from 'lucide-react';
+import { Menu, Search, User, LayoutDashboard, Command } from 'lucide-react';
 import Head from 'next/head';
 import Sidebar from './Sidebar';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import NotificationBell from '../ui/NotificationBell';
+import { doctorApi } from '../../lib/api';
 
 const DashboardLayout = ({ children, title = "" }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userData, setUserData] = useState({ name: 'Practitioner', specialization: 'General Physician' });
+    const [userRole, setUserRole] = useState('PATIENT');
     const [isClient, setIsClient] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const router = useRouter();
@@ -33,34 +36,52 @@ const DashboardLayout = ({ children, title = "" }) => {
     useEffect(() => {
         setIsClient(true);
         const role = localStorage.getItem('user_role');
-        const allowedRoles = getAllowedRolesForPath(router.pathname);
         const verificationStatus = localStorage.getItem('user_verificationStatus');
+        
+        const syncUserData = async () => {
+            const allowedRoles = getAllowedRolesForPath(router.pathname);
 
-        if (!role) {
-            router.push('/login');
-            return;
-        }
+            if (!role) {
+                router.push('/login');
+                return;
+            }
 
-        if (role === 'DOCTOR' && verificationStatus === 'PENDING' && !router.pathname.startsWith('/doctor/setup')) {
-            router.push('/doctor/setup');
-            return;
-        }
+            // Sync with remote profile if doctor data is thin
+            if (role === 'DOCTOR' && !localStorage.getItem('user_profile_img')) {
+                try {
+                    const profileRes = await doctorApi.get('/profile/me');
+                    const profile = profileRes.data?.data || profileRes.data || profileRes;
+                    if (profile) {
+                        if (profile.profileImageUrl) localStorage.setItem('user_profile_img', profile.profileImageUrl);
+                        if (profile.specialization) localStorage.setItem('user_specialization', profile.specialization);
+                        if (profile.verificationStatus) {
+                            localStorage.setItem('user_verificationStatus', profile.verificationStatus);
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Global profile sync delayed:", e);
+                }
+            }
 
-        if (role === 'DOCTOR' && verificationStatus === 'APPROVED' && router.pathname.startsWith('/doctor/setup')) {
-            router.push('/dashboard/doctor');
-            return;
-        }
+            if (role === 'DOCTOR' && verificationStatus === 'PENDING' && !router.pathname.startsWith('/doctor/setup')) {
+                router.push('/doctor/setup');
+                return;
+            }
 
-        if (allowedRoles.includes(role)) {
-            setIsAuthorized(true);
-            setUserData({
-                name: localStorage.getItem('user_name') || 'Practitioner',
-                specialization: localStorage.getItem('user_specialization') || 'General Physician'
-            });
-            return;
-        }
+            if (allowedRoles.includes(role)) {
+                setIsAuthorized(true);
+                setUserRole(role);
+                setUserData({
+                    name: localStorage.getItem('user_name') || 'Practitioner',
+                    specialization: localStorage.getItem('user_specialization') || (role === 'DOCTOR' ? 'General Physician' : 'Patient'),
+                    profileImageUrl: localStorage.getItem('user_profile_img')
+                });
+            } else {
+                router.push(getFallbackRoute(role));
+            }
+        };
 
-        router.push(getFallbackRoute(role));
+        syncUserData();
     }, [router, router.pathname]);
 
     if (!isClient || !isAuthorized) {
@@ -128,21 +149,22 @@ const DashboardLayout = ({ children, title = "" }) => {
                     </div>
 
                     <div className="flex items-center gap-4 lg:gap-6 ml-4">
-                        <button className="relative w-10 h-10 rounded-xl bg-white border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:border-[var(--accent-teal)] hover:text-[var(--accent-teal)] transition-all shadow-sm group">
-                            <Bell size={18} className="group-hover:rotate-12 transition-transform" />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-[var(--accent-amber)] rounded-full border-2 border-white" />
-                        </button>
+                        <NotificationBell />
                         
                         <div className="h-8 w-px bg-[var(--border-color)] hidden sm:block" />
 
                         <div className="flex items-center gap-3 group cursor-pointer">
                             <div className="text-right hidden sm:block">
-                                <p className="text-sm font-bold font-serif text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent-teal)] transition-colors">Dr. {userData.name}</p>
-                                <p className="text-[10px] font-medium text-[var(--text-muted)] mt-0.5">{userData.specialization}</p>
+                                <p className="text-sm font-bold font-serif text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent-teal)] transition-colors">
+                                    {userRole === 'DOCTOR' ? `Dr. ${userData.name}` : userRole === 'ADMIN' ? `Admin ${userData.name}` : userData.name}
+                                </p>
+                                <p className="text-[10px] font-medium text-[var(--text-muted)] mt-0.5">
+                                    {userRole === 'DOCTOR' ? userData.specialization : userRole === 'ADMIN' ? 'Administrator' : 'Patient'}
+                                </p>
                             </div>
                             <div className="w-10 h-10 rounded-full bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-center text-[var(--accent-teal)] relative group-hover:scale-105 transition-transform">
                                 <img 
-                                    src={`https://ui-avatars.com/api/?name=${userData.name}&background=0D9488&color=fff`} 
+                                    src={userData.profileImageUrl || `https://ui-avatars.com/api/?name=${userData.name}&background=0D9488&color=fff`} 
                                     alt={userData.name}
                                     className="w-full h-full rounded-full object-cover p-0.5"
                                 />

@@ -31,6 +31,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -75,6 +78,15 @@ public class AuthService {
                     .lastName(savedUser.getLastName())
                     .phoneNumber(savedUser.getPhoneNumber())
                     .roles(Set.of("PATIENT"))
+                    .bloodGroup(request.getBloodGroup())
+                    .allergies(request.getAllergies())
+                    .chronicIllnesses(request.getChronicIllnesses())
+                    .height(request.getHeight())
+                    .weight(request.getWeight())
+                    .emergencyContact(request.getEmergencyContact())
+                    .dob(request.getDob())
+                    .gender(request.getGender())
+                    .profileImageUrl(request.getProfileImageUrl())
                     .build();
 
             rabbitTemplate.convertAndSend(
@@ -242,4 +254,50 @@ public class AuthService {
         }
     }
 
+    @Transactional
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmailAndIsDeletedFalse(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(24));
+        userRepository.save(user);
+
+        // Publish event to send reset email
+        try {
+            Map<String, Object> event = new HashMap<>();
+            event.put("userId", user.getId());
+            event.put("email", user.getEmail());
+            event.put("firstName", user.getFirstName());
+            event.put("token", token);
+            event.put("type", "PASSWORD_RESET");
+
+            rabbitTemplate.convertAndSend(
+                    "healthcare.exchange",
+                    "notification.auth.password.reset",
+                    event
+            );
+            log.info("Published password reset event for user: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to publish password reset event for user: {}", user.getEmail(), e);
+        }
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        User user = userRepository.findByResetToken(token)
+                .orElseThrow(() -> new BadRequestException("Invalid or expired reset token"));
+
+        if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Reset token has expired");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
+
+        log.info("Password reset successfully for user: {}", user.getEmail());
+    }
 }
