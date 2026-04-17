@@ -34,8 +34,24 @@ const ConsultationsPage = () => {
 
                     const doctorDbId = profileRes?.data?.id || id;
                     setUserData({ name, id, doctorDbId });
+                    
+                    // Fetch appointments
                     const apptRes = await appointmentApi.get(`/doctor/${doctorDbId}`);
-                    setAppointments((apptRes.data?.data || apptRes.data || []).filter(a => a.status !== 'CANCELLED'));
+                    const appts = (apptRes.data?.data || apptRes.data || []).filter(a => a.status !== 'CANCELLED');
+                    setAppointments(appts);
+
+                    // Fetch patient details to resolve names
+                    if (appts.length > 0) {
+                        try {
+                            const patRes = await appointmentApi.get(`/doctor/${doctorDbId}/patients`);
+                            const patList = patRes.data?.data || patRes.data || [];
+                            const map = {};
+                            patList.forEach(p => { if (p?.id) map[p.id] = p; });
+                            setUserData(prev => ({ ...prev, patientsMap: map }));
+                        } catch (patErr) {
+                            console.warn('Could not load patient names:', patErr.message);
+                        }
+                    }
                 } catch (err) {
                     console.error("Failed to fetch tele-consultations", err);
                 } finally {
@@ -60,7 +76,9 @@ const ConsultationsPage = () => {
                     onCompleteSession={(id) => {
                         setAppointments(prev => prev.filter(a => a.id !== id));
                     }} 
-                    onEndSession={(appt, notes) => setActivePostSession({ ...appt, inheritedNotes: notes })} 
+                    onEndSession={(appt, notes) => {
+                        toast.success("Consultation notes synchronized. You can issue the digital prescription from the Prescriptions ledger at any time.");
+                    }} 
                 />
                 <AnimatePresence>
                     {activePostSession && (

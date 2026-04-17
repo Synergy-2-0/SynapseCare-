@@ -6,9 +6,25 @@ import { prescriptionApi } from '@/lib/api';
 
 const IssuePrescription = ({ session, onClose, doctorId }) => {
     const [submitting, setSubmitting] = useState(false);
+    const [consultationNotes, setConsultationNotes] = useState('');
     const [medications, setMedications] = useState([
         { name: '', instructions: '', unitPrice: 0, quantity: 1, unitDiscount: 0 }
     ]);
+
+    useEffect(() => {
+        const fetchNotes = async () => {
+            try {
+                const { telemedicineApi } = await import('@/lib/api');
+                const res = await telemedicineApi.get(`/appointments/${session.id}/session`);
+                if (res.data?.data?.notes) {
+                    setConsultationNotes(res.data.data.notes);
+                }
+            } catch (e) {
+                console.warn("No telemedicine notes found for this session.");
+            }
+        };
+        if (session?.id) fetchNotes();
+    }, [session?.id]);
 
     const totals = useMemo(() => {
         return medications.reduce((acc, med) => {
@@ -169,7 +185,7 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
                                             </td>
                                             <td className="p-6">
                                                 <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 group-focus-within:bg-white border border-transparent focus-within:border-indigo-200 transition-all">
-                                                    <span className="text-slate-400 text-xs">$</span>
+                                                    <span className="text-slate-400 text-[10px] font-bold">LKR</span>
                                                     <input 
                                                         type="number"
                                                         value={med.unitPrice}
@@ -219,6 +235,17 @@ const IssuePrescription = ({ session, onClose, doctorId }) => {
 
                         {/* BILL SUMMARY */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            {consultationNotes && (
+                                <div className="bg-indigo-50/50 p-8 rounded-[2rem] border border-indigo-100 flex flex-col gap-4">
+                                    <div className="flex items-center gap-3 text-indigo-700">
+                                        <FileText size={18} />
+                                        <h4 className="text-[10px] font-black uppercase tracking-widest">Clinical Session Notes</h4>
+                                    </div>
+                                    <div className="text-sm font-medium text-indigo-900 leading-relaxed italic whitespace-pre-wrap">
+                                        "{consultationNotes}"
+                                    </div>
+                                </div>
+                            )}
                             <div className="bg-white p-8 rounded-[2rem] border border-slate-200 h-fit">
                                 <div className="flex items-center gap-3 mb-6 text-indigo-600">
                                     <Info size={18} />

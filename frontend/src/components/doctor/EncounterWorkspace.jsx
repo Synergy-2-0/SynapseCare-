@@ -58,7 +58,7 @@ const EncounterWorkspace = ({ session, onClose }) => {
                             </div>
                             <div>
                                 <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none mb-1">Clinical Session</h1>
-                                <p className="text-xl font-serif font-bold text-slate-900 leading-none">{session.name || `Patient #${session.patientId}`}</p>
+                                <p className="text-xl font-serif font-bold text-slate-900 leading-none">{session.patientName || session.name || `Patient #${session.patientId}`}</p>
                             </div>
                         </div>
                         <div className="h-10 w-px bg-slate-100" />

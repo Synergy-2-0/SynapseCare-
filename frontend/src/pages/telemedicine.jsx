@@ -33,7 +33,12 @@ const TelemedicinePage = () => {
     };
 
     useEffect(() => {
-        if (!appointmentId) return;
+        if (!router.isReady) return;
+        if (!appointmentId) {
+            setError('No clinical sequence ID provided. Access the bridge via your dashboard.');
+            setLoading(false);
+            return;
+        }
 
         const fetchData = async () => {
             setLoading(true);

@@ -137,7 +137,10 @@ const PatientDashboard = () => {
                     setUserData({ ...patientInfo, name: patientInfo.name || name, id, clinicalId });
                     setProfileForm({ ...patientInfo, name: patientInfo.name || name });
                     setAllAppointments(safeAppts);
-                    setUpcoming(safeAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)));
+                    setUpcoming(safeAppts.filter(a => 
+                        ['CONFIRMED', 'PAID', 'PENDING_PAYMENT', 'IN_PROGRESS'].includes(a.status) &&
+                        (a.consultationType === 'VIDEO' || a.consultationType === 'TELEMEDICINE' || a.mode === 'TELEMEDICINE')
+                    ));
                     setClinicalHistory(safeHistory);
                     setReports(safeReports);
                     setPayments(safePayments);
@@ -171,7 +174,10 @@ const PatientDashboard = () => {
                 const allAppts = apptRes.data?.data || apptRes.data || [];
                 const safeAppts = Array.isArray(allAppts) ? allAppts : [];
                 setAllAppointments(safeAppts);
-                setUpcoming(safeAppts.filter(a => ['CONFIRMED', 'PAID', 'PENDING_PAYMENT'].includes(a.status)));
+                setUpcoming(safeAppts.filter(a => 
+                    ['CONFIRMED', 'PAID', 'PENDING_PAYMENT', 'IN_PROGRESS'].includes(a.status) &&
+                    (a.consultationType === 'VIDEO' || a.consultationType === 'TELEMEDICINE' || a.mode === 'TELEMEDICINE')
+                ));
 
                 // Update URL to remove visual success param without reload
                 router.replace('/dashboard/patient', undefined, { shallow: true });
@@ -768,8 +774,7 @@ const PatientDashboard = () => {
                                                                 <div className="flex-1 flex flex-wrap gap-4 relative z-10">
                                                                     <button 
                                                                         onClick={() => {
-                                                                            localStorage.setItem('active_consultation_id', upcoming[0].id);
-                                                                            router.push('/telemedicine');
+                                                                            router.push(`/telemedicine?appointmentId=${upcoming[0].id}`);
                                                                         }}
                                                                         className="h-16 px-10 bg-slate-900 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-teal-600 transition-all shadow-xl shadow-slate-200"
                                                                     >
@@ -832,7 +837,7 @@ const PatientDashboard = () => {
                                                                             <div className="flex gap-4">
                                                                                 {u.status !== 'PAID' ? (
                                                                                     <button 
-                                                                                        onClick={() => router.push(`/payment?appointmentId=${u.id}&amount=${u.fee || 1500}&patientId=${userData.id}&doctorId=${u.doctorId}`)}
+                                                                                        onClick={() => router.push(`/payment?appointmentId=${u.id}&amount=${u.fee || 2000}&patientId=${userData.id}&doctorId=${u.doctorId}`)}
                                                                                         className="flex-1 h-12 bg-teal-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all"
                                                                                     >
                                                                                         Settle Fee
@@ -1001,24 +1006,46 @@ const PatientDashboard = () => {
                                 )}
 
                                 {activeTab === 'telemedicine' && (
-                                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="space-y-8 text-center py-20">
-                                        <div className="max-w-2xl mx-auto space-y-10 p-12 bg-slate-900 rounded-[4rem] border border-white/5 shadow-2xl relative overflow-hidden">
+                                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="space-y-8 text-center py-10 lg:py-20">
+                                        <div className="max-w-4xl mx-auto space-y-10 p-12 bg-slate-900 rounded-[4rem] border border-white/5 shadow-2xl relative overflow-hidden">
                                             <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 blur-[100px]" />
                                             <div className="w-28 h-28 bg-teal-500/10 rounded-[2.5rem] border border-teal-500/20 text-teal-400 flex items-center justify-center mx-auto shadow-inner relative z-10">
                                                 <Video size={56} />
                                             </div>
-                                            <div className="relative z-10 space-y-4">
+                                            <div className="relative z-10 space-y-6">
                                                 <h2 className="text-4xl font-black text-white italic tracking-widest uppercase">Clinical Bridge</h2>
-                                                <p className="text-slate-500 font-medium text-lg leading-relaxed px-10">Initialize a high-bandwidth clinical connection with your specialized diagnostic lead.</p>
+                                                {upcoming.length > 0 ? (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                                                        {upcoming.slice(0, 2).map((appt) => (
+                                                            <div key={appt.id} className="p-6 bg-white/5 rounded-3xl border border-white/10 text-left space-y-3 hover:bg-white/10 transition-all group">
+                                                                <div className="flex justify-between items-start">
+                                                                    <div className="px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-400 text-[9px] font-black uppercase">Active Registry #{appt.id}</div>
+                                                                    <div className="text-[10px] text-slate-500 font-bold">{appt.date}</div>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-white font-bold text-lg">{appt.time}</p>
+                                                                    <p className="text-slate-400 text-xs truncate">Ref: {appt.reason || 'Standard Clinical Review'}</p>
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => router.push(`/telemedicine?appointmentId=${appt.id}`)}
+                                                                    className="w-full py-3 bg-white text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-500 hover:text-white transition-all shadow-xl"
+                                                                >
+                                                                    Initialize Node
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-slate-500 font-medium text-lg leading-relaxed px-10">No active clinical sessions found in your registry for the current cycle.</p>
+                                                )}
                                             </div>
-                                            <div className="bg-white/5 p-8 rounded-[2rem] border border-white/5 text-left relative z-10">
+                                            <div className="bg-white/5 p-8 rounded-[2rem] border border-white/5 text-left relative z-10 max-w-xl mx-auto">
                                                 <div className="flex items-center gap-3 mb-4">
                                                     <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
                                                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-teal-500">Telemetry Status</span>
                                                 </div>
-                                                <p className="text-sm font-bold text-slate-400 italic">Your secure interactive uplink will activate as per the clinical schedule registry.</p>
+                                                <p className="text-sm font-bold text-slate-400 italic">Your secure interactive uplink will activate as per the clinical schedule registry. Ensure high-bandwidth availability before initialization.</p>
                                             </div>
-                                            <button onClick={() => router.push('/telemedicine')} className="h-16 px-12 bg-white text-slate-900 rounded-3xl font-black text-xs uppercase tracking-[0.3em] hover:bg-teal-500 hover:text-white transition-all shadow-2xl shadow-white/5 relative z-10">Enter Telemetry Node</button>
                                         </div>
                                     </motion.div>
                                 )}

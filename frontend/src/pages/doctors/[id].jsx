@@ -90,7 +90,7 @@ export default function DoctorProfile() {
                         "Personalized Neural Protocols",
                         "Strategic Health Monitoring"
                     ],
-                    fee: doc.consultationFee || 1500,
+                    fee: doc.consultationFee || 2000,
                     verificationStatus: doc.verificationStatus
                 };
                 setDoctor(richDoctor);

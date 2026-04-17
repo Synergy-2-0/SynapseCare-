@@ -154,7 +154,18 @@ const DoctorDashboard = () => {
                     const apptRes = await appointmentApi.get(`/doctor/${doctorId}`);
                     const allAppts = apptRes.data?.data || apptRes.data || [];
                     const safeAppts = Array.isArray(allAppts) ? allAppts : [];
+
+                    // Fetch patient details to resolve names
+                    let pMap = {};
+                    try {
+                        const patRes = await appointmentApi.get(`/doctor/${doctorId}/patients`);
+                        const patList = patRes.data?.data || patRes.data || [];
+                        patList.forEach(p => { if (p?.id) pMap[p.id] = p; });
+                    } catch (patErr) {
+                        console.warn('Could not load patient names:', patErr.message);
+                    }
                     
+                    setUserData(prev => ({ ...prev, patientsMap: pMap }));
                     setAppointments(safeAppts.filter(a => a.status !== 'CANCELLED'));
                     setStats(prev => ({
                         ...prev,
@@ -298,7 +309,7 @@ const DoctorDashboard = () => {
                                                                         unoptimized
                                                                     />
                                                                 </div>
-                                                                <span className="font-bold text-slate-800">Patient #{appt.patientId}</span>
+                                                                <span className="font-bold text-slate-800">{userData?.patientsMap?.[appt.patientId]?.name || `Patient #${appt.patientId}`}</span>
                                                             </div>
                                                         </td>
                                                         <td className="p-6">
@@ -501,7 +512,7 @@ const DoctorDashboard = () => {
                                             </div>
                                         </div>
                                         <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Consultation Fee (USD $)</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Consultation Fee (LKR)</label>
                                             <div className="relative">
                                                 <DollarSign size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
                                                 <input 
